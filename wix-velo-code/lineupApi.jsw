@@ -23,7 +23,7 @@ import wixData from 'wix-data';
  * You can also use the Wix Data API's listDataItems() to inspect actual field keys.
  */
 export async function getLineup() {
-  const results = await wixData.query("Lineup")
+  const results = await wixData.query("Team")
     .ascending("kezdIdő")
     .limit(1000)
     .find();
