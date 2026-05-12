@@ -15,7 +15,8 @@
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { CalendarPlus, ChevronDown, Filter, ExternalLink, Search, Heart, X, Star, LayoutGrid, List } from "lucide-react";
+import { CalendarPlus, ChevronDown, Filter, ExternalLink, Search, Heart, X, Star, LayoutGrid, List, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   type Artist,
@@ -362,6 +363,7 @@ function ListamPanel({
   onClose,
   onJumpTo,
   onExportAll,
+  onShare,
 }: {
   favourites: Set<string>;
   allArtists: Artist[];
@@ -370,6 +372,7 @@ function ListamPanel({
   onClose: () => void;
   onJumpTo: (artist: Artist) => void;
   onExportAll: () => void;
+  onShare: () => void;
 }) {
   const favArtists = useMemo(
     () => allArtists.filter((a) => favourites.has(a.id)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
@@ -401,13 +404,26 @@ function ListamPanel({
           >
             Listám
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-            title="Bezár"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            {favourites.size > 0 && (
+              <button
+                onClick={onShare}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime text-muted-foreground transition-all"
+                style={{ borderRadius: 0, fontFamily: "'Pacaembu', sans-serif" }}
+                title="Megosztás"
+              >
+                <Share2 size={12} />
+                Megosztás
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-muted-foreground hover:text-foreground transition-colors ml-1"
+              title="Bezár"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {favArtists.length === 0 ? (
@@ -603,6 +619,64 @@ export default function Timetable() {
       return next;
     });
   }, []);
+
+  // ---- URL hash helpers for shareable favourites ----
+  const encodeFavouritesToHash = useCallback((ids: Set<string>): string => {
+    if (ids.size === 0) return "";
+    const raw = Array.from(ids).join(",");
+    return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  }, []);
+
+  const decodeFavouritesFromHash = useCallback((hash: string): string[] => {
+    try {
+      const padded = hash + "=".repeat((4 - (hash.length % 4)) % 4);
+      const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+      return raw.split(",").filter(Boolean);
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // On mount: check if URL hash contains shared favourites
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash.startsWith("fav:")) return;
+    const encoded = hash.slice(4);
+    const ids = decodeFavouritesFromHash(encoded);
+    if (ids.length === 0) return;
+    const validIds = new Set(ids.filter((id) => MOCK_ARTISTS.some((a) => a.id === id)));
+    if (validIds.size === 0) return;
+    setFavourites((prev) => {
+      const merged = new Set([...Array.from(prev), ...Array.from(validIds)]);
+      writeFavouritesToCookie(merged);
+      return merged;
+    });
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    toast.success(`${validIds.size} kedvenc betöltve a megosztott listából!`, {
+      style: { fontFamily: "'Pacaembu', sans-serif" },
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Share: copy URL with encoded favourites to clipboard
+  const shareFavourites = useCallback(() => {
+    const encoded = encodeFavouritesToHash(favourites);
+    if (!encoded) return;
+    const url = `${window.location.origin}${window.location.pathname}#fav:${encoded}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        toast.success("Link másolva a vágólapra!", {
+          style: { fontFamily: "'Pacaembu', sans-serif" },
+        });
+      }).catch(() => {
+        toast.error("Nem sikerült másolni a linket.", {
+          style: { fontFamily: "'Pacaembu', sans-serif" },
+        });
+      });
+    } else {
+      window.prompt("Másold ki ezt a linket:", url);
+    }
+  }, [favourites, encodeFavouritesToHash]);
 
   // Export all favourites as a single ICS file
   const exportAllFavourites = useCallback(() => {
@@ -912,6 +986,7 @@ export default function Timetable() {
               onClose={() => setShowListam(false)}
               onJumpTo={jumpToArtist}
               onExportAll={exportAllFavourites}
+              onShare={shareFavourites}
             />
           )}
         </AnimatePresence>
