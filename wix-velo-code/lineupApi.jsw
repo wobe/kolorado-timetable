@@ -1,0 +1,71 @@
+// ============================================================
+// Backend/lineupApi.jsw
+// Kolorádó Festival Timetable — Wix Velo Backend Module
+// Place this file at: Backend > lineupApi.jsw in the Velo editor
+// ============================================================
+
+import wixData from 'wix-data';
+
+/**
+ * Fetch all lineup items from the "Lineup" CMS collection.
+ * Returns an array of artist objects formatted for the Custom Element.
+ * 
+ * CMS field IDs (from your Wix Content Manager):
+ *   - title          → "Name" column (Artist name, auto-mapped)
+ *   - link-lineup-all-title → "Lineup (Item)" column (URL slug, e.g. "/lineup/analog-balaton")
+ *   - kezdIdő        → "Kezdő idő" column (Date/Time: set start time)
+ *   - végeIdő        → "Vége idő" column (Date/Time: set end time)
+ *   - színpad        → "Színpad" column (Tags/Reference: stage name, stored as JSON array)
+ *   - genre          → "Genre" column (Text: music genre)
+ *
+ * NOTE: The field IDs above use Wix's auto-generated camelCase format.
+ * If your field IDs differ, check them in the CMS > Collection > Fields panel.
+ * You can also use the Wix Data API's listDataItems() to inspect actual field keys.
+ */
+export async function getLineup() {
+  const results = await wixData.query("Lineup")
+    .ascending("kezdIdő")
+    .limit(1000)
+    .find();
+
+  return results.items
+    .filter(item => item["kezdIdő"] && item["színpad"]) // Only include items with dates & stages
+    .map((item, index) => {
+      // Parse stage from JSON array format: '["Nagyszínpad"]' → "Nagyszínpad"
+      let stage = "";
+      const rawStage = item["színpad"];
+      if (Array.isArray(rawStage)) {
+        stage = rawStage[0] || "";
+      } else if (typeof rawStage === "string") {
+        try {
+          const parsed = JSON.parse(rawStage);
+          stage = Array.isArray(parsed) ? parsed[0] || "" : rawStage;
+        } catch {
+          stage = rawStage;
+        }
+      }
+
+      // Parse the URL slug from the "Lineup (Item)" reference field
+      // This may be a string like "/lineup/analog-balaton" or an object with a url property
+      let url = "";
+      const rawLink = item["link-lineup-all-title"] || item["linkLineupAllTitle"];
+      if (typeof rawLink === "string") {
+        url = rawLink;
+      } else if (rawLink && typeof rawLink === "object" && rawLink.url) {
+        url = rawLink.url;
+      }
+
+      const startTime = item["kezdIdő"];
+      const endTime = item["végeIdő"];
+
+      return {
+        id: item._id || `artist-${index}`,
+        name: item.title || "",
+        stage,
+        startTime: startTime instanceof Date ? startTime.toISOString() : startTime,
+        endTime: endTime instanceof Date ? endTime.toISOString() : endTime,
+        genre: item.genre || "",
+        url,
+      };
+    });
+}
