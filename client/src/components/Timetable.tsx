@@ -333,40 +333,6 @@ function KedvencekPanel({
           style={{ backgroundColor: "#062322f8" }}
     >
       <div className="container py-4">
-        {/* Header row */}
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-kolo-lime" style={{ fontFamily: "'SerialBlur', sans-serif" }}>
-            Kedvencek
-          </h2>
-          <div className="flex items-center gap-1">
-            {favArtists.length > 0 && (
-              <>
-                {/* Mentés naptárba — same size as Megosztás */}
-                <button
-                  onClick={onExportAll}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime text-muted-foreground transition-all"
-                  style={{ borderRadius: 0, fontFamily: "'Pacaembu', sans-serif" }}
-                  title="Mentés naptárba"
-                >
-                  <CalendarPlus size={12} />
-                  Naptárba
-                </button>
-                <button
-                  onClick={onShare}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime text-muted-foreground transition-all"
-                  style={{ borderRadius: 0, fontFamily: "'Pacaembu', sans-serif" }}
-                  title="Megosztás"
-                >
-                  <Share2 size={12} />
-                  Megosztás
-                </button>
-              </>
-            )}
-            <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors ml-1" title="Bezár">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
 
         {favArtists.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
@@ -420,10 +386,34 @@ function KedvencekPanel({
           </div>
         )}
 
-        {/* Disclaimer */}
-        <p className="text-[10px] text-muted-foreground/60 border-t border-kolo-teal/15 pt-2 leading-relaxed" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
-          A kedvenceid a böngésződben tárolódnak és nem szinkronizálódnak az eszközeid között. A Megosztás linkkel be tudod másolni a kedvenceidet más böngészőbe.
-        </p>
+        {/* Footer: disclaimer + action buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-end gap-2 border-t border-kolo-teal/15 pt-2">
+          <p className="flex-1 text-[10px] text-muted-foreground/60 leading-relaxed" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
+            A kedvenceid a böngésződben tárolódnak és nem szinkronizálódnak az eszközeid között. A Megosztás linkkel be tudod másolni a kedvenceidet más böngészőbe.
+          </p>
+          {favArtists.length > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={onExportAll}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime text-muted-foreground transition-all"
+                style={{ borderRadius: 0, fontFamily: "'Pacaembu', sans-serif" }}
+                title="Mentés naptárba"
+              >
+                <CalendarPlus size={12} />
+                <span className="hidden sm:inline">Naptárba</span>
+              </button>
+              <button
+                onClick={onShare}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime text-muted-foreground transition-all"
+                style={{ borderRadius: 0, fontFamily: "'Pacaembu', sans-serif" }}
+                title="Megosztás"
+              >
+                <Share2 size={12} />
+                <span className="hidden sm:inline">Megosztás</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -750,7 +740,11 @@ export default function Timetable() {
                 fontFamily: "'Pacaembu', sans-serif",
               }}
             >
-              <Heart size={13} fill={showKedvencek ? "#e86b5a" : "none"} style={{ color: showKedvencek ? "#e86b5a" : "#7a9e9b" }} />
+              {showKedvencek ? (
+                <X size={13} style={{ color: "#e86b5a" }} />
+              ) : (
+                <Heart size={13} fill="none" style={{ color: "#7a9e9b" }} />
+              )}
               <span>Kedvencek</span>
               {favourites.size > 0 && (
                 <span
