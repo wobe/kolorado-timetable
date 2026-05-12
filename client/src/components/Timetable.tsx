@@ -191,11 +191,11 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
             onClick={handleFavClick}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: isFavourite ? "#e86b5a" : "#062322",
-              color: isFavourite ? "#fff" : "#e86b5a",
+              backgroundColor: isFavourite ? "#e86b5a" : "#ffffff",
+              color: isFavourite ? "#fff" : "#062322",
               fontFamily: "'Pacaembu', sans-serif",
-              borderRadius: 0,
-              border: isFavourite ? "none" : "1px solid #e86b5a66",
+              borderRadius: "9999px",
+              border: "none",
             }}
           >
             <Heart size={12} fill={isFavourite ? "#fff" : "none"} />
