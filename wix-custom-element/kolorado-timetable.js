@@ -1,948 +1,804 @@
 // ============================================================
 // Kolorádó Festival Timetable — Wix Custom Element v2
-// Self-contained Web Component. Drop into Wix as a Custom Element.
-// Receives lineup data via the "lineup-data" attribute (JSON array).
+// Self-contained Web Component (no external dependencies)
 //
 // Features:
-//   - Day tabs (SerialBlur ALL CAPS, pill-shaped, lime active)
-//   - Stage filter pills
-//   - Search bar (filters across all days, hides empty columns)
+//   - Day tabs (Szerda–Szombat), pill-shaped, SerialBlur font
+//   - Grid view (calendar) + List view toggle
+//   - Search panel (navigation only, does not filter calendar)
 //   - Favourites with cookie persistence (1 year)
-//   - Listám panel: click jumps to slot, opens artist page, bulk ICS export
-//   - Shareable link via URL hash (#fav:base64url)
-//   - Mobile list view toggle
-//   - MOST (now) line
-//   - Typography: SerialBlur for artist names/headlines, Pacaembu for everything else
-//   - Sharp corners on event blocks, no left-side colour border
+//   - Kedvencek panel with ICS export + share link
+//   - Shareable URL hash (#fav:...) — uses Wix parent page URL
+//     via postMessage bridge so share links point to kolorado.hu
+//   - Filter dropdown (stage toggles + "Csak a kedvenceim")
+//   - Hidden empty stage columns when filtering
+//   - MOST (now) line overlay
+//   - Tap-to-reveal overlay on calendar events (mobile)
+//   - Loading skeleton
+//   - CMS data via lineup-data attribute (JSON string)
 //
-// CMS attribute interface (same as v1):
-//   lineup-data = JSON.stringify([{ id, name, stage, startTime (ISO), endTime (ISO), genre?, url? }])
+// Fonts (loaded from Manus CDN):
+//   SerialBlur — headlines, artist names (ALL CAPS)
+//   Pacaembu  — everything else
+//
+// Usage in Wix:
+//   1. Upload this file to Wix Public files
+//   2. Add Custom Element with tag: kolorado-timetable
+//   3. Set ID to: koloradoTimetable
+//   4. Add Velo page code from wix-velo-code/timetable-page.js
 // ============================================================
 
-const KOLORADO_BASE_URL = "https://www.kolorado.hu";
+(function () {
+  "use strict";
 
-// Font URLs — served from the Kolorádó timetable hosted site
-const SERIAL_BLUR_URL = "https://koloradotim-bqt3vb73.manus.space/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf";
-const PACAEMBU_URL    = "https://koloradotim-bqt3vb73.manus.space/manus-storage/Pacaembu-Medium_86abdf90.ttf";
+  // ── Font URLs (served from the hosted Manus site) ──────────
+  const SERIAL_BLUR_URL = "https://koloradotim-bqt3vb73.manus.space/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf";
+  const PACAEMBU_URL    = "https://koloradotim-bqt3vb73.manus.space/manus-storage/Pacaembu-Medium_86abdf90.ttf";
 
-const STAGES = [
-  { id: "nagyszinpad",  name: "Nagyszínpad",  color: "#dcea75" },
-  { id: "balterem",     name: "Bálterem",     color: "#5ab8e8" },
-  { id: "toszinpad",    name: "Tószínpad",    color: "#e8a838" },
-  { id: "hangar",       name: "Hangár",       color: "#a87be8" },
-  { id: "platanos",     name: "Platános",     color: "#e86b5a" },
-  { id: "listeningbar", name: "Listening Bar",color: "#5ae8a8" },
-  { id: "healing",      name: "Healing",      color: "#e8c85a" },
-  { id: "ring",         name: "Ring",         color: "#e85aab" },
-];
+  // ── Constants ──────────────────────────────────────────────
+  const KOLORADO_BASE_URL = "https://www.kolorado.hu";
+  const FAV_COOKIE_NAME   = "kolorado_favourites";
+  const FAV_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+  const DAY_START_HOUR    = 10;
+  const DAY_END_HOUR      = 31;
+  const HOUR_HEIGHT_PX    = 80;
+  const MOBILE_HOUR_HEIGHT_PX = 60;
 
-const FESTIVAL_DAYS = [
-  { id: "wed", label: "Szerda",    shortLabel: "Sze",  date: "2026-07-15" },
-  { id: "thu", label: "Csütörtök", shortLabel: "Csüt", date: "2026-07-16" },
-  { id: "fri", label: "Péntek",    shortLabel: "Pén",  date: "2026-07-17" },
-  { id: "sat", label: "Szombat",   shortLabel: "Szo",  date: "2026-07-18" },
-];
+  const FESTIVAL_DAYS = [
+    { id: "wed", label: "Szerda",    shortLabel: "Sze",  date: "2026-07-15" },
+    { id: "thu", label: "Csütörtök", shortLabel: "Csüt", date: "2026-07-16" },
+    { id: "fri", label: "Péntek",    shortLabel: "Pén",  date: "2026-07-17" },
+    { id: "sat", label: "Szombat",   shortLabel: "Szo",  date: "2026-07-18" },
+  ];
 
-const DAY_START_HOUR    = 10;
-const DAY_END_HOUR      = 31;
-const HOUR_HEIGHT       = 80;
-const MOBILE_HOUR_HEIGHT = 60;
-const FAV_COOKIE        = "kolorado_favourites";
-const FAV_MAX_AGE       = 60 * 60 * 24 * 365;
+  const STAGES = [
+    { id: "nagyszinpad",  name: "Nagyszínpad",  color: "#dcea75" },
+    { id: "balterem",     name: "Bálterem",     color: "#5ab8e8" },
+    { id: "toszinpad",    name: "Tószínpad",    color: "#e8a838" },
+    { id: "hangar",       name: "Hangár",       color: "#a87be8" },
+    { id: "platanos",     name: "Platános",     color: "#e86b5a" },
+    { id: "listeningbar", name: "Listening Bar",color: "#5ae8a8" },
+    { id: "healing",      name: "Healing",      color: "#e8c85a" },
+    { id: "ring",         name: "Ring",         color: "#e85aab" },
+  ];
 
-// ---- Utilities ----
-
-function toFestivalHour(date) {
-  const h = date.getHours(), m = date.getMinutes();
-  return h < DAY_START_HOUR ? 24 + h + m / 60 : h + m / 60;
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
-function getFestivalDayId(date) {
-  const h = date.getHours();
-  const d = new Date(date);
-  if (h < DAY_START_HOUR) d.setDate(d.getDate() - 1);
-  const str = d.toISOString().split("T")[0];
-  const day = FESTIVAL_DAYS.find(fd => fd.date === str);
-  return day ? day.id : null;
-}
-
-function getArtistPageUrl(artist) {
-  if (artist.url) return KOLORADO_BASE_URL + artist.url;
-  const slug = artist.name.toLowerCase()
-    .replace(/[áà]/g,"a").replace(/[éè]/g,"e").replace(/[íì]/g,"i")
-    .replace(/[óòö]/g,"o").replace(/[őô]/g,"o").replace(/[úùü]/g,"u")
-    .replace(/[űû]/g,"u").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-  return `${KOLORADO_BASE_URL}/lineup/${slug}`;
-}
-
-function readFavCookie() {
-  try {
-    const m = document.cookie.split("; ").find(r => r.startsWith(FAV_COOKIE + "="));
-    if (!m) return new Set();
-    const ids = JSON.parse(decodeURIComponent(m.split("=")[1]));
-    return new Set(Array.isArray(ids) ? ids : []);
-  } catch { return new Set(); }
-}
-
-function writeFavCookie(ids) {
-  document.cookie = `${FAV_COOKIE}=${encodeURIComponent(JSON.stringify([...ids]))}; path=/; max-age=${FAV_MAX_AGE}; SameSite=Lax`;
-}
-
-function encodeFavHash(ids) {
-  if (!ids.size) return "";
-  return btoa([...ids].join(",")).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
-}
-
-function decodeFavHash(h) {
-  try {
-    const p = h + "=".repeat((4 - h.length % 4) % 4);
-    return atob(p.replace(/-/g,"+").replace(/_/g,"/")).split(",").filter(Boolean);
-  } catch { return []; }
-}
-
-function generateAllICS(artists) {
-  const pad = n => String(n).padStart(2,"0");
-  const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const now = new Date();
-  const events = artists.map(a => [
-    "BEGIN:VEVENT",
-    `DTSTART:${fmt(a.startTime)}`,
-    `DTEND:${fmt(a.endTime)}`,
-    `DTSTAMP:${fmt(now)}`,
-    `UID:${a.id}@kolorado.hu`,
-    `SUMMARY:${a.name}`,
-    `DESCRIPTION:${a.name} @ ${a.stage} - Kolorádó Fesztivál 2026`,
-    `LOCATION:${a.stage}\\, Kolorádó Fesztivál\\, Káloz`,
-    "STATUS:CONFIRMED",
-    "END:VEVENT",
-  ].join("\r\n")).join("\r\n");
-  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Kolorádó Fesztivál//Timetable//HU","CALSCALE:GREGORIAN","METHOD:PUBLISH",events,"END:VCALENDAR"].join("\r\n");
-}
-
-function downloadAllICS(artists) {
-  const blob = new Blob([generateAllICS(artists)], { type: "text/calendar;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "kolorado_kedvencek.ics";
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-function showToast(root, msg, type = "success") {
-  const t = document.createElement("div");
-  t.style.cssText = `
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    background:${type==="success"?"#dcea75":"#e86b5a"};color:#062322;
-    padding:10px 20px;font-family:'Pacaembu',sans-serif;font-size:13px;
-    z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s;
-  `;
-  t.textContent = msg;
-  (root.shadowRoot || root).appendChild(t);
-  setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }, 2500);
-}
-
-// ---- Styles ----
-
-function getStyles() {
-  return `
-    @font-face {
-      font-family: 'SerialBlur';
-      src: url('${SERIAL_BLUR_URL}') format('truetype');
-      font-weight: normal; font-style: normal; font-display: swap;
-    }
-    @font-face {
-      font-family: 'Pacaembu';
-      src: url('${PACAEMBU_URL}') format('truetype');
-      font-weight: 500; font-style: normal; font-display: swap;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :host { display: block; width: 100%; font-family: 'Pacaembu', sans-serif; }
-
-    /* ---- Root ---- */
-    .root { background: #062322; color: #c8dbd9; min-height: 100vh; }
-
-    /* ---- Header ---- */
-    .header {
-      position: sticky; top: 0; z-index: 40;
-      background: #062322; border-bottom: 1px solid #1a6b6620;
-      backdrop-filter: blur(8px);
-    }
-    .header-inner { max-width: 1280px; margin: 0 auto; padding: 10px 16px 8px; }
-
-    /* ---- Day tabs ---- */
-    .day-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .day-tab {
-      font-family: 'SerialBlur', sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-size: 13px;
-      padding: 6px 18px;
-      border: 1.5px solid transparent;
-      border-radius: 9999px;
-      cursor: pointer;
-      background: transparent;
-      color: rgba(220,234,117,0.8);
-      transition: all 0.15s;
-      position: relative;
-    }
-    .day-tab:hover { color: #dcea75; border-color: #dcea7540; }
-    .day-tab.active { background: #dcea75; color: #062322; border-color: #dcea75; }
-
-    /* ---- Row 2: Kedvencek + Listám ---- */
-    .ctrl-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-    .pill-btn {
-      font-family: 'Pacaembu', sans-serif;
-      font-size: 12px;
-      padding: 5px 14px;
-      border-radius: 9999px;
-      border: 1.5px solid #1a6b6660;
-      background: transparent;
-      color: #7a9e9b;
-      cursor: pointer;
-      display: flex; align-items: center; gap: 6px;
-      transition: all 0.15s;
-      position: relative;
-    }
-    .pill-btn:hover { border-color: #dcea7540; color: #dcea75; }
-    .pill-btn.active-fav { border-color: #e86b5a88; color: #e86b5a; background: #e86b5a18; }
-    .pill-btn.active-listam { border-color: #dcea7566; color: #dcea75; background: #dcea7518; }
-    .pill-btn.active-search { border-color: #dcea7566; color: #dcea75; background: #dcea7518; }
-    .badge {
-      position: absolute; top: -4px; right: -4px;
-      width: 16px; height: 16px; border-radius: 9999px;
-      background: #e86b5a; color: #fff;
-      font-size: 9px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* ---- Stage filters ---- */
-    .stage-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-    .stage-btn {
-      font-family: 'Pacaembu', sans-serif;
-      font-size: 11px; padding: 3px 10px;
-      border-radius: 9999px;
-      border: 1.5px solid transparent;
-      background: transparent; cursor: pointer;
-      display: flex; align-items: center; gap: 5px;
-      transition: all 0.15s; color: #7a9e9b;
-    }
-    .stage-dot { width: 7px; height: 7px; border-radius: 9999px; }
-    .stage-btn.active { color: #c8dbd9; }
-
-    /* ---- Dropdown panels ---- */
-    .panel {
-      border-bottom: 1px solid #1a6b6620;
-      background: rgba(6,35,34,0.98);
-      backdrop-filter: blur(8px);
-      padding: 16px;
-      max-width: 1280px; margin: 0 auto;
-    }
-    .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .panel-title {
-      font-family: 'SerialBlur', sans-serif;
-      text-transform: uppercase; font-size: 12px;
-      letter-spacing: 0.08em; color: #dcea75;
-    }
-    .panel-actions { display: flex; align-items: center; gap: 6px; }
-    .icon-btn {
-      background: transparent; border: none; cursor: pointer;
-      color: #7a9e9b; padding: 4px; display: flex; align-items: center;
-      transition: color 0.15s;
-    }
-    .icon-btn:hover { color: #dcea75; }
-    .share-btn {
-      font-family: 'Pacaembu', sans-serif; font-size: 11px;
-      padding: 3px 10px; border: 1px solid #1a6b6630;
-      background: transparent; cursor: pointer; color: #7a9e9b;
-      display: flex; align-items: center; gap: 5px;
-      transition: all 0.15s;
-    }
-    .share-btn:hover { border-color: #dcea7540; color: #dcea75; }
-
-    /* ---- Search ---- */
-    .search-input {
-      width: 100%; padding: 8px 12px;
-      background: #0a3533; border: 1px solid #1a6b6640;
-      color: #c8dbd9; font-family: 'Pacaembu', sans-serif; font-size: 13px;
-      outline: none; margin-bottom: 10px;
-    }
-    .search-input::placeholder { color: #7a9e9b; }
-    .search-results { max-height: 260px; overflow-y: auto; }
-    .search-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 10px; border-bottom: 1px solid #1a6b6615; cursor: pointer;
-      transition: background 0.1s;
-    }
-    .search-item:hover { background: #0a3533; }
-    .search-name { font-family: 'SerialBlur', sans-serif; text-transform: uppercase; font-size: 13px; color: #c8dbd9; }
-    .search-meta { font-size: 11px; color: #7a9e9b; margin-top: 2px; }
-    .search-item-actions { display: flex; gap: 4px; }
-
-    /* ---- Listám ---- */
-    .listam-scroll { max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
-    .listam-day-label {
-      font-family: 'SerialBlur', sans-serif; text-transform: uppercase;
-      font-size: 10px; letter-spacing: 0.1em; color: #7a9e9b;
-      padding: 6px 0 4px; border-bottom: 1px solid #1a6b6620; margin-bottom: 4px;
-    }
-    .listam-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 4px; border-bottom: 1px solid #1a6b6615; cursor: pointer;
-      transition: background 0.1s;
-    }
-    .listam-item:hover { background: #0a3533; }
-    .listam-name { font-family: 'SerialBlur', sans-serif; text-transform: uppercase; font-size: 13px; }
-    .listam-meta { font-size: 11px; color: #7a9e9b; margin-top: 1px; }
-    .listam-link { color: #7a9e9b; padding: 4px; display: flex; align-items: center; transition: color 0.15s; }
-    .listam-link:hover { color: #dcea75; }
-    .export-btn {
-      width: 100%; padding: 10px; border: 1px solid #1a6b6630;
-      background: transparent; color: #7a9e9b; cursor: pointer;
-      font-family: 'Pacaembu', sans-serif; font-size: 13px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: all 0.15s;
-    }
-    .export-btn:hover { border-color: #dcea7540; color: #dcea75; }
-    .empty-msg { font-size: 13px; color: #7a9e9b; text-align: center; padding: 20px 0; }
-
-    /* ---- View toggle ---- */
-    .view-toggle {
-      display: flex; gap: 4px; align-items: center;
-      margin-left: auto;
-    }
-    .view-btn {
-      background: transparent; border: 1px solid #1a6b6640;
-      color: #7a9e9b; padding: 4px 8px; cursor: pointer;
-      border-radius: 4px; display: flex; align-items: center;
-      transition: all 0.15s;
-    }
-    .view-btn.active { border-color: #dcea7566; color: #dcea75; background: #dcea7518; }
-
-    /* ---- Grid ---- */
-    .grid-container { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; }
-    .grid-scroll { overflow-x: auto; }
-    .grid-flex { display: flex; }
-    .time-axis { flex-shrink: 0; width: 56px; }
-    .corner { height: 40px; }
-    .time-labels { position: relative; }
-    .time-label {
-      position: absolute; left: 0; right: 0;
-      font-size: 11px; color: #1a6b66; text-align: right; padding-right: 8px;
-      transform: translateY(-50%);
-    }
-    .stages-area { flex: 1; position: relative; min-width: 0; }
-    .stage-columns { display: flex; height: 100%; }
-    .stage-col { flex: 1; min-width: 120px; position: relative; border-right: 1px solid #1a6b6620; }
-    .stage-col:last-child { border-right: none; }
-    .stage-header {
-      height: 40px; display: flex; align-items: center; justify-content: center;
-      font-family: 'SerialBlur', sans-serif; text-transform: uppercase;
-      font-size: 11px; letter-spacing: 0.08em; border-bottom: 1px solid #1a6b6620;
-      position: sticky; top: 0; background: #062322; z-index: 2;
-    }
-    .events-area { position: relative; }
-    .grid-line { position: absolute; left: 0; right: 0; border-top: 1px solid #1a6b6615; }
-
-    /* ---- Artist block ---- */
-    .artist-block {
-      position: absolute; left: 2px; right: 2px;
-      overflow: hidden; cursor: pointer;
-      transition: filter 0.15s;
-    }
-    .artist-block:hover { filter: brightness(1.15); z-index: 10; }
-    .artist-block:hover .fav-overlay { opacity: 1; }
-    .artist-inner { padding: 4px 6px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-    .artist-name-text {
-      font-family: 'SerialBlur', sans-serif; text-transform: uppercase;
-      font-size: 12px; line-height: 1.2; overflow: hidden;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    }
-    .artist-genre { font-size: 10px; color: #7a9e9b; margin-top: 2px; }
-    .artist-time { font-size: 10px; margin-top: auto; }
-    .fav-overlay {
-      position: absolute; inset: 0; opacity: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(6,35,34,0.5); transition: opacity 0.15s;
-    }
-    .fav-btn-overlay {
-      background: #e86b5a; color: #fff; border: none; cursor: pointer;
-      padding: 4px 10px; font-family: 'Pacaembu', sans-serif; font-size: 11px;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .fav-btn-overlay.is-fav { background: #062322; border: 1px solid #e86b5a; color: #e86b5a; }
-
-    /* ---- NOW line ---- */
-    .now-line {
-      position: absolute; left: 0; right: 0; z-index: 20;
-      display: flex; align-items: center; pointer-events: none;
-    }
-    .now-dot { width: 10px; height: 10px; border-radius: 9999px; background: #dcea75; flex-shrink: 0; }
-    .now-label {
-      font-family: 'SerialBlur', sans-serif; text-transform: uppercase;
-      font-size: 10px; color: #062322; background: #dcea75;
-      padding: 1px 5px; margin-left: 2px; flex-shrink: 0;
-    }
-    .now-bar { flex: 1; height: 1px; background: #dcea75; }
-
-    /* ---- Mobile list view ---- */
-    .list-container { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; }
-    .list-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid #1a6b6620; cursor: pointer;
-    }
-    .list-item:hover { background: #0a3533; }
-    .list-name { font-family: 'SerialBlur', sans-serif; text-transform: uppercase; font-size: 14px; }
-    .list-meta { font-size: 11px; color: #7a9e9b; margin-top: 2px; }
-    .list-fav-btn { background: transparent; border: none; cursor: pointer; padding: 8px; }
-
-    /* ---- Empty state ---- */
-    .empty-state { padding: 60px 16px; text-align: center; color: #7a9e9b; font-size: 13px; }
-
-    /* ---- Responsive ---- */
-    @media (max-width: 767px) {
-      .ctrl-row { gap: 6px; }
-      .pill-btn { font-size: 11px; padding: 5px 10px; }
-      .stage-filters { display: none; }
-      .stage-filters.show { display: flex; }
-      .day-tab { font-size: 12px; padding: 5px 12px; }
-    }
-  `;
-}
-
-// ---- SVG icons (inline) ----
-const SVG = {
-  heart: (filled, color="#7a9e9b", size=14) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled?color:"none"}" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
-  x: (size=14) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  search: (size=13) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
-  star: (filled, size=13) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${filled?"#dcea75":"none"}" stroke="#dcea75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-  share: (size=13) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
-  external: (size=12) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`,
-  calendar: (size=13) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  grid: (size=14) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-  list: (size=14) =>
-    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
-};
-
-// ============================================================
-// Web Component
-// ============================================================
-
-class KoloradoTimetable extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-    this._artists = [];
-    this._activeDay = FESTIVAL_DAYS[0].id;
-    this._activeStages = new Set(STAGES.map(s => s.id));
-    this._favourites = readFavCookie();
-    this._filterFavourites = false;
-    this._searchQuery = "";
-    this._showSearch = false;
-    this._showListam = false;
-    this._viewMode = "grid"; // "grid" | "list"
-    this._isMobile = window.innerWidth < 768;
-    this._resizeHandler = () => {
-      const was = this._isMobile;
-      this._isMobile = window.innerWidth < 768;
-      if (was !== this._isMobile) this.render();
-    };
-    // Map artistId → block element for scroll-to
-    this._blockEls = new Map();
+  // ── Fallback mock data ──────────────────────────────────────
+  function makeDate(dayDate, hour, minute) {
+    minute = minute || 0;
+    var d = new Date(dayDate + "T00:00:00");
+    if (hour >= 24) { d.setDate(d.getDate() + 1); d.setHours(hour - 24, minute, 0, 0); }
+    else { d.setHours(hour, minute, 0, 0); }
+    return d;
   }
 
-  static get observedAttributes() { return ["lineup-data"]; }
+  var MOCK_ARTISTS = [
+    { id:"w1",  name:"Analog Balaton",              stage:"Nagyszínpad",  startTime:makeDate("2026-07-15",19,15), endTime:makeDate("2026-07-15",20,15), genre:"elektronikus",            url:"/lineup/analog-balaton" },
+    { id:"w2",  name:"Elefánt",                     stage:"Nagyszínpad",  startTime:makeDate("2026-07-15",21, 0), endTime:makeDate("2026-07-15",22,30), genre:"rock",                    url:"/lineup/elef%C3%A1nt" },
+    { id:"w3",  name:"Swim Swim Naked",              stage:"Nagyszínpad",  startTime:makeDate("2026-07-15",23, 0), endTime:makeDate("2026-07-16", 0,30), genre:"elektronikus-pop",        url:"/lineup/swim-swim-naked" },
+    { id:"w4",  name:"Decolonize Your Mind Society", stage:"Bálterem",    startTime:makeDate("2026-07-15",17, 0), endTime:makeDate("2026-07-15",18,30), genre:"pszichedelikus jazz-rock", url:"/lineup/decolonize-your-mind-society" },
+    { id:"w5",  name:"L.A. Suzi",                   stage:"Bálterem",    startTime:makeDate("2026-07-15",20, 0), endTime:makeDate("2026-07-15",21,30), genre:"dallamos punk-pop sanzon", url:"/lineup/l.a.-suzi" },
+    { id:"w6",  name:"Csinszka",                    stage:"Bálterem",    startTime:makeDate("2026-07-15",22,30), endTime:makeDate("2026-07-16", 0, 0), genre:"indie pop",               url:"/lineup/csinszka" },
+    { id:"w7",  name:"Gilbert Pomelo",              stage:"Tószínpad",   startTime:makeDate("2026-07-15",22, 0), endTime:makeDate("2026-07-16", 0, 0), genre:"dub",                     url:"/lineup/gilbert-pomelo" },
+    { id:"w8",  name:"Monofade",                    stage:"Tószínpad",   startTime:makeDate("2026-07-16", 0, 0), endTime:makeDate("2026-07-16", 2, 0), genre:"house",                   url:"/lineup/monofade" },
+    { id:"w9",  name:"Loophia",                     stage:"Hangár",      startTime:makeDate("2026-07-15",20, 0), endTime:makeDate("2026-07-15",21,30), genre:"experimentális pop",       url:"/lineup/loophia" },
+    { id:"w10", name:"Cicciolina.jpeg",             stage:"Hangár",      startTime:makeDate("2026-07-15",22, 0), endTime:makeDate("2026-07-15",23,30), genre:"tánczene",                url:"/lineup/cicciolina.jpeg" },
+    { id:"w11", name:"Kolibri",                     stage:"Platános",    startTime:makeDate("2026-07-15",14, 0), endTime:makeDate("2026-07-15",15,30), genre:"folk",                    url:"/lineup/kolibri" },
+    { id:"w12", name:"Telehold",                    stage:"Platános",    startTime:makeDate("2026-07-15",16, 0), endTime:makeDate("2026-07-15",17,30), genre:"ambient",                 url:"/lineup/telehold" },
+    { id:"w13", name:"Szoliver",                    stage:"Listening Bar",startTime:makeDate("2026-07-15",18, 0), endTime:makeDate("2026-07-15",20, 0), genre:"DJ set",                  url:"/lineup/szoliver" },
+    { id:"w14", name:"Tolo",                        stage:"Listening Bar",startTime:makeDate("2026-07-16", 0, 0), endTime:makeDate("2026-07-16", 3, 0), genre:"techno",                  url:"/lineup/tolo" },
+    { id:"t1",  name:"Aga2l & Indirect Movement",  stage:"Tószínpad",   startTime:makeDate("2026-07-16",19,15), endTime:makeDate("2026-07-16",19,30), genre:"techno",                  url:"/lineup/aga2l-%26-indirect-movement" },
+    { id:"t2",  name:"Adis Is Ok",                 stage:"Bálterem",    startTime:makeDate("2026-07-16",19,15), endTime:makeDate("2026-07-16",21,15), genre:"house",                   url:"/lineup/adis-is-ok" },
+    { id:"t3",  name:"Sisi",                       stage:"Nagyszínpad",  startTime:makeDate("2026-07-16",21, 0), endTime:makeDate("2026-07-16",22,30), genre:"rap",                     url:"/lineup/sisi" },
+    { id:"t4",  name:"Pumped Gabó",                stage:"Hangár",      startTime:makeDate("2026-07-16",23, 0), endTime:makeDate("2026-07-17", 0,30), genre:"hardstyle",               url:"/lineup/pumped-gab%C3%B3" },
+    { id:"t5",  name:"Budapest Afro Ska Orchestra",stage:"Platános",    startTime:makeDate("2026-07-16",17, 0), endTime:makeDate("2026-07-16",18,30), genre:"ska",                     url:"/lineup/budapest-afro-ska-orchestra" },
+    { id:"t6",  name:"Gege x Bizmuth",             stage:"Tószínpad",   startTime:makeDate("2026-07-16",22, 0), endTime:makeDate("2026-07-17", 0, 0), genre:"experimental",            url:"/lineup/gege-x-bizmuth" },
+    { id:"t7",  name:"Hocuspony",                  stage:"Listening Bar",startTime:makeDate("2026-07-16",20, 0), endTime:makeDate("2026-07-16",22, 0), genre:"electronic",              url:"/lineup/hocuspony" },
+    { id:"t8",  name:"Lil 404",                    stage:"Hangár",      startTime:makeDate("2026-07-16",20, 0), endTime:makeDate("2026-07-16",21,30), genre:"rap",                     url:"/lineup/lil-404" },
+    { id:"t9",  name:"Bagocs",                     stage:"Bálterem",    startTime:makeDate("2026-07-16",22, 0), endTime:makeDate("2026-07-16",23,30), genre:"electronic",              url:"/lineup/bagocs" },
+    { id:"f1",  name:"Indigo",                     stage:"Nagyszínpad",  startTime:makeDate("2026-07-17",19, 0), endTime:makeDate("2026-07-17",20,30), genre:"indie pop",               url:"/lineup/indigo" },
+    { id:"f2",  name:"Bongor",                     stage:"Nagyszínpad",  startTime:makeDate("2026-07-17",22, 0), endTime:makeDate("2026-07-17",23,30), genre:"electronic",              url:"/lineup/bongor" },
+    { id:"f3",  name:"Paralich",                   stage:"Bálterem",    startTime:makeDate("2026-07-17",20, 0), endTime:makeDate("2026-07-17",21,30), genre:"punk",                    url:"/lineup/paralich" },
+    { id:"f4",  name:"Toro Lomo",                  stage:"Tószínpad",   startTime:makeDate("2026-07-17",21, 0), endTime:makeDate("2026-07-17",23, 0), genre:"electronic",              url:"/lineup/toro-lomo" },
+    { id:"f5",  name:"Shoes",                      stage:"Hangár",      startTime:makeDate("2026-07-17",18, 0), endTime:makeDate("2026-07-17",19,30), genre:"indie",                   url:"/lineup/shoes" },
+    { id:"f6",  name:"Vedat Akdag",                stage:"Hangár",      startTime:makeDate("2026-07-17",22, 0), endTime:makeDate("2026-07-18", 0, 0), genre:"electronic",              url:"/lineup/vedat-akdag" },
+    { id:"f7",  name:"Palo Canto",                 stage:"Platános",    startTime:makeDate("2026-07-17",16, 0), endTime:makeDate("2026-07-17",17,30), genre:"world",                   url:"/lineup/palo-canto-live" },
+    { id:"f8",  name:"Rozi Mákó / Tsering",        stage:"Healing",     startTime:makeDate("2026-07-17",11, 0), endTime:makeDate("2026-07-17",12,30), genre:"healing",                 url:"/lineup/rozi-m%C3%A1k%C3%B3-%2F-tsering" },
+    { id:"f9",  name:"Slym",                       stage:"Listening Bar",startTime:makeDate("2026-07-17",23, 0), endTime:makeDate("2026-07-18", 2, 0), genre:"electronic",              url:"/lineup/slym" },
+    { id:"s1",  name:"Crime",                      stage:"Nagyszínpad",  startTime:makeDate("2026-07-18",21, 0), endTime:makeDate("2026-07-18",22,30), genre:"electronic",              url:"/lineup/crime" },
+    { id:"s2",  name:"Siketfajd",                  stage:"Nagyszínpad",  startTime:makeDate("2026-07-18",18, 0), endTime:makeDate("2026-07-18",19,30), genre:"rock",                    url:"/lineup/siketfajd" },
+    { id:"s3",  name:"Mőb",                        stage:"Bálterem",    startTime:makeDate("2026-07-18",20, 0), endTime:makeDate("2026-07-18",21,30), genre:"electronic",              url:"/lineup/m%C3%B6b" },
+    { id:"s4",  name:"Blue Advance",               stage:"Tószínpad",   startTime:makeDate("2026-07-18",22, 0), endTime:makeDate("2026-07-19", 0, 0), genre:"electronic",              url:"/lineup/blue-advance" },
+    { id:"s5",  name:"Zakhorov",                   stage:"Hangár",      startTime:makeDate("2026-07-18",20, 0), endTime:makeDate("2026-07-18",22, 0), genre:"techno",                  url:"/lineup/zakhorov" },
+    { id:"s6",  name:"Hanussen & Kozmo D",         stage:"Listening Bar",startTime:makeDate("2026-07-18",22, 0), endTime:makeDate("2026-07-19", 1, 0), genre:"electronic",              url:"/lineup/hanussen-%26-kozmo-d" },
+    { id:"s7",  name:"Lőrinczi Áron",              stage:"Platános",    startTime:makeDate("2026-07-18",15, 0), endTime:makeDate("2026-07-18",16,30), genre:"folk",                    url:"/lineup/l%C5%91rinczi-%C3%A1ron" },
+    { id:"s8",  name:"Gandharva & Von Yodi",       stage:"Healing",     startTime:makeDate("2026-07-18",12, 0), endTime:makeDate("2026-07-18",14, 0), genre:"healing",                 url:"/lineup/gandharva-%26-von-yodi" },
+    { id:"s9",  name:"Kale Lulugyi",               stage:"Ring",        startTime:makeDate("2026-07-18",19, 0), endTime:makeDate("2026-07-18",20,30), genre:"world",                   url:"/lineup/kale-lulugyi" },
+    { id:"s10", name:"Kiuz & Arash Ete",           stage:"Ring",        startTime:makeDate("2026-07-18",21, 0), endTime:makeDate("2026-07-18",23, 0), genre:"electronic",              url:"/lineup/kiuz-%26-arash-ete" },
+    { id:"s11", name:"Falcao",                     stage:"Bálterem",    startTime:makeDate("2026-07-18",23, 0), endTime:makeDate("2026-07-19", 1, 0), genre:"electronic",              url:"/lineup/falcao" },
+    { id:"s12", name:"Freakin' Disco",             stage:"Hangár",      startTime:makeDate("2026-07-18",23,30), endTime:makeDate("2026-07-19", 2, 0), genre:"disco",                   url:"/lineup/freakin'-disco" },
+    { id:"s13", name:"Moonbase Patel Disco",       stage:"Tószínpad",   startTime:makeDate("2026-07-18",16, 0), endTime:makeDate("2026-07-18",18, 0), genre:"disco",                   url:"/lineup/moonbase-patel-disco" },
+    { id:"s14", name:"Lenkke_",                    stage:"Listening Bar",startTime:makeDate("2026-07-18",18, 0), endTime:makeDate("2026-07-18",20, 0), genre:"electronic",              url:"/lineup/lenkke_" },
+    { id:"s15", name:"BRSZ",                       stage:"Platános",    startTime:makeDate("2026-07-18",18, 0), endTime:makeDate("2026-07-18",19,30), genre:"electronic",              url:"/lineup/brsz" },
+    { id:"s16", name:"Klpflrtrpr & Vava",          stage:"Ring",        startTime:makeDate("2026-07-18",23, 0), endTime:makeDate("2026-07-19", 1,30), genre:"electronic",              url:"/lineup/klpflrtpr-%26-vava" },
+  ];
 
-  attributeChangedCallback(name, _, newVal) {
-    if (name === "lineup-data" && newVal) {
-      try {
-        const raw = JSON.parse(newVal);
-        this._artists = raw.map(a => ({
-          ...a,
-          startTime: new Date(a.startTime),
-          endTime: new Date(a.endTime),
-        }));
-        this.render();
-      } catch(e) { console.error("Kolorádó Timetable: parse error", e); }
+  // ── Helpers ────────────────────────────────────────────────
+  function toFestivalHour(date) {
+    var h = date.getHours(), m = date.getMinutes();
+    return h < DAY_START_HOUR ? 24 + h + m / 60 : h + m / 60;
+  }
+  function formatTime(date) {
+    return date.toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  function getFestivalDayId(date) {
+    var h = date.getHours();
+    var d = new Date(date);
+    if (h < DAY_START_HOUR) d.setDate(d.getDate() - 1);
+    var str = d.toISOString().split("T")[0];
+    var day = FESTIVAL_DAYS.find(function(fd) { return fd.date === str; });
+    return day ? day.id : null;
+  }
+  function getArtistPageUrl(artist) {
+    if (artist.url) return KOLORADO_BASE_URL + artist.url;
+    var slug = artist.name.toLowerCase()
+      .replace(/[áà]/g,"a").replace(/[éè]/g,"e").replace(/[íì]/g,"i")
+      .replace(/[óòö]/g,"o").replace(/[őô]/g,"o").replace(/[úùü]/g,"u")
+      .replace(/[űû]/g,"u").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    return KOLORADO_BASE_URL + "/lineup/" + slug;
+  }
+  function readFavCookie() {
+    try {
+      var m = document.cookie.split("; ").find(function(r) { return r.startsWith(FAV_COOKIE_NAME + "="); });
+      if (!m) return new Set();
+      var ids = JSON.parse(decodeURIComponent(m.split("=")[1]));
+      return new Set(Array.isArray(ids) ? ids : []);
+    } catch(e) { return new Set(); }
+  }
+  function writeFavCookie(ids) {
+    document.cookie = FAV_COOKIE_NAME + "=" + encodeURIComponent(JSON.stringify(Array.from(ids))) + "; path=/; max-age=" + FAV_COOKIE_MAX_AGE + "; SameSite=Lax";
+  }
+  function encodeFavs(ids) {
+    if (!ids.size) return "";
+    return btoa(Array.from(ids).join(",")).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+  }
+  function decodeFavs(hash) {
+    try {
+      var padded = hash + "=".repeat((4 - hash.length % 4) % 4);
+      return atob(padded.replace(/-/g,"+").replace(/_/g,"/")).split(",").filter(Boolean);
+    } catch(e) { return []; }
+  }
+  function generateAllICS(artists) {
+    var pad = function(n) { return String(n).padStart(2,"0"); };
+    var fmt = function(d) { return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00"; };
+    var now = new Date();
+    var events = artists.map(function(a) {
+      return ["BEGIN:VEVENT","DTSTART:"+fmt(a.startTime),"DTEND:"+fmt(a.endTime),"DTSTAMP:"+fmt(now),"UID:"+a.id+"@kolorado.hu","SUMMARY:"+a.name,"DESCRIPTION:"+a.name+" @ "+a.stage+" - Kolorádó Fesztivál 2026","LOCATION:"+a.stage+"\\, Kolorádó Fesztivál\\, Káloz","STATUS:CONFIRMED","END:VEVENT"].join("\r\n");
+    }).join("\r\n");
+    return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Kolorádó Fesztivál//Timetable//HU","CALSCALE:GREGORIAN","METHOD:PUBLISH",events,"END:VCALENDAR"].join("\r\n");
+  }
+  function downloadAllICS(artists) {
+    var blob = new Blob([generateAllICS(artists)], { type: "text/calendar;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "kolorado_kedvencek.ics";
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  function getTimeLabels() {
+    var labels = [];
+    for (var h = DAY_START_HOUR; h < DAY_END_HOUR; h++) {
+      var dh = h >= 24 ? h - 24 : h;
+      labels.push({ hour: h, label: String(dh).padStart(2,"0") + ":00" });
     }
+    return labels;
   }
 
-  connectedCallback() {
-    window.addEventListener("resize", this._resizeHandler);
-    // Handle shared favourites from URL hash
-    this._handleHashImport();
-    this.render();
-  }
+  // ── SVG icons ──────────────────────────────────────────────
+  var ICONS = {
+    heart: function(fill, size) { fill=fill||"none"; size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="'+fill+'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'; },
+    x: function(size) { size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; },
+    search: function(size) { size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'; },
+    filter: function(size) { size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>'; },
+    grid: function(size) { size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>'; },
+    list: function(size) { size=size||16; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'; },
+    share: function(size) { size=size||14; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'; },
+    calendar: function(size) { size=size||14; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'; },
+    external: function(size) { size=size||13; return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'; },
+  };
 
-  disconnectedCallback() {
-    window.removeEventListener("resize", this._resizeHandler);
-  }
+  // ── CSS ────────────────────────────────────────────────────
+  var CSS = [
+    "@font-face { font-family:'SerialBlur'; src:url('"+SERIAL_BLUR_URL+"') format('truetype'); font-weight:normal; font-style:normal; font-display:swap; }",
+    "@font-face { font-family:'Pacaembu'; src:url('"+PACAEMBU_URL+"') format('truetype'); font-weight:normal; font-style:normal; font-display:swap; }",
+    "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}",
+    ":host{display:block;width:100%;font-family:'Pacaembu',sans-serif;}",
+    ".kt-root{background:#0E4B4D;min-height:100vh;color:#c8dedd;}",
+    ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
+    ".kt-days{display:flex;gap:6px;margin-bottom:8px;justify-content:center;}",
+    ".kt-day-btn{flex:1;max-width:180px;padding:10px 24px;border-radius:9999px;border:none;cursor:pointer;font-family:'SerialBlur',sans-serif;font-size:15px;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;background:transparent;color:rgba(220,234,117,0.8);}",
+    ".kt-day-btn.active{background:#dcea75;color:#062322;}",
+    ".kt-day-btn .full{display:inline;}.kt-day-btn .short{display:none;}",
+    "@media(max-width:600px){.kt-day-btn{font-size:13px;padding:8px 8px;}.kt-day-btn .full{display:none;}.kt-day-btn .short{display:inline;}}",
+    ".kt-toolbar{display:flex;align-items:center;gap:8px;}",
+    ".kt-fav-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:12px;cursor:pointer;position:relative;transition:all 0.2s;}",
+    ".kt-fav-btn.active{border-color:rgba(232,107,90,0.4);color:#e86b5a;background:rgba(232,107,90,0.1);}",
+    ".kt-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e86b5a;color:#fff;font-size:9px;font-weight:bold;display:flex;align-items:center;justify-content:center;}",
+    ".kt-spacer{flex:1;}",
+    ".kt-icon-btn{width:36px;height:36px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}",
+    ".kt-icon-btn.active{border-color:rgba(220,234,117,0.4);color:#dcea75;background:rgba(220,234,117,0.06);}",
+    ".kt-search-expanded{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:rgba(26,107,102,0.15);}",
+    ".kt-search-expanded input{background:transparent;border:none;outline:none;color:#c8dedd;font-family:'Pacaembu',sans-serif;font-size:12px;width:140px;}",
+    ".kt-search-expanded input::placeholder{color:rgba(122,158,155,0.7);}",
+    ".kt-view-toggle{display:flex;border:1px solid rgba(26,107,102,0.4);border-radius:9999px;overflow:hidden;flex-shrink:0;}",
+    ".kt-view-btn{width:36px;height:36px;border:none;background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}",
+    ".kt-view-btn.active{background:rgba(220,234,117,0.13);color:#dcea75;}",
+    ".kt-panel{background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);padding:12px 16px;}",
+    ".kt-panel-list{max-height:260px;overflow-y:auto;margin-bottom:8px;}",
+    ".kt-panel-row{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background 0.15s;}",
+    ".kt-panel-row:hover{background:rgba(26,107,102,0.15);}",
+    ".kt-panel-row .bar{width:4px;height:32px;flex-shrink:0;}",
+    ".kt-panel-row .info{flex:1;min-width:0;}",
+    ".kt-panel-row .name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".kt-panel-row .meta{font-size:11px;color:rgba(122,158,155,0.8);margin-top:1px;}",
+    ".kt-panel-row .actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}",
+    ".kt-panel-row .actions button{background:none;border:none;cursor:pointer;padding:6px;color:#7a9e9b;transition:color 0.15s;display:flex;align-items:center;}",
+    ".kt-panel-row .actions button:hover{color:#dcea75;}",
+    ".kt-panel-row .actions button.fav-on{color:#e86b5a;}",
+    ".kt-panel-row .actions a{color:#7a9e9b;padding:6px;display:flex;align-items:center;text-decoration:none;transition:color 0.15s;}",
+    ".kt-panel-row .actions a:hover{color:#dcea75;}",
+    ".kt-panel-footer{display:flex;align-items:flex-end;gap:10px;border-top:1px solid rgba(26,107,102,0.15);padding-top:8px;}",
+    ".kt-panel-disclaimer{flex:1;font-size:10px;color:rgba(122,158,155,0.55);line-height:1.5;}",
+    ".kt-panel-actions{display:flex;gap:6px;flex-shrink:0;}",
+    ".kt-action-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid rgba(26,107,102,0.3);background:transparent;color:rgba(122,158,155,0.8);font-family:'Pacaembu',sans-serif;font-size:11px;cursor:pointer;border-radius:0;transition:all 0.15s;}",
+    ".kt-action-btn:hover{border-color:rgba(220,234,117,0.4);color:#dcea75;}",
+    ".kt-empty{text-align:center;padding:32px 16px;color:rgba(122,158,155,0.7);font-size:13px;}",
+    ".kt-empty button{margin-top:10px;background:none;border:none;color:#dcea75;font-size:12px;text-decoration:underline;cursor:pointer;font-family:'Pacaembu',sans-serif;}",
+    ".kt-filter-wrap{position:relative;}",
+    ".kt-filter-dropdown{position:absolute;right:0;top:calc(100% + 4px);z-index:60;min-width:200px;background:#062322;border:1px solid rgba(26,107,102,0.3);box-shadow:0 8px 24px rgba(0,0,0,0.4);}",
+    ".kt-filter-item{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:12px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:'Pacaembu',sans-serif;color:#7a9e9b;transition:background 0.15s;}",
+    ".kt-filter-item:hover{background:rgba(26,107,102,0.15);}",
+    ".kt-filter-item.active{color:#e86b5a;background:rgba(232,107,90,0.06);}",
+    ".kt-filter-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}",
+    ".kt-filter-sep{border:none;border-top:1px solid rgba(26,107,102,0.15);margin:2px 0;}",
+    ".kt-day-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(122,158,155,0.6);padding:4px 10px 2px;font-family:'Pacaembu',sans-serif;}",
+    ".kt-list{padding:8px 16px 48px;}",
+    ".kt-list-row{display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer;transition:background 0.15s;}",
+    ".kt-list-row:hover{background:rgba(26,107,102,0.12);}",
+    ".kt-list-row .bar{width:4px;height:44px;flex-shrink:0;}",
+    ".kt-list-row .info{flex:1;min-width:0;}",
+    ".kt-list-row .name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".kt-list-row .time{font-size:11px;color:rgba(122,158,155,0.8);margin-top:2px;}",
+    ".kt-list-row .stage-label{font-size:10px;margin-top:2px;}",
+    ".kt-list-row .fav-btn{background:none;border:none;cursor:pointer;padding:8px;color:#7a9e9b;transition:color 0.15s;flex-shrink:0;}",
+    ".kt-list-row .fav-btn.on{color:#e86b5a;}",
+    ".kt-grid-wrap{padding:0 16px 32px;}",
+    ".kt-grid-scroll{overflow-x:auto;overflow-y:auto;border:1px solid rgba(26,107,102,0.15);height:calc(100vh - 140px);}",
+    ".kt-grid-inner{display:flex;}",
+    ".kt-time-axis{position:sticky;left:0;z-index:20;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);flex-shrink:0;}",
+    ".kt-time-axis-header{position:sticky;top:0;z-index:30;background:#0E4B4D;border-bottom:1px solid rgba(26,107,102,0.15);height:40px;}",
+    ".kt-time-axis-body{position:relative;}",
+    ".kt-time-label{position:absolute;left:0;right:0;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;}",
+    ".kt-time-label span{font-size:9px;color:rgba(122,158,155,0.6);transform:translateY(-50%);font-family:'Pacaembu',sans-serif;}",
+    ".kt-stage-cols{display:flex;flex:1;position:relative;}",
+    ".kt-stage-col{flex:1;min-width:140px;}",
+    ".kt-stage-header{position:sticky;top:0;z-index:20;padding:0 8px;height:40px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(26,107,102,0.15);background:rgba(14,75,77,0.95);backdrop-filter:blur(4px);}",
+    ".kt-stage-header span{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:center;}",
+    ".kt-stage-body{position:relative;}",
+    ".kt-hour-line{position:absolute;left:0;right:0;border-top:1px solid rgba(26,107,102,0.07);}",
+    ".kt-block{position:absolute;left:2px;right:2px;overflow:hidden;cursor:pointer;border-radius:0;transition:outline 0.2s;}",
+    ".kt-block-content{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:4px 6px;}",
+    ".kt-block-content.row{flex-direction:row;align-items:center;gap:6px;}",
+    ".kt-block-name{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}",
+    ".kt-block-genre{font-size:10px;color:rgba(200,222,221,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Pacaembu',sans-serif;}",
+    ".kt-block-time{font-size:10px;white-space:nowrap;flex-shrink:0;font-family:'Pacaembu',sans-serif;}",
+    ".kt-block-overlay{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px;opacity:0;transition:opacity 0.15s;pointer-events:none;}",
+    ".kt-block:hover .kt-block-overlay,.kt-block.tapped .kt-block-overlay{opacity:1;pointer-events:auto;}",
+    ".kt-block-overlay-name{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#062322;font-weight:bold;text-align:center;cursor:pointer;background:none;border:none;line-height:1.2;}",
+    ".kt-block-overlay-name:hover{text-decoration:underline;}",
+    ".kt-block-overlay-time{font-size:11px;color:rgba(6,35,34,0.8);font-family:'Pacaembu',sans-serif;text-align:center;}",
+    ".kt-fav-pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:9999px;border:none;cursor:pointer;font-family:'Pacaembu',sans-serif;font-size:11px;font-weight:600;transition:all 0.15s;}",
+    ".kt-fav-pill.off{background:#fff;color:#062322;}",
+    ".kt-fav-pill.on{background:#e86b5a;color:#fff;}",
+    ".kt-now-line{position:absolute;left:0;right:0;z-index:30;pointer-events:none;}",
+    ".kt-now-bar{position:relative;}",
+    ".kt-now-bar::after{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:#dcea75;}",
+    ".kt-now-dot{position:absolute;left:-4px;top:-5px;width:10px;height:10px;border-radius:50%;background:#dcea75;box-shadow:0 0 8px #dcea75;}",
+    ".kt-now-label{position:absolute;left:12px;top:-9px;font-size:9px;font-weight:bold;padding:1px 5px;background:#dcea75;color:#062322;font-family:'Pacaembu',sans-serif;}",
+    ".kt-skeleton{background:#0E4B4D;min-height:100vh;}",
+    ".kt-skel-header{padding:12px 16px 8px;background:rgba(6,35,34,0.96);}",
+    ".kt-skel-row{display:flex;gap:6px;margin-bottom:8px;}",
+    ".kt-skel-pill{height:36px;flex:1;border-radius:9999px;background:rgba(26,107,102,0.3);animation:kt-pulse 1.5s ease-in-out infinite;}",
+    ".kt-skel-body{padding:12px 16px;}",
+    ".kt-skel-item{display:flex;gap:10px;padding:10px 0;}",
+    ".kt-skel-bar{width:4px;height:44px;background:rgba(26,107,102,0.3);animation:kt-pulse 1.5s ease-in-out infinite;}",
+    ".kt-skel-lines{flex:1;}",
+    ".kt-skel-line{height:12px;border-radius:4px;background:rgba(26,107,102,0.3);animation:kt-pulse 1.5s ease-in-out infinite;margin-bottom:6px;}",
+    "@keyframes kt-pulse{0%,100%{opacity:0.5}50%{opacity:1}}",
+    "svg{display:inline-block;vertical-align:middle;}"
+  ].join("\n");
 
-  _handleHashImport() {
-    const hash = window.location.hash.slice(1);
-    if (!hash.startsWith("fav:")) return;
-    const ids = decodeFavHash(hash.slice(4));
-    const valid = ids.filter(id => this._artists.some(a => a.id === id) || true); // accept all, validate later
-    if (!valid.length) return;
-    valid.forEach(id => this._favourites.add(id));
-    writeFavCookie(this._favourites);
-    history.replaceState(null, "", window.location.pathname + window.location.search);
-    showToast(this, `${valid.length} kedvenc betöltve a megosztott listából!`);
-  }
-
-  // ---- State helpers ----
-
-  _toggleFav(id) {
-    if (this._favourites.has(id)) this._favourites.delete(id);
-    else this._favourites.add(id);
-    writeFavCookie(this._favourites);
-    this.render();
-  }
-
-  _toggleStage(id) {
-    if (this._activeStages.has(id)) {
-      if (this._activeStages.size > 1) this._activeStages.delete(id);
-    } else {
-      this._activeStages.add(id);
+  // ── Web Component ──────────────────────────────────────────
+  var KoloradoTimetable = (function() {
+    function KoloradoTimetable() {
+      var host = this;
+      host._artists = MOCK_ARTISTS;
+      host._activeDay = FESTIVAL_DAYS[0].id;
+      host._activeStages = new Set(STAGES.map(function(s){return s.id;}));
+      host._favourites = readFavCookie();
+      host._viewMode = window.innerWidth < 768 ? "list" : "grid";
+      host._showKedvencek = false;
+      host._showSearch = false;
+      host._showFilter = false;
+      host._filterFavourites = false;
+      host._searchQuery = "";
+      host._tappedBlockId = null;
+      host._parentUrl = null;
+      host._loading = true;
+      host._nowInterval = null;
     }
-    this.render();
-  }
 
-  _getSearchResults() {
-    if (!this._searchQuery.trim()) return [];
-    const q = this._searchQuery.toLowerCase();
-    return this._artists.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      (a.genre && a.genre.toLowerCase().includes(q)) ||
-      a.stage.toLowerCase().includes(q)
-    ).slice(0, 20);
-  }
+    KoloradoTimetable.prototype = Object.create(HTMLElement.prototype);
+    KoloradoTimetable.prototype.constructor = KoloradoTimetable;
 
-  _getVisibleArtists() {
-    const searchIds = this._searchQuery.trim()
-      ? new Set(this._getSearchResults().map(a => a.id))
-      : null;
-    return this._artists.filter(a => {
-      if (getFestivalDayId(a.startTime) !== this._activeDay) return false;
-      const stage = STAGES.find(s => s.name === a.stage);
-      if (!stage || !this._activeStages.has(stage.id)) return false;
-      if (this._filterFavourites && !this._favourites.has(a.id)) return false;
-      if (searchIds && !searchIds.has(a.id)) return false;
-      return true;
-    });
-  }
-
-  _getVisibleStages() {
-    const isFiltering = this._filterFavourites || this._searchQuery.trim();
-    if (!isFiltering) return STAGES.filter(s => this._activeStages.has(s.id));
-    const visible = this._getVisibleArtists();
-    return STAGES.filter(s =>
-      this._activeStages.has(s.id) && visible.some(a => a.stage === s.name)
-    );
-  }
-
-  // ---- Render ----
-
-  render() {
-    const hourHeight = this._isMobile ? MOBILE_HOUR_HEIGHT : HOUR_HEIGHT;
-    const totalHeight = (DAY_END_HOUR - DAY_START_HOUR) * hourHeight;
-    const visibleArtists = this._getVisibleArtists();
-    const visibleStages = this._getVisibleStages();
-    const searchResults = this._getSearchResults();
-    const favArtists = this._artists
-      .filter(a => this._favourites.has(a.id))
-      .sort((a,b) => a.startTime - b.startTime);
-
-    // Time labels
-    const timeLabels = [];
-    for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h++) {
-      const dh = h >= 24 ? h - 24 : h;
-      timeLabels.push({ hour: h, label: `${String(dh).padStart(2,"0")}:00` });
-    }
-
-    // NOW line
-    const now = new Date();
-    const nowH = toFestivalHour(now);
-    const showNow = nowH >= DAY_START_HOUR && nowH < DAY_END_HOUR;
-    const nowTop = showNow ? (nowH - DAY_START_HOUR) * hourHeight + 40 : -100;
-
-    // Listám grouped by day
-    const byDay = new Map();
-    for (const day of FESTIVAL_DAYS) {
-      const da = favArtists.filter(a => getFestivalDayId(a.startTime) === day.id);
-      if (da.length) byDay.set(day.id, da);
-    }
-
-    const sr = this.shadowRoot;
-    sr.innerHTML = `
-      <style>${getStyles()}</style>
-      <div class="root">
-
-        <!-- HEADER -->
-        <header class="header">
-          <div class="header-inner">
-
-            <!-- Row 1: Day tabs -->
-            <div class="day-tabs">
-              ${FESTIVAL_DAYS.map(d => `
-                <button class="day-tab${this._activeDay===d.id?" active":""}" data-day="${d.id}">
-                  <span class="day-full">${d.label}</span>
-                </button>
-              `).join("")}
-            </div>
-
-            <!-- Row 2: Kedvencek + Listám + view toggle -->
-            <div class="ctrl-row">
-              <button class="pill-btn${this._filterFavourites?" active-fav":""}" data-action="toggle-fav">
-                ${SVG.heart(this._filterFavourites,"#e86b5a",14)}
-                Kedvencek
-                ${this._favourites.size > 0 ? `<span class="badge">${this._favourites.size}</span>` : ""}
-              </button>
-              <button class="pill-btn${this._showListam?" active-listam":""}" data-action="toggle-listam">
-                ${SVG.star(this._showListam,13)}
-                Listám
-                ${this._favourites.size > 0 ? `<span class="badge">${this._favourites.size}</span>` : ""}
-              </button>
-              <button class="pill-btn${this._showSearch?" active-search":""}" data-action="toggle-search">
-                ${SVG.search(13)}
-                Keresés
-              </button>
-              <div class="view-toggle" style="margin-left:auto">
-                <button class="view-btn${this._viewMode==="grid"?" active":""}" data-action="view-grid" title="Rács nézet">${SVG.grid(14)}</button>
-                <button class="view-btn${this._viewMode==="list"?" active":""}" data-action="view-list" title="Lista nézet">${SVG.list(14)}</button>
-              </div>
-            </div>
-
-            <!-- Row 3: Stage filters -->
-            <div class="stage-filters">
-              ${STAGES.map(s => `
-                <button class="stage-btn${this._activeStages.has(s.id)?" active":""}" data-stage="${s.id}" style="border-color:${this._activeStages.has(s.id)?s.color+"60":"#1a6b6630"}">
-                  <span class="stage-dot" style="background:${s.color}"></span>
-                  <span style="color:${this._activeStages.has(s.id)?s.color:"#7a9e9b"}">${s.name}</span>
-                </button>
-              `).join("")}
-            </div>
-
-            <!-- Search panel -->
-            ${this._showSearch ? `
-              <div class="panel" style="margin-top:8px">
-                <div class="panel-header">
-                  <span class="panel-title">Keresés</span>
-                  <button class="icon-btn" data-action="close-search">${SVG.x(14)}</button>
-                </div>
-                <input class="search-input" type="text" placeholder="Előadó, műfaj, színpad..." value="${this._escHtml(this._searchQuery)}" data-action="search-input" />
-                <div class="search-results">
-                  ${searchResults.length === 0 && this._searchQuery.trim() ? `<div class="empty-msg">Nincs találat.</div>` : ""}
-                  ${searchResults.map(a => {
-                    const stage = STAGES.find(s => s.name === a.stage);
-                    const isFav = this._favourites.has(a.id);
-                    return `
-                      <div class="search-item" data-jump="${a.id}">
-                        <div>
-                          <div class="search-name" style="color:${stage?stage.color:"#c8dbd9"}">${this._escHtml(a.name)}</div>
-                          <div class="search-meta">${this._escHtml(a.stage)}${a.genre?" · "+this._escHtml(a.genre):""} · ${formatTime(a.startTime)}</div>
-                        </div>
-                        <div class="search-item-actions">
-                          <button class="icon-btn" data-fav="${a.id}" title="${isFav?"Eltávolítás":"Kedvencnek"}">${SVG.heart(isFav,"#e86b5a",14)}</button>
-                        </div>
-                      </div>
-                    `;
-                  }).join("")}
-                </div>
-              </div>
-            ` : ""}
-
-            <!-- Listám panel -->
-            ${this._showListam ? `
-              <div class="panel" style="margin-top:8px">
-                <div class="panel-header">
-                  <span class="panel-title">Listám</span>
-                  <div class="panel-actions">
-                    ${this._favourites.size > 0 ? `
-                      <button class="share-btn" data-action="share">${SVG.share(12)} Megosztás</button>
-                    ` : ""}
-                    <button class="icon-btn" data-action="close-listam">${SVG.x(14)}</button>
-                  </div>
-                </div>
-                ${favArtists.length === 0 ? `
-                  <div class="empty-msg">Még nincs kedvenc. Kattints a ♥ gombra egy előadónál.</div>
-                ` : `
-                  <div class="listam-scroll">
-                    ${[...byDay.entries()].map(([dayId, artists]) => {
-                      const day = FESTIVAL_DAYS.find(d => d.id === dayId);
-                      return `
-                        <div class="listam-day-label">${day ? day.label : dayId}</div>
-                        ${artists.map(a => {
-                          const stage = STAGES.find(s => s.name === a.stage);
-                          return `
-                            <div class="listam-item" data-jump="${a.id}">
-                              <div>
-                                <div class="listam-name" style="color:${stage?stage.color:"#c8dbd9"}">${this._escHtml(a.name)}</div>
-                                <div class="listam-meta">${this._escHtml(a.stage)} · ${formatTime(a.startTime)}–${formatTime(a.endTime)}</div>
-                              </div>
-                              <div style="display:flex;align-items:center;gap:4px">
-                                <a class="listam-link" href="${getArtistPageUrl(a)}" target="_blank" rel="noopener" title="Kolorádó oldal">${SVG.external(12)}</a>
-                                <button class="icon-btn" data-fav="${a.id}">${SVG.heart(true,"#e86b5a",14)}</button>
-                              </div>
-                            </div>
-                          `;
-                        }).join("")}
-                      `;
-                    }).join("")}
-                  </div>
-                  <button class="export-btn" data-action="export-ics">${SVG.calendar(14)} Mentés naptárba</button>
-                `}
-              </div>
-            ` : ""}
-
-          </div>
-        </header>
-
-        <!-- MOBILE LIST VIEW -->
-        ${this._viewMode === "list" ? `
-          <div class="list-container">
-            ${visibleArtists.length === 0 ? `
-              <div class="empty-state">Ezen a napon nincs${this._filterFavourites?" kedvenc":""} program.</div>
-            ` : visibleArtists.sort((a,b)=>a.startTime-b.startTime).map(a => {
-              const stage = STAGES.find(s => s.name === a.stage);
-              const isFav = this._favourites.has(a.id);
-              return `
-                <div class="list-item" data-artist-url="${getArtistPageUrl(a)}">
-                  <div>
-                    <div class="list-name" style="color:${stage?stage.color:"#c8dbd9"}">${this._escHtml(a.name)}</div>
-                    <div class="list-meta">${this._escHtml(a.stage)} · ${formatTime(a.startTime)}–${formatTime(a.endTime)}${a.genre?" · "+this._escHtml(a.genre):""}</div>
-                  </div>
-                  <button class="list-fav-btn" data-fav="${a.id}">${SVG.heart(isFav,"#e86b5a",18)}</button>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        ` : `
-        <!-- GRID VIEW -->
-        <div class="grid-container">
-          <div class="grid-scroll">
-            <div class="grid-flex">
-              <!-- Time axis -->
-              <div class="time-axis">
-                <div class="corner"></div>
-                <div class="time-labels" style="height:${totalHeight}px">
-                  ${timeLabels.map(t => `
-                    <div class="time-label" style="top:${(t.hour-DAY_START_HOUR)*hourHeight}px">${t.label}</div>
-                  `).join("")}
-                </div>
-              </div>
-              <!-- Stages -->
-              <div class="stages-area">
-                ${showNow ? `
-                  <div class="now-line" style="top:${nowTop}px">
-                    <div class="now-dot"></div>
-                    <span class="now-label">MOST</span>
-                    <div class="now-bar"></div>
-                  </div>
-                ` : ""}
-                <div class="stage-columns">
-                  ${visibleStages.map(stage => {
-                    const stageArtists = visibleArtists.filter(a => a.stage === stage.name);
-                    return `
-                      <div class="stage-col">
-                        <div class="stage-header" style="color:${stage.color}">${stage.name}</div>
-                        <div class="events-area" style="height:${totalHeight}px">
-                          ${timeLabels.map(t => `
-                            <div class="grid-line" style="top:${(t.hour-DAY_START_HOUR)*hourHeight}px"></div>
-                          `).join("")}
-                          ${stageArtists.map(artist => {
-                            const startH = toFestivalHour(artist.startTime);
-                            const endH = toFestivalHour(artist.endTime);
-                            const top = (startH - DAY_START_HOUR) * hourHeight;
-                            const height = Math.max((endH - startH) * hourHeight - 2, 24);
-                            const isShort = height < 52;
-                            const isTiny = height < 36;
-                            const isFav = this._favourites.has(artist.id);
-                            return `
-                              <div class="artist-block"
-                                   data-artist-id="${artist.id}"
-                                   data-artist-url="${getArtistPageUrl(artist)}"
-                                   style="top:${top}px;height:${height}px;background:${stage.color}18;">
-                                <div class="artist-inner">
-                                  <div>
-                                    <div class="artist-name-text" style="color:${stage.color}">${this._escHtml(artist.name)}</div>
-                                    ${!isShort && artist.genre ? `<div class="artist-genre">${this._escHtml(artist.genre)}</div>` : ""}
-                                  </div>
-                                  ${!isTiny ? `<div class="artist-time" style="color:${stage.color}99">${formatTime(artist.startTime)}–${formatTime(artist.endTime)}</div>` : ""}
-                                </div>
-                                <div class="fav-overlay">
-                                  <button class="fav-btn-overlay${isFav?" is-fav":""}" data-fav="${artist.id}">
-                                    ${SVG.heart(isFav,"#fff",12)}
-                                    ${isFav ? "Kedvenc" : "Kedvencnek"}
-                                  </button>
-                                </div>
-                              </div>
-                            `;
-                          }).join("")}
-                        </div>
-                      </div>
-                    `;
-                  }).join("")}
-                </div>
-                ${visibleStages.length === 0 ? `
-                  <div class="empty-state">Nincs megjelenítendő program.</div>
-                ` : ""}
-              </div>
-            </div>
-          </div>
-        </div>
-        `}
-
-      </div>
-    `;
-
-    this._attachEvents();
-  }
-
-  _escHtml(str) {
-    return String(str||"")
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-  }
-
-  _attachEvents() {
-    const sr = this.shadowRoot;
-
-    // Day tabs
-    sr.querySelectorAll("[data-day]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        this._activeDay = btn.dataset.day;
-        this._showSearch = false; this._searchQuery = "";
-        this._showListam = false;
-        this.render();
-      });
-    });
-
-    // Stage filters
-    sr.querySelectorAll("[data-stage]").forEach(btn => {
-      btn.addEventListener("click", () => this._toggleStage(btn.dataset.stage));
-    });
-
-    // Action buttons
-    sr.querySelectorAll("[data-action]").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        const a = btn.dataset.action;
-        if (a === "toggle-fav") {
-          this._filterFavourites = !this._filterFavourites;
-          this.render();
-        } else if (a === "toggle-listam") {
-          this._showListam = !this._showListam;
-          if (this._showListam) this._showSearch = false;
-          this.render();
-        } else if (a === "toggle-search") {
-          this._showSearch = !this._showSearch;
-          if (this._showSearch) { this._showListam = false; }
-          else { this._searchQuery = ""; }
-          this.render();
-          if (this._showSearch) {
-            setTimeout(() => sr.querySelector(".search-input")?.focus(), 50);
-          }
-        } else if (a === "close-search") {
-          this._showSearch = false; this._searchQuery = "";
-          this.render();
-        } else if (a === "close-listam") {
-          this._showListam = false; this.render();
-        } else if (a === "view-grid") {
-          this._viewMode = "grid"; this.render();
-        } else if (a === "view-list") {
-          this._viewMode = "list"; this.render();
-        } else if (a === "export-ics") {
-          const favs = this._artists.filter(a => this._favourites.has(a.id))
-            .sort((a,b) => a.startTime - b.startTime);
-          if (favs.length) downloadAllICS(favs);
-        } else if (a === "share") {
-          const encoded = encodeFavHash(this._favourites);
-          if (!encoded) return;
-          const url = `${window.location.origin}${window.location.pathname}#fav:${encoded}`;
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(url)
-              .then(() => showToast(this, "Link másolva a vágólapra!"))
-              .catch(() => window.prompt("Másold ki ezt a linket:", url));
-          } else {
-            window.prompt("Másold ki ezt a linket:", url);
-          }
+    KoloradoTimetable.prototype.connectedCallback = function() {
+      var self = this;
+      this._shadow = this.attachShadow({ mode: "open" });
+      this._render();
+      // postMessage bridge for parent URL
+      try { window.parent.postMessage({ type: "kolorado-timetable-request-url" }, "*"); } catch(e) {}
+      window.addEventListener("message", function(e) {
+        if (e.data && e.data.type === "kolorado-timetable-parent-url" && typeof e.data.url === "string") {
+          self._parentUrl = e.data.url;
         }
       });
-    });
-
-    // Search input
-    const searchInput = sr.querySelector(".search-input");
-    if (searchInput) {
-      searchInput.addEventListener("input", e => {
-        this._searchQuery = e.target.value;
-        this.render();
-        // Re-focus after re-render
-        setTimeout(() => {
-          const inp = this.shadowRoot.querySelector(".search-input");
-          if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
-        }, 10);
+      // Load shared favourites from URL hash
+      var hash = window.location.hash.slice(1);
+      if (hash.startsWith("fav:")) {
+        var ids = decodeFavs(hash.slice(4));
+        var allIds = self._artists.map(function(a){return a.id;});
+        var valid = new Set(ids.filter(function(id){return allIds.indexOf(id) !== -1;}));
+        if (valid.size) {
+          valid.forEach(function(id){self._favourites.add(id);});
+          writeFavCookie(self._favourites);
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+          self._showToast(valid.size + " kedvenc betöltve a megosztott listából!");
+        }
+      }
+      this._nowInterval = setInterval(function(){self._updateNowLine();}, 60000);
+      window.addEventListener("resize", function() {
+        var mobile = window.innerWidth < 768;
+        if (mobile && self._viewMode === "grid") { self._viewMode = "list"; self._render(); }
       });
-    }
+      setTimeout(function(){ self._loading = false; self._render(); }, 400);
+    };
 
-    // Favourite toggles (all [data-fav] buttons)
-    sr.querySelectorAll("[data-fav]").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        this._toggleFav(btn.dataset.fav);
-      });
-    });
+    KoloradoTimetable.prototype.disconnectedCallback = function() {
+      if (this._nowInterval) clearInterval(this._nowInterval);
+    };
 
-    // Artist block click → open page
-    sr.querySelectorAll(".artist-block[data-artist-url]").forEach(el => {
-      el.addEventListener("click", () => {
-        window.open(el.dataset.artistUrl, "_blank", "noopener,noreferrer");
-      });
-    });
+    KoloradoTimetable.observedAttributes = ["lineup-data"];
+    KoloradoTimetable.prototype.attributeChangedCallback = function(name, _old, val) {
+      if (name === "lineup-data" && val) {
+        try {
+          var raw = JSON.parse(val);
+          this._artists = raw.map(function(item) {
+            return {
+              id: item.id || item._id || String(Math.random()),
+              name: item.title || item.name || "Ismeretlen",
+              stage: item.sz\u00ednpad || item.stage || "Nagyszínpad",
+              startTime: new Date(item.kezdId\u0151 || item.startTime),
+              endTime: new Date(item.v\u00e9geId\u0151 || item.endTime),
+              genre: item.genre || item.m\u0171faj || "",
+              url: item["link-lineup-all-title"] || item.url || null,
+            };
+          }).filter(function(a){ return !isNaN(a.startTime) && !isNaN(a.endTime); });
+          this._loading = false;
+          this._render();
+        } catch(e) { console.error("kolorado-timetable: invalid lineup-data", e); }
+      }
+    };
 
-    // List item click → open page
-    sr.querySelectorAll(".list-item[data-artist-url]").forEach(el => {
-      el.addEventListener("click", e => {
-        if (e.target.closest("[data-fav]")) return;
-        window.open(el.dataset.artistUrl, "_blank", "noopener,noreferrer");
-      });
-    });
+    KoloradoTimetable.prototype._render = function() {
+      var root = this._shadow;
+      if (!root) return;
+      root.innerHTML = "";
+      var style = document.createElement("style");
+      style.textContent = CSS;
+      root.appendChild(style);
+      if (this._loading) { root.appendChild(this._renderSkeleton()); return; }
+      var wrap = document.createElement("div");
+      wrap.className = "kt-root";
+      wrap.appendChild(this._renderHeader());
+      if (this._showKedvencek) wrap.appendChild(this._renderKedvencekPanel());
+      if (this._showSearch && this._searchQuery) wrap.appendChild(this._renderSearchPanel());
+      if (this._viewMode === "list") wrap.appendChild(this._renderListView());
+      else wrap.appendChild(this._renderGridView());
+      root.appendChild(wrap);
+      // Close filter on outside click
+      if (this._showFilter) {
+        var self = this;
+        setTimeout(function() {
+          var handler = function(e) {
+            var fw = root.querySelector(".kt-filter-wrap");
+            if (fw && !fw.contains(e.target)) { self._showFilter = false; self._render(); root.removeEventListener("click", handler); }
+          };
+          root.addEventListener("click", handler);
+        }, 0);
+      }
+      // Auto-scroll grid
+      if (this._viewMode === "grid") {
+        var self = this;
+        setTimeout(function() {
+          var scroll = root.querySelector(".kt-grid-scroll");
+          if (!scroll) return;
+          var dayArtists = self._artists.filter(function(a){ return getFestivalDayId(a.startTime) === self._activeDay; });
+          if (!dayArtists.length) return;
+          var first = dayArtists.reduce(function(a,b){ return a.startTime < b.startTime ? a : b; });
+          var hh = window.innerWidth < 768 ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
+          scroll.scrollTop = Math.max(0, (toFestivalHour(first.startTime) - DAY_START_HOUR) * hh - 24);
+        }, 50);
+      }
+    };
 
-    // Jump to artist (from search or listám)
-    sr.querySelectorAll("[data-jump]").forEach(el => {
-      el.addEventListener("click", e => {
-        if (e.target.closest("[data-fav]") || e.target.closest("a")) return;
-        const artistId = el.dataset.jump;
-        const artist = this._artists.find(a => a.id === artistId);
-        if (!artist) return;
-        const dayId = getFestivalDayId(artist.startTime);
-        if (dayId) this._activeDay = dayId;
-        this._showListam = false; this._showSearch = false; this._searchQuery = "";
-        this._viewMode = "grid";
-        this.render();
-        // Scroll to block after render
-        setTimeout(() => {
-          const block = this.shadowRoot.querySelector(`[data-artist-id="${artistId}"]`);
-          if (block) {
-            block.scrollIntoView({ behavior: "smooth", block: "center" });
-            block.style.outline = "2px solid #dcea75";
-            setTimeout(() => { block.style.outline = ""; }, 1200);
-          }
-        }, 80);
+    KoloradoTimetable.prototype._renderSkeleton = function() {
+      var el = document.createElement("div");
+      el.className = "kt-skeleton";
+      el.innerHTML = '<div class="kt-skel-header"><div class="kt-skel-row"><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div></div><div class="kt-skel-row"><div class="kt-skel-pill" style="max-width:80px"></div><div class="kt-skel-pill" style="max-width:80px"></div></div></div><div class="kt-skel-body"><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:60%"></div><div class="kt-skel-line" style="width:35%"></div></div></div><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:70%"></div><div class="kt-skel-line" style="width:40%"></div></div></div><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:50%"></div><div class="kt-skel-line" style="width:30%"></div></div></div></div>';
+      return el;
+    };
+
+    KoloradoTimetable.prototype._renderHeader = function() {
+      var self = this;
+      var header = document.createElement("header");
+      header.className = "kt-header";
+      // Days row
+      var daysRow = document.createElement("div");
+      daysRow.className = "kt-days";
+      FESTIVAL_DAYS.forEach(function(day) {
+        var btn = document.createElement("button");
+        btn.className = "kt-day-btn" + (self._activeDay === day.id ? " active" : "");
+        btn.innerHTML = '<span class="full">'+day.label+'</span><span class="short">'+day.shortLabel+'</span>';
+        btn.addEventListener("click", function(){ self._activeDay = day.id; self._render(); });
+        daysRow.appendChild(btn);
       });
-    });
+      header.appendChild(daysRow);
+      // Toolbar
+      var toolbar = document.createElement("div");
+      toolbar.className = "kt-toolbar";
+      // Kedvencek btn
+      var favCount = this._favourites.size;
+      var favBtn = document.createElement("button");
+      favBtn.className = "kt-fav-btn" + (this._showKedvencek ? " active" : "");
+      favBtn.innerHTML = (this._showKedvencek ? ICONS.x(13) : ICONS.heart("none",13)) + " Kedvencek" + (favCount > 0 ? '<span class="kt-badge">'+favCount+'</span>' : "");
+      favBtn.addEventListener("click", function(){ self._showKedvencek = !self._showKedvencek; if(self._showKedvencek) self._showSearch=false; self._render(); });
+      toolbar.appendChild(favBtn);
+      var spacer = document.createElement("div"); spacer.className = "kt-spacer";
+      toolbar.appendChild(spacer);
+      // Search
+      if (this._showSearch) {
+        var sw = document.createElement("div"); sw.className = "kt-search-expanded";
+        sw.innerHTML = ICONS.search(13);
+        var inp = document.createElement("input"); inp.placeholder = "Keresés…"; inp.value = this._searchQuery;
+        inp.addEventListener("input", function(e){ self._searchQuery = e.target.value; self._render(); });
+        inp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
+        sw.appendChild(inp);
+        var closeX = document.createElement("button");
+        closeX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
+        closeX.innerHTML = ICONS.x(12);
+        closeX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
+        sw.appendChild(closeX);
+        toolbar.appendChild(sw);
+        setTimeout(function(){ var i = self._shadow.querySelector(".kt-search-expanded input"); if(i) i.focus(); }, 30);
+      } else {
+        var sb = document.createElement("button"); sb.className = "kt-icon-btn"; sb.innerHTML = ICONS.search(15); sb.title = "Keresés";
+        sb.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
+        toolbar.appendChild(sb);
+      }
+      // Filter
+      var hasFilters = this._filterFavourites || this._activeStages.size < STAGES.length;
+      var fw = document.createElement("div"); fw.className = "kt-filter-wrap";
+      var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = "Szűrők";
+      fb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
+      fw.appendChild(fb);
+      if (this._showFilter) {
+        var dd = document.createElement("div"); dd.className = "kt-filter-dropdown";
+        var favItem = document.createElement("button");
+        favItem.className = "kt-filter-item" + (this._filterFavourites ? " active" : "");
+        favItem.innerHTML = ICONS.heart(this._filterFavourites ? "#e86b5a" : "none", 13) + " Csak a kedvenceim";
+        favItem.addEventListener("click", function(){ self._filterFavourites = !self._filterFavourites; self._showFilter=false; self._render(); });
+        dd.appendChild(favItem);
+        var sep = document.createElement("hr"); sep.className = "kt-filter-sep"; dd.appendChild(sep);
+        STAGES.forEach(function(stage) {
+          var isActive = self._activeStages.has(stage.id);
+          var item = document.createElement("button"); item.className = "kt-filter-item";
+          item.innerHTML = '<span class="dot" style="background:'+(isActive?stage.color:"rgba(122,158,155,0.3)")+'"></span><span style="color:'+(isActive?stage.color:"#7a9e9b")+'">'+stage.name+'</span>'+(isActive?'<span style="margin-left:auto;font-size:10px;opacity:0.6">✓</span>':"");
+          item.addEventListener("click", function(){
+            if(self._activeStages.has(stage.id)){ if(self._activeStages.size>1) self._activeStages.delete(stage.id); }
+            else self._activeStages.add(stage.id);
+            self._render();
+          });
+          dd.appendChild(item);
+        });
+        fw.appendChild(dd);
+      }
+      toolbar.appendChild(fw);
+      // View toggle
+      var vt = document.createElement("div"); vt.className = "kt-view-toggle";
+      var gb = document.createElement("button"); gb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); gb.innerHTML = ICONS.grid(14); gb.title = "Naptár";
+      gb.addEventListener("click", function(){ self._viewMode="grid"; self._render(); });
+      var lb = document.createElement("button"); lb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); lb.innerHTML = ICONS.list(14); lb.title = "Lista";
+      lb.addEventListener("click", function(){ self._viewMode="list"; self._render(); });
+      vt.appendChild(gb); vt.appendChild(lb);
+      toolbar.appendChild(vt);
+      header.appendChild(toolbar);
+      return header;
+    };
+
+    KoloradoTimetable.prototype._renderKedvencekPanel = function() {
+      var self = this;
+      var panel = document.createElement("div"); panel.className = "kt-panel";
+      var favArtists = this._artists.filter(function(a){ return self._favourites.has(a.id); }).sort(function(a,b){ return a.startTime-b.startTime; });
+      if (!favArtists.length) {
+        panel.innerHTML = '<div class="kt-empty">Még nincs kedvenc. Kattints a ♥ gombra egy előadónál.</div>';
+      } else {
+        var list = document.createElement("div"); list.className = "kt-panel-list";
+        var byDay = {};
+        FESTIVAL_DAYS.forEach(function(day){
+          var da = favArtists.filter(function(a){ return getFestivalDayId(a.startTime)===day.id; });
+          if(da.length) byDay[day.id] = { label: day.label, artists: da };
+        });
+        FESTIVAL_DAYS.forEach(function(day){
+          if(!byDay[day.id]) return;
+          var dl = document.createElement("div"); dl.className = "kt-day-label"; dl.textContent = byDay[day.id].label;
+          list.appendChild(dl);
+          byDay[day.id].artists.forEach(function(artist){
+            var stage = STAGES.find(function(s){return s.name===artist.stage;});
+            var color = stage ? stage.color : "#dcea75";
+            var row = document.createElement("div"); row.className = "kt-panel-row";
+            row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+'</div></div><div class="actions"><a href="'+getArtistPageUrl(artist)+'" target="_blank" rel="noopener noreferrer" title="Előadó oldala">'+ICONS.external(13)+'</a><button class="fav-on" data-id="'+artist.id+'" style="color:#e86b5a">'+ICONS.heart("#e86b5a",13)+'</button></div>';
+            row.querySelector("button").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+            row.querySelector(".info").addEventListener("click", function(){ self._jumpToArtist(artist); self._showKedvencek=false; self._render(); });
+            list.appendChild(row);
+          });
+        });
+        panel.appendChild(list);
+      }
+      var footer = document.createElement("div"); footer.className = "kt-panel-footer";
+      var disc = document.createElement("p"); disc.className = "kt-panel-disclaimer";
+      disc.textContent = "A kedvenceid a böngésződben tárolódnak és nem szinkronizálódnak az eszközeid között. A Megosztás linkkel be tudod másolni a kedvenceidet más böngészőbe.";
+      footer.appendChild(disc);
+      if (favArtists.length) {
+        var actions = document.createElement("div"); actions.className = "kt-panel-actions";
+        var calBtn = document.createElement("button"); calBtn.className = "kt-action-btn";
+        calBtn.innerHTML = ICONS.calendar(12) + " Naptárba";
+        calBtn.addEventListener("click", function(){ downloadAllICS(favArtists); });
+        var shareBtn = document.createElement("button"); shareBtn.className = "kt-action-btn";
+        shareBtn.innerHTML = ICONS.share(12) + " Megosztás";
+        shareBtn.addEventListener("click", function(){ self._shareFavourites(); });
+        actions.appendChild(calBtn); actions.appendChild(shareBtn);
+        footer.appendChild(actions);
+      }
+      panel.appendChild(footer);
+      return panel;
+    };
+
+    KoloradoTimetable.prototype._renderSearchPanel = function() {
+      var self = this;
+      var panel = document.createElement("div"); panel.className = "kt-panel";
+      var q = this._searchQuery.toLowerCase();
+      var results = this._artists.filter(function(a){
+        return a.name.toLowerCase().indexOf(q)!==-1 || (a.genre && a.genre.toLowerCase().indexOf(q)!==-1) || a.stage.toLowerCase().indexOf(q)!==-1;
+      }).slice(0,20);
+      if (!results.length) { panel.innerHTML = '<div class="kt-empty">Nincs találat: „'+this._searchQuery+'"</div>'; return panel; }
+      var list = document.createElement("div"); list.className = "kt-panel-list";
+      results.forEach(function(artist){
+        var stage = STAGES.find(function(s){return s.name===artist.stage;});
+        var color = stage ? stage.color : "#dcea75";
+        var isFav = self._favourites.has(artist.id);
+        var row = document.createElement("div"); row.className = "kt-panel-row";
+        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+(artist.genre?' · '+artist.genre:'')+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+'" data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><a href="'+getArtistPageUrl(artist)+'" target="_blank" rel="noopener noreferrer" title="Előadó oldala">'+ICONS.external(13)+'</a></div>';
+        row.querySelector("button").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        row.querySelector(".info").addEventListener("click", function(){ self._jumpToArtist(artist); self._showSearch=false; self._searchQuery=""; self._render(); });
+        list.appendChild(row);
+      });
+      panel.appendChild(list);
+      return panel;
+    };
+
+    KoloradoTimetable.prototype._renderListView = function() {
+      var self = this;
+      var wrap = document.createElement("div"); wrap.className = "kt-list";
+      var visible = this._getVisibleArtists().sort(function(a,b){return a.startTime-b.startTime;});
+      if (!visible.length) {
+        var empty = document.createElement("div"); empty.className = "kt-empty";
+        empty.innerHTML = (this._filterFavourites?"Ezen a napon nincs kedvenc előadód.":"Ezen a napon nincs program.")+'<br><button>Összes program mutatása</button>';
+        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
+        wrap.appendChild(empty); return wrap;
+      }
+      visible.forEach(function(artist){
+        var stage = STAGES.find(function(s){return s.name===artist.stage;});
+        var color = stage ? stage.color : "#dcea75";
+        var isFav = self._favourites.has(artist.id);
+        var row = document.createElement("div"); row.className = "kt-list-row";
+        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+'</div><div class="stage-label" style="color:'+color+'55">'+artist.stage+'</div></div><button class="fav-btn'+(isFav?" on":"")+'" data-id="'+artist.id+'">'+ICONS.heart(isFav?"#e86b5a":"none",18)+'</button>';
+        row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        row.addEventListener("click", function(){ window.open(getArtistPageUrl(artist),"_blank","noopener,noreferrer"); });
+        wrap.appendChild(row);
+      });
+      return wrap;
+    };
+
+    KoloradoTimetable.prototype._renderGridView = function() {
+      var self = this;
+      var isMobile = window.innerWidth < 768;
+      var hh = isMobile ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
+      var totalH = (DAY_END_HOUR - DAY_START_HOUR) * hh;
+      var timeLabels = getTimeLabels();
+      var visibleArtists = this._getVisibleArtists();
+      var visibleStages = this._getVisibleStages(visibleArtists);
+      var wrap = document.createElement("div"); wrap.className = "kt-grid-wrap";
+      if (!visibleArtists.length) {
+        var empty = document.createElement("div"); empty.className = "kt-empty";
+        empty.innerHTML = (this._filterFavourites?"Ezen a napon nincs kedvenc előadód.":"Ezen a napon nincs program.")+'<br><button>Összes program mutatása</button>';
+        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
+        wrap.appendChild(empty); return wrap;
+      }
+      var scroll = document.createElement("div"); scroll.className = "kt-grid-scroll";
+      scroll.addEventListener("click", function(){ if(self._tappedBlockId){ self._tappedBlockId=null; self._render(); }});
+      var inner = document.createElement("div"); inner.className = "kt-grid-inner";
+      inner.style.minWidth = isMobile ? (visibleStages.length*140+48)+"px" : "auto";
+      // Time axis
+      var ta = document.createElement("div"); ta.className = "kt-time-axis"; ta.style.width = isMobile?"44px":"64px";
+      var tah = document.createElement("div"); tah.className = "kt-time-axis-header"; ta.appendChild(tah);
+      var tab = document.createElement("div"); tab.className = "kt-time-axis-body"; tab.style.height = totalH+"px";
+      timeLabels.forEach(function(t){
+        var lbl = document.createElement("div"); lbl.className = "kt-time-label"; lbl.style.top = ((t.hour-DAY_START_HOUR)*hh)+"px";
+        lbl.innerHTML = "<span>"+t.label+"</span>"; tab.appendChild(lbl);
+      });
+      ta.appendChild(tab); inner.appendChild(ta);
+      // Stage cols
+      var sc = document.createElement("div"); sc.className = "kt-stage-cols";
+      var nl = this._createNowLine(hh); if(nl) sc.appendChild(nl);
+      visibleStages.forEach(function(stage, idx){
+        var artists = visibleArtists.filter(function(a){return a.stage===stage.name;});
+        var col = document.createElement("div"); col.className = "kt-stage-col";
+        col.style.minWidth = isMobile?"140px":"160px";
+        if(idx < visibleStages.length-1) col.style.borderRight = "1px solid rgba(26,107,102,0.08)";
+        var ch = document.createElement("div"); ch.className = "kt-stage-header";
+        ch.innerHTML = '<span style="color:'+stage.color+'">'+stage.name+'</span>'; col.appendChild(ch);
+        var cb = document.createElement("div"); cb.className = "kt-stage-body"; cb.style.height = totalH+"px";
+        timeLabels.forEach(function(t){ var hl=document.createElement("div"); hl.className="kt-hour-line"; hl.style.top=((t.hour-DAY_START_HOUR)*hh)+"px"; cb.appendChild(hl); });
+        artists.forEach(function(artist){ cb.appendChild(self._createArtistBlock(artist, stage, hh)); });
+        col.appendChild(cb); sc.appendChild(col);
+      });
+      inner.appendChild(sc); scroll.appendChild(inner); wrap.appendChild(scroll);
+      return wrap;
+    };
+
+    KoloradoTimetable.prototype._createArtistBlock = function(artist, stage, hh) {
+      var self = this;
+      var startH = toFestivalHour(artist.startTime);
+      var endH = toFestivalHour(artist.endTime);
+      var top = (startH - DAY_START_HOUR) * hh;
+      var height = Math.max((endH - startH) * hh - 2, 24);
+      var isShort = height < 52, isTiny = height < 36;
+      var isFav = this._favourites.has(artist.id);
+      var isTapped = this._tappedBlockId === artist.id;
+      var block = document.createElement("div");
+      block.className = "kt-block" + (isTapped ? " tapped" : "");
+      block.style.cssText = "top:"+top+"px;height:"+height+"px;background:"+stage.color+"18;outline:"+(isFav?"1px solid "+stage.color+"88":"none")+";";
+      block.setAttribute("data-id", artist.id);
+      // Content
+      var content = document.createElement("div"); content.className = "kt-block-content"+(isShort?" row":"");
+      var nameEl = document.createElement("div"); nameEl.className = "kt-block-name"; nameEl.style.cssText = "color:"+stage.color+";font-size:"+(isShort?"11px":"12px"); nameEl.textContent = artist.name;
+      var inner = document.createElement("div"); inner.style.cssText = "min-width:0;flex:1;"; inner.appendChild(nameEl);
+      if (!isShort && artist.genre) { var ge=document.createElement("div"); ge.className="kt-block-genre"; ge.textContent=artist.genre; inner.appendChild(ge); }
+      content.appendChild(inner);
+      if (!isTiny) { var te=document.createElement("div"); te.className="kt-block-time"; te.style.color=stage.color+"99"; te.textContent=formatTime(artist.startTime)+"–"+formatTime(artist.endTime); content.appendChild(te); }
+      block.appendChild(content);
+      // Overlay
+      var ov = document.createElement("div"); ov.className = "kt-block-overlay"; ov.style.background = stage.color+"dd";
+      var nb = document.createElement("button"); nb.className = "kt-block-overlay-name"; nb.textContent = artist.name;
+      nb.addEventListener("click", function(e){ e.stopPropagation(); window.open(getArtistPageUrl(artist),"_blank","noopener,noreferrer"); });
+      ov.appendChild(nb);
+      if (!isTiny) { var ot=document.createElement("div"); ot.className="kt-block-overlay-time"; ot.textContent=formatTime(artist.startTime)+" – "+formatTime(artist.endTime); ov.appendChild(ot); }
+      var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
+      fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?"Kedvenc":"Kedvencnek");
+      fp.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+      ov.appendChild(fp); block.appendChild(ov);
+      block.addEventListener("click", function(e){ e.stopPropagation(); self._tappedBlockId=(self._tappedBlockId===artist.id)?null:artist.id; self._render(); });
+      return block;
+    };
+
+    KoloradoTimetable.prototype._createNowLine = function(hh) {
+      var now = new Date();
+      var fh = toFestivalHour(now);
+      if (fh < DAY_START_HOUR || fh >= DAY_END_HOUR) return null;
+      var top = (fh - DAY_START_HOUR) * hh + 40;
+      var line = document.createElement("div"); line.className = "kt-now-line"; line.style.top = top+"px";
+      line.innerHTML = '<div class="kt-now-bar"><div class="kt-now-dot"></div><div class="kt-now-label">MOST</div></div>';
+      return line;
+    };
+
+    KoloradoTimetable.prototype._updateNowLine = function() {
+      var root = this._shadow;
+      if (!root) return;
+      var isMobile = window.innerWidth < 768;
+      var hh = isMobile ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
+      var old = root.querySelector(".kt-now-line"); if(old) old.remove();
+      var sc = root.querySelector(".kt-stage-cols");
+      if (sc) { var nl = this._createNowLine(hh); if(nl) sc.insertBefore(nl, sc.firstChild); }
+    };
+
+    KoloradoTimetable.prototype._getVisibleArtists = function() {
+      var self = this;
+      return this._artists.filter(function(a){
+        if (getFestivalDayId(a.startTime) !== self._activeDay) return false;
+        var stage = STAGES.find(function(s){return s.name===a.stage;});
+        if (!stage || !self._activeStages.has(stage.id)) return false;
+        if (self._filterFavourites && !self._favourites.has(a.id)) return false;
+        return true;
+      });
+    };
+
+    KoloradoTimetable.prototype._getVisibleStages = function(visibleArtists) {
+      var self = this;
+      var allActive = STAGES.filter(function(s){return self._activeStages.has(s.id);});
+      if (!this._filterFavourites) return allActive;
+      var stagesWithArtists = new Set(visibleArtists.map(function(a){return a.stage;}));
+      return allActive.filter(function(s){return stagesWithArtists.has(s.name);});
+    };
+
+    KoloradoTimetable.prototype._toggleFav = function(id) {
+      if (this._favourites.has(id)) this._favourites.delete(id);
+      else this._favourites.add(id);
+      writeFavCookie(this._favourites);
+      this._render();
+    };
+
+    KoloradoTimetable.prototype._jumpToArtist = function(artist) {
+      var self = this;
+      var dayId = getFestivalDayId(artist.startTime);
+      if (dayId) this._activeDay = dayId;
+      this._viewMode = "grid";
+      this._render();
+      setTimeout(function(){
+        var scroll = self._shadow.querySelector(".kt-grid-scroll");
+        if (!scroll) return;
+        var hh = window.innerWidth < 768 ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
+        scroll.scrollTo({ top: Math.max(0, (toFestivalHour(artist.startTime)-DAY_START_HOUR)*hh-80), behavior:"smooth" });
+        var block = self._shadow.querySelector('[data-id="'+artist.id+'"]');
+        if (block) { block.style.outline="2px solid #dcea75"; setTimeout(function(){block.style.outline="";},1200); }
+      }, 80);
+    };
+
+    KoloradoTimetable.prototype._shareFavourites = function() {
+      var encoded = encodeFavs(this._favourites);
+      if (!encoded) return;
+      var base = this._parentUrl ? this._parentUrl.split("#")[0] : (window.location.origin + window.location.pathname);
+      var url = base + "#fav:" + encoded;
+      var self = this;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function(){ self._showToast("Link másolva a vágólapra!"); }).catch(function(){ window.prompt("Másold ki ezt a linket:", url); });
+      } else { window.prompt("Másold ki ezt a linket:", url); }
+    };
+
+    KoloradoTimetable.prototype._showToast = function(msg) {
+      var toast = document.createElement("div");
+      toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dcea75;color:#062322;padding:8px 18px;font-family:'Pacaembu',sans-serif;font-size:13px;z-index:9999;pointer-events:none;";
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); }, 3000);
+    };
+
+    return KoloradoTimetable;
+  })();
+
+  // Extend HTMLElement properly
+  KoloradoTimetable.prototype = Object.create(HTMLElement.prototype);
+  KoloradoTimetable.prototype.constructor = KoloradoTimetable;
+
+  if (!customElements.get("kolorado-timetable")) {
+    customElements.define("kolorado-timetable", KoloradoTimetable);
   }
-}
-
-customElements.define("kolorado-timetable", KoloradoTimetable);
+})();

@@ -400,7 +400,7 @@ function KedvencekPanel({
                 title="Mentés naptárba"
               >
                 <CalendarPlus size={12} />
-                <span className="hidden sm:inline">Naptárba</span>
+                Naptárba
               </button>
               <button
                 onClick={onShare}
@@ -409,7 +409,7 @@ function KedvencekPanel({
                 title="Megosztás"
               >
                 <Share2 size={12} />
-                <span className="hidden sm:inline">Megosztás</span>
+                Megosztás
               </button>
             </div>
           )}
@@ -497,6 +497,7 @@ export default function Timetable() {
   const [favourites, setFavourites] = useState<Set<string>>(() => readFavouritesFromCookie());
   const [viewMode, setViewMode] = useState<"grid" | "list">("list"); // default list on mobile
   const [tappedBlockId, setTappedBlockId] = useState<string | null>(null);
+  const [parentUrl, setParentUrl] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const filterBtnRef = useRef<HTMLDivElement>(null);
@@ -505,6 +506,19 @@ export default function Timetable() {
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
+  }, []);
+
+  // Wix postMessage bridge: ask the parent page for its URL so share links use kolorado.hu
+  useEffect(() => {
+    // Request the parent URL
+    try { window.parent.postMessage({ type: "kolorado-timetable-request-url" }, "*"); } catch (_) {}
+    const handler = (e: MessageEvent) => {
+      if (e.data && e.data.type === "kolorado-timetable-parent-url" && typeof e.data.url === "string") {
+        setParentUrl(e.data.url);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
   }, []);
 
   useEffect(() => {
@@ -630,7 +644,9 @@ export default function Timetable() {
   const shareFavourites = useCallback(() => {
     const encoded = encodeFavouritesToHash(favourites);
     if (!encoded) return;
-    const url = `${window.location.origin}${window.location.pathname}#fav:${encoded}`;
+    // Use the Wix parent page URL if available (via postMessage bridge), otherwise fall back to own URL
+    const base = parentUrl ? parentUrl.split("#")[0] : `${window.location.origin}${window.location.pathname}`;
+    const url = `${base}#fav:${encoded}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url)
         .then(() => toast.success("Link másolva a vágólapra!", { style: { fontFamily: "'Pacaembu', sans-serif" } }))
@@ -638,7 +654,7 @@ export default function Timetable() {
     } else {
       window.prompt("Másold ki ezt a linket:", url);
     }
-  }, [favourites, encodeFavouritesToHash]);
+  }, [favourites, encodeFavouritesToHash, parentUrl]);
 
   const exportAllFavourites = useCallback(() => {
     const favArtists = MOCK_ARTISTS.filter((a) => favourites.has(a.id)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
