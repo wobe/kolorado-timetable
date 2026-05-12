@@ -5,11 +5,13 @@
 //   - SerialBlur: headlines, artist names → ALL CAPS
 //   - Pacaembu: everything else → regular caps
 // Changes:
+//   - No header title (website already has one)
 //   - No left-side colour border on event blocks
-//   - Sharp corners (no border-radius) on event blocks
+//   - Sharp corners on event blocks
 //   - Pill-shaped day selector buttons
-//   - Search bar to find artists
-//   - Favourites with cookie persistence
+//   - Favourites prominent; calendar button de-emphasised
+//   - "Listám" panel: click jumps to slot + artist page link
+//   - Empty stage columns hidden when filtering/searching
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
@@ -57,7 +59,7 @@ function writeFavouritesToCookie(ids: Set<string>) {
   document.cookie = `${FAV_COOKIE_NAME}=${value}; path=/; max-age=${FAV_COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
-// ---- Artist Block (single event cell) ----
+// ---- Artist Block ----
 
 interface ArtistBlockProps {
   artist: Artist;
@@ -65,10 +67,10 @@ interface ArtistBlockProps {
   hourHeight: number;
   isFavourite: boolean;
   onToggleFavourite: (id: string) => void;
-  isHighlighted?: boolean;
+  blockRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite, isHighlighted }: ArtistBlockProps) {
+function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite, blockRef }: ArtistBlockProps) {
   const startHour = toFestivalHour(artist.startTime);
   const endHour = toFestivalHour(artist.endTime);
   const top = (startHour - DAY_START_HOUR) * hourHeight;
@@ -100,9 +102,10 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: isHighlighted === false ? 0.25 : 1, scale: 1 }}
+      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
+      ref={blockRef as React.RefObject<HTMLDivElement>}
       className="artist-block group absolute left-1 right-1 overflow-hidden cursor-pointer select-none"
       style={{
         top: `${top}px`,
@@ -146,7 +149,7 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
         )}
       </div>
 
-      {/* Hover overlay */}
+      {/* Hover overlay — favourite prominent, calendar subtle */}
       <div
         className="absolute inset-0 z-20 flex flex-col justify-center items-center gap-1.5 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         style={{ backgroundColor: `${stage.color}dd` }}
@@ -165,32 +168,33 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
             {formatTime(artist.startTime)} – {formatTime(artist.endTime)}
           </p>
         )}
-        <div className="flex gap-1.5 mt-0.5">
-          <button
-            onClick={handleCalendarClick}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-            style={{
-              backgroundColor: "#062322",
-              color: stage.color,
-              fontFamily: "'Pacaembu', sans-serif",
-              borderRadius: 0,
-            }}
-          >
-            <CalendarPlus size={11} />
-            Naptárba
-          </button>
+        <div className="flex gap-1.5 mt-0.5 items-center">
+          {/* Favourite — prominent */}
           <button
             onClick={handleFavClick}
-            className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${favAnimating ? "fav-pulse" : ""}`}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${favAnimating ? "fav-pulse" : ""}`}
             style={{
-              backgroundColor: isFavourite ? "#062322" : "#06232244",
-              color: isFavourite ? "#e86b5a" : "#062322",
+              backgroundColor: isFavourite ? "#e86b5a" : "#062322",
+              color: isFavourite ? "#fff" : "#e86b5a",
               fontFamily: "'Pacaembu', sans-serif",
               borderRadius: 0,
+              border: isFavourite ? "none" : "1px solid #e86b5a66",
             }}
           >
-            <Heart size={11} fill={isFavourite ? "#e86b5a" : "none"} />
+            <Heart size={12} fill={isFavourite ? "#fff" : "none"} />
+            {isFavourite ? "Kedvenc" : "Kedvencnek"}
           </button>
+          {/* Calendar — subtle icon-only */}
+          {!isTiny && (
+            <button
+              onClick={handleCalendarClick}
+              className="p-1.5 transition-all hover:scale-105 active:scale-95"
+              style={{ color: "#062322aa" }}
+              title="Naptárba"
+            >
+              <CalendarPlus size={13} />
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -358,27 +362,28 @@ function SearchPanel({
   );
 }
 
-// ---- Favourites list panel ----
+// ---- Listám panel ----
 
-function FavouritesPanel({
+function ListamPanel({
   favourites,
   allArtists,
   stages,
   onToggleFavourite,
   onClose,
+  onJumpTo,
 }: {
   favourites: Set<string>;
   allArtists: Artist[];
   stages: Stage[];
   onToggleFavourite: (id: string) => void;
   onClose: () => void;
+  onJumpTo: (artist: Artist) => void;
 }) {
   const favArtists = useMemo(
     () => allArtists.filter((a) => favourites.has(a.id)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
     [favourites, allArtists]
   );
 
-  // Group by day
   const byDay = useMemo(() => {
     const map = new Map<string, Artist[]>();
     for (const day of FESTIVAL_DAYS) {
@@ -402,7 +407,7 @@ function FavouritesPanel({
             className="text-sm font-bold uppercase tracking-wider text-kolo-lime"
             style={{ fontFamily: "'SerialBlur', sans-serif" }}
           >
-            Kedvenceim
+            Listám
           </h2>
           <button
             onClick={onClose}
@@ -434,13 +439,16 @@ function FavouritesPanel({
                     return (
                       <div
                         key={artist.id}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-kolo-bg-light transition-colors cursor-pointer group/row"
-                        onClick={() => window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer")}
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-kolo-bg-light transition-colors group/row"
                       >
                         <div className="w-1 h-8 shrink-0" style={{ backgroundColor: color }} />
-                        <div className="flex-1 min-w-0">
+                        {/* Name — click jumps to slot in grid */}
+                        <button
+                          className="flex-1 min-w-0 text-left"
+                          onClick={() => { onJumpTo(artist); onClose(); }}
+                        >
                           <p
-                            className="text-sm font-semibold uppercase truncate"
+                            className="text-sm font-semibold uppercase truncate hover:underline underline-offset-2"
                             style={{ color, fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.03em" }}
                           >
                             {artist.name}
@@ -451,15 +459,29 @@ function FavouritesPanel({
                           >
                             {formatTime(artist.startTime)}–{formatTime(artist.endTime)} · {artist.stage}
                           </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        </button>
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Open artist page on kolorado.hu */}
+                          <a
+                            href={getArtistPageUrl(artist)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
+                            title="Előadó oldala"
+                          >
+                            <ExternalLink size={13} />
+                          </a>
+                          {/* Calendar — subtle */}
                           <button
                             onClick={(e) => { e.stopPropagation(); downloadICS(artist); }}
-                            className="p-1.5 hover:text-kolo-lime text-muted-foreground transition-colors opacity-0 group-hover/row:opacity-100"
+                            className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors opacity-0 group-hover/row:opacity-100"
                             title="Naptárba"
                           >
                             <CalendarPlus size={13} />
                           </button>
+                          {/* Remove favourite */}
                           <button
                             onClick={(e) => { e.stopPropagation(); onToggleFavourite(artist.id); }}
                             className="p-1.5 text-kolo-coral transition-colors"
@@ -492,10 +514,12 @@ export default function Timetable() {
   const [isMobile, setIsMobile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFavourites, setShowFavourites] = useState(false);
+  const [showListam, setShowListam] = useState(false);
   const [filterFavourites, setFilterFavourites] = useState(false);
   const [favourites, setFavourites] = useState<Set<string>>(() => readFavouritesFromCookie());
   const gridRef = useRef<HTMLDivElement>(null);
+  // Map of artistId → block DOM ref for scroll-to
+  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -508,7 +532,6 @@ export default function Timetable() {
   const timeLabels = useMemo(() => getTimeLabels(), []);
   const totalHeight = (DAY_END_HOUR - DAY_START_HOUR) * hourHeight;
 
-  // Toggle favourite and persist to cookie
   const toggleFavourite = useCallback((id: string) => {
     setFavourites((prev) => {
       const next = new Set(prev);
@@ -531,6 +554,12 @@ export default function Timetable() {
     ).slice(0, 20);
   }, [searchQuery]);
 
+  // IDs of artists that match the active search query (for column visibility)
+  const searchMatchIds = useMemo(() => {
+    if (!searchQuery.trim()) return null; // null = no active search filter
+    return new Set(searchResults.map((a) => a.id));
+  }, [searchQuery, searchResults]);
+
   // Filter artists for the active day and visible stages
   const visibleArtists = useMemo(() => {
     return MOCK_ARTISTS.filter((a) => {
@@ -539,14 +568,21 @@ export default function Timetable() {
       const stageObj = STAGES.find((s) => s.name === a.stage);
       if (!stageObj || !activeStages.has(stageObj.id)) return false;
       if (filterFavourites && !favourites.has(a.id)) return false;
+      if (searchMatchIds && !searchMatchIds.has(a.id)) return false;
       return true;
     });
-  }, [activeDay, activeStages, filterFavourites, favourites]);
+  }, [activeDay, activeStages, filterFavourites, favourites, searchMatchIds]);
 
-  // Group by stage
+  // Visible stages: only those with at least one visible artist when filtering/searching
+  const isFiltering = filterFavourites || (searchMatchIds !== null && searchMatchIds.size > 0);
+
   const visibleStages = useMemo(() => {
-    return STAGES.filter((s) => activeStages.has(s.id));
-  }, [activeStages]);
+    const allActive = STAGES.filter((s) => activeStages.has(s.id));
+    if (!isFiltering) return allActive;
+    // Only show stages that have at least one visible artist
+    const stagesWithArtists = new Set(visibleArtists.map((a) => a.stage));
+    return allActive.filter((s) => stagesWithArtists.has(s.name));
+  }, [activeStages, isFiltering, visibleArtists]);
 
   const artistsByStage = useMemo(() => {
     const map = new Map<string, Artist[]>();
@@ -558,16 +594,6 @@ export default function Timetable() {
     }
     return map;
   }, [visibleArtists, visibleStages]);
-
-  // All artists for the active day (for dimming non-fav when filter is off)
-  const allDayArtists = useMemo(() => {
-    return MOCK_ARTISTS.filter((a) => {
-      const dayId = getFestivalDayId(a.startTime);
-      if (dayId !== activeDay) return false;
-      const stageObj = STAGES.find((s) => s.name === a.stage);
-      return stageObj && activeStages.has(stageObj.id);
-    });
-  }, [activeDay, activeStages]);
 
   const toggleStage = useCallback((stageId: string) => {
     setActiveStages((prev) => {
@@ -581,35 +607,74 @@ export default function Timetable() {
     });
   }, []);
 
+  // Jump to an artist's slot: switch to their day, then scroll the grid to their time position
+  const jumpToArtist = useCallback((artist: Artist) => {
+    const dayId = getFestivalDayId(artist.startTime);
+    if (dayId) setActiveDay(dayId);
+    // Wait for React to re-render the correct day before scrolling
+    setTimeout(() => {
+      const el = blockRefs.current.get(artist.id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Brief highlight flash
+        el.style.outline = "2px solid #dcea75";
+        setTimeout(() => { el.style.outline = ""; }, 1200);
+      } else if (gridRef.current) {
+        // Fallback: scroll by time position
+        const startHour = toFestivalHour(artist.startTime);
+        const scrollTop = (startHour - DAY_START_HOUR) * hourHeight - 80;
+        gridRef.current.scrollTo({ top: Math.max(0, scrollTop), behavior: "smooth" });
+      }
+    }, 80);
+  }, [hourHeight]);
+
   const handleSearchOpen = () => {
-    setShowFavourites(false);
+    setShowListam(false);
     setShowSearch(true);
   };
 
-  const handleFavouritesOpen = () => {
+  const handleListamOpen = () => {
     setShowSearch(false);
-    setShowFavourites(true);
+    setShowListam(true);
   };
 
   return (
     <div className="w-full min-h-screen bg-kolo-bg">
-      {/* Header */}
+      {/* Header — no title, just controls */}
       <header className="sticky top-0 z-40 bg-kolo-bg/95 backdrop-blur-md border-b border-kolo-teal/20">
         <div className="container py-3">
-          {/* Title row */}
+          {/* Controls row */}
           <div className="flex items-center justify-between mb-3">
-            <h1
-              className="text-xl md:text-2xl font-bold text-kolo-lime"
-              style={{ fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.04em" }}
-            >
-              KOLORÁDÓ
-              <span
-                className="text-foreground/60 font-normal text-sm md:text-base ml-2"
-                style={{ fontFamily: "'Pacaembu', sans-serif", textTransform: "none", letterSpacing: "0" }}
-              >
-                menetrend
-              </span>
-            </h1>
+            {/* Day tabs — pill-shaped */}
+            <div className="flex gap-1.5">
+              {FESTIVAL_DAYS.map((day) => (
+                <button
+                  key={day.id}
+                  onClick={() => setActiveDay(day.id)}
+                  className={`relative px-4 md:px-6 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                    activeDay === day.id
+                      ? "text-kolo-bg"
+                      : "text-foreground/50 hover:text-foreground/80 hover:bg-kolo-bg-light"
+                  }`}
+                  style={{
+                    borderRadius: "9999px",
+                    fontFamily: "'Pacaembu', sans-serif",
+                    backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
+                  }}
+                >
+                  <span className="hidden md:inline">{day.label}</span>
+                  <span className="md:hidden">{day.shortLabel}</span>
+                  {activeDay === day.id && (
+                    <motion.div
+                      layoutId="dayIndicator"
+                      className="absolute inset-0 bg-kolo-lime -z-10"
+                      style={{ borderRadius: "9999px" }}
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
 
             {/* Right controls */}
             <div className="flex items-center gap-2">
@@ -630,21 +695,21 @@ export default function Timetable() {
                 <span className="hidden sm:inline">Kedvencek</span>
               </button>
 
-              {/* Favourites list button */}
+              {/* Listám button */}
               <button
-                onClick={handleFavouritesOpen}
+                onClick={handleListamOpen}
                 className="relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-all"
                 style={{
                   borderRadius: "9999px",
-                  borderColor: showFavourites ? "#dcea7566" : "#1a6b6660",
-                  color: showFavourites ? "#dcea75" : "#7a9e9b",
-                  backgroundColor: showFavourites ? "#dcea7518" : "transparent",
+                  borderColor: showListam ? "#dcea7566" : "#1a6b6660",
+                  color: showListam ? "#dcea75" : "#7a9e9b",
+                  backgroundColor: showListam ? "#dcea7518" : "transparent",
                   fontFamily: "'Pacaembu', sans-serif",
                 }}
-                title="Kedvenceim listája"
+                title="Listám"
               >
-                <Star size={13} fill={showFavourites ? "#dcea75" : "none"} />
-                <span className="hidden sm:inline">Lista</span>
+                <Star size={13} fill={showListam ? "#dcea75" : "none"} />
+                <span className="hidden sm:inline">Listám</span>
                 {favourites.size > 0 && (
                   <span
                     className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-kolo-coral text-white"
@@ -683,41 +748,9 @@ export default function Timetable() {
                 }}
               >
                 <Filter size={14} />
-                Színpadok
                 <ChevronDown size={12} className={`transition-transform ${showStageFilter ? "rotate-180" : ""}`} />
               </button>
             </div>
-          </div>
-
-          {/* Day tabs — pill-shaped */}
-          <div className="flex gap-1.5 mb-2">
-            {FESTIVAL_DAYS.map((day) => (
-              <button
-                key={day.id}
-                onClick={() => setActiveDay(day.id)}
-                className={`relative px-4 md:px-6 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                  activeDay === day.id
-                    ? "text-kolo-bg"
-                    : "text-foreground/50 hover:text-foreground/80 hover:bg-kolo-bg-light"
-                }`}
-                style={{
-                  borderRadius: "9999px",
-                  fontFamily: "'Pacaembu', sans-serif",
-                  backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
-                }}
-              >
-                <span className="hidden md:inline">{day.label}</span>
-                <span className="md:hidden">{day.shortLabel}</span>
-                {activeDay === day.id && (
-                  <motion.div
-                    layoutId="dayIndicator"
-                    className="absolute inset-0 bg-kolo-lime -z-10"
-                    style={{ borderRadius: "9999px" }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
           </div>
 
           {/* Stage filters */}
@@ -764,15 +797,16 @@ export default function Timetable() {
           )}
         </AnimatePresence>
 
-        {/* Favourites panel */}
+        {/* Listám panel */}
         <AnimatePresence>
-          {showFavourites && (
-            <FavouritesPanel
+          {showListam && (
+            <ListamPanel
               favourites={favourites}
               allArtists={MOCK_ARTISTS}
               stages={STAGES}
               onToggleFavourite={toggleFavourite}
-              onClose={() => setShowFavourites(false)}
+              onClose={() => setShowListam(false)}
+              onJumpTo={jumpToArtist}
             />
           )}
         </AnimatePresence>
@@ -783,7 +817,7 @@ export default function Timetable() {
         <div
           ref={gridRef}
           className="timetable-scroll overflow-x-auto overflow-y-auto mt-4 border border-kolo-teal/15"
-          style={{ maxHeight: "calc(100vh - 200px)" }}
+          style={{ maxHeight: "calc(100vh - 160px)" }}
         >
           <div className="flex" style={{ minWidth: isMobile ? `${visibleStages.length * 160 + 56}px` : "auto" }}>
             {/* Time axis */}
@@ -856,17 +890,34 @@ export default function Timetable() {
                       })}
 
                       <AnimatePresence mode="popLayout">
-                        {stageArtists.map((artist) => (
-                          <ArtistBlock
-                            key={artist.id}
-                            artist={artist}
-                            stage={stage}
-                            hourHeight={hourHeight}
-                            isFavourite={favourites.has(artist.id)}
-                            onToggleFavourite={toggleFavourite}
-                          />
-                        ))}
+                        {stageArtists.map((artist) => {
+                          const refCallback = (el: HTMLDivElement | null) => {
+                            if (el) blockRefs.current.set(artist.id, el);
+                            else blockRefs.current.delete(artist.id);
+                          };
+                          return (
+                            <ArtistBlock
+                              key={artist.id}
+                              artist={artist}
+                              stage={stage}
+                              hourHeight={hourHeight}
+                              isFavourite={favourites.has(artist.id)}
+                              onToggleFavourite={toggleFavourite}
+                              blockRef={{ current: blockRefs.current.get(artist.id) ?? null } as React.RefObject<HTMLDivElement | null>}
+                            />
+                          );
+                        })}
                       </AnimatePresence>
+                      {/* Attach refs via a hidden div per artist */}
+                      {stageArtists.map((artist) => (
+                        <div
+                          key={`ref-${artist.id}`}
+                          ref={(el) => {
+                            if (el) blockRefs.current.set(artist.id, el);
+                          }}
+                          style={{ position: "absolute", top: `${(toFestivalHour(artist.startTime) - DAY_START_HOUR) * hourHeight}px`, height: 0, width: 0 }}
+                        />
+                      ))}
                     </div>
                   </div>
                 );
@@ -985,16 +1036,9 @@ function MobileListView({
                       e.stopPropagation();
                       downloadICS(artist);
                     }}
-                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold transition-all hover:scale-105"
-                    style={{
-                      backgroundColor: `${color}22`,
-                      color,
-                      fontFamily: "'Pacaembu', sans-serif",
-                      borderRadius: 0,
-                    }}
+                    className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
                   >
-                    <CalendarPlus size={10} />
-                    <span className="hidden xs:inline">Naptár</span>
+                    <CalendarPlus size={13} />
                   </button>
                   <ExternalLink size={12} style={{ color: `${color}66` }} />
                 </div>
