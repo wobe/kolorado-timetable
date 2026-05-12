@@ -175,7 +175,7 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
         style={{ backgroundColor: `${stage.color}dd` }}
       >
         <button
-          className="font-bold text-sm text-center leading-tight uppercase hover:underline underline-offset-2"
+          className="font-bold text-xs text-center leading-tight uppercase hover:underline underline-offset-2"
           style={{ color: "#062322", fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.04em", background: "none", border: "none", cursor: "pointer" }}
           onClick={handleNameClick}
         >
@@ -189,7 +189,7 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
         <div className="flex gap-1.5 mt-0.5 items-center">
           <button
             onClick={handleFavClick}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95"
             style={{
               backgroundColor: isFavourite ? "#e86b5a" : "#ffffff",
               color: isFavourite ? "#fff" : "#062322",
@@ -239,9 +239,6 @@ function SearchPanel({
   query: string; onQueryChange: (q: string) => void; results: Artist[];
   stages: Stage[]; favourites: Set<string>; onToggleFavourite: (id: string) => void; onClose: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -250,27 +247,6 @@ function SearchPanel({
           style={{ backgroundColor: "#062322f8" }}
       >
         <div className="container py-3">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-2 flex-1 px-3 py-2 border border-kolo-teal/30 bg-kolo-bg-light" style={{ borderRadius: 0 }}>
-            <Search size={15} className="text-muted-foreground shrink-0" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Keress előadót, műfajt vagy színpadot…"
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              style={{ fontFamily: "'Pacaembu', sans-serif" }}
-            />
-            {query && (
-              <button onClick={() => onQueryChange("")} className="text-muted-foreground hover:text-foreground transition-colors">
-                <X size={13} />
-              </button>
-            )}
-          </div>
-          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors" title="Bezár">
-            <X size={16} />
-          </button>
-        </div>
         {query.length > 0 && (
           <div className="max-h-64 overflow-y-auto space-y-0.5">
             {results.length === 0 ? (
