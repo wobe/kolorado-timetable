@@ -150,6 +150,55 @@ export function generateICS(artist: Artist): string {
 }
 
 /**
+ * Generate ICS calendar content for multiple artists in a single file
+ */
+export function generateMultiICS(artists: Artist[]): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const formatICSDate = (d: Date) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const now = new Date();
+
+  const events = artists.map((artist) => [
+    "BEGIN:VEVENT",
+    `DTSTART:${formatICSDate(artist.startTime)}`,
+    `DTEND:${formatICSDate(artist.endTime)}`,
+    `DTSTAMP:${formatICSDate(now)}`,
+    `UID:${artist.id}-${artist.startTime.getTime()}@kolorado.hu`,
+    `SUMMARY:${artist.name}`,
+    `DESCRIPTION:${artist.name} @ ${artist.stage} - Kolorádó Fesztivál 2026`,
+    `LOCATION:${artist.stage}\\, Kolorádó Fesztivál\\, Káloz`,
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+  ].join("\r\n")).join("\r\n");
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Kolorádó Fesztivál//Timetable//HU",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    events,
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+/**
+ * Trigger download of a single ICS file containing all given artists
+ */
+export function downloadAllICS(artists: Artist[]): void {
+  const ics = generateMultiICS(artists);
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "kolorado_kedvencek.ics";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Trigger download of an ICS file
  */
 export function downloadICS(artist: Artist): void {

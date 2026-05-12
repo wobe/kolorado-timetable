@@ -31,8 +31,9 @@ import {
   formatTime,
   getFestivalDayId,
   downloadICS,
-  getTimeLabels,
+  downloadAllICS,
   getArtistPageUrl,
+  getTimeLabels,
 } from "@/lib/timetable-data";
 
 // ---- Cookie helpers for favourites ----
@@ -603,13 +604,11 @@ export default function Timetable() {
     });
   }, []);
 
-  // Export all favourites as individual ICS downloads
+  // Export all favourites as a single ICS file
   const exportAllFavourites = useCallback(() => {
-    const favArtists = MOCK_ARTISTS.filter((a) => favourites.has(a.id));
-    favArtists.forEach((artist, i) => {
-      // Stagger downloads slightly so browser doesn't block them
-      setTimeout(() => downloadICS(artist), i * 120);
-    });
+    const favArtists = MOCK_ARTISTS.filter((a) => favourites.has(a.id))
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    if (favArtists.length > 0) downloadAllICS(favArtists);
   }, [favourites]);
 
   // Jump to an artist's slot: switch to their day, then scroll the grid to their time position
