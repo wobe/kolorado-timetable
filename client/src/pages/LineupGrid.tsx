@@ -19,11 +19,25 @@ function saveFavourites(favs: Set<string>) {
   document.cookie = `${FAV_COOKIE}=${encodeURIComponent(JSON.stringify(Array.from(favs)))}; expires=${expires}; path=/; SameSite=Lax`;
 }
 
-// Extended artist type for CMS data that may include photo/day fields
+// Extended artist type for CMS data fields
+// CMS field mapping: title→name, photo→photo, genre1→genre, id→startTime, id1→endTime, sznpad→stage, website→url, longDescription→description, jobTitle→nationality, youtubeLink2→youtubeLink, newField→soundcloudLink
 type ArtistExtended = Artist & {
   photo?: string;
   day?: string;
+  description?: string;
+  nationality?: string;
+  youtubeLink?: string;
+  soundcloudLink?: string;
 };
+
+// ── Heart icon SVG ─────────────────────────────────────────────────────────
+function HeartIcon({ filled, color }: { filled: boolean; color: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
 
 // ── Artist popup ───────────────────────────────────────────────────────────
 function ArtistPopup({
@@ -39,101 +53,122 @@ function ArtistPopup({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(6,35,34,0.85)", backdropFilter: "blur(6px)" }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 50,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 16,
+        background: "rgba(14,75,77,0.88)", backdropFilter: "blur(8px)",
+      }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg overflow-hidden"
-        style={{ background: "#0E4B4D", border: "1px solid rgba(255,255,255,0.1)" }}
+        style={{
+          position: "relative", width: "100%", maxWidth: 520,
+          background: "#FEFFC0", overflow: "hidden",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Photo */}
-        <div className="relative w-full" style={{ paddingBottom: "60%" }}>
+        {/* Photo — 1:1 */}
+        <div style={{ position: "relative", width: "100%", paddingBottom: "100%" }}>
           {artist.photo ? (
             <img
               src={artist.photo}
               alt={artist.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (
-            <div
-              className="absolute inset-0 flex items-center justify-center text-4xl font-bold"
-              style={{ background: "#062322", color: "rgba(255,255,255,0.15)", fontFamily: "'SerialBlur', sans-serif" }}
-            >
-              {artist.name.slice(0, 2).toUpperCase()}
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#e8e9a0", fontSize: 48, fontFamily: "'SerialBlur', sans-serif", color: "#642CFF", textTransform: "uppercase" }}>
+              {artist.name.slice(0, 2)}
             </div>
           )}
-          {/* Name overlay */}
-          <div className="absolute top-0 left-0 px-3 py-2" style={{ background: "rgba(6,35,34,0.75)" }}>
-            <span className="text-lg uppercase tracking-wide" style={{ fontFamily: "'SerialBlur', sans-serif", color: "#E8FF6B" }}>
-              {artist.name}
-            </span>
-          </div>
           {/* Close */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-white"
-            style={{ background: "rgba(0,0,0,0.5)", borderRadius: "50%", fontSize: 18, border: "none", cursor: "pointer" }}
+            style={{
+              position: "absolute", top: 12, right: 12,
+              width: 32, height: 32, borderRadius: "50%",
+              background: "rgba(254,255,192,0.9)", border: "none", cursor: "pointer",
+              fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#642CFF", fontWeight: 700,
+            }}
           >
             ×
           </button>
         </div>
 
         {/* Info */}
-        <div className="p-5 space-y-3">
-          {/* Stage + day + genre */}
-          <div className="flex flex-wrap gap-2">
+        <div style={{ padding: "20px 24px 24px" }}>
+          {/* Name */}
+          <h2 style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 24, textTransform: "uppercase", color: "#642CFF", marginBottom: 8, lineHeight: 1.1 }}>
+            {artist.name}
+          </h2>
+
+          {/* Tags */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {artist.stage && (
-              <span className="px-3 py-1 text-xs uppercase tracking-wider" style={{ background: "rgba(255,255,255,0.1)", color: "#E8FF6B", fontFamily: "'Pacaembu', sans-serif" }}>
+              <span style={{ padding: "3px 10px", background: "#642CFF", color: "#FEFFC0", fontFamily: "'Pacaembu', sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 {artist.stage}
               </span>
             )}
-            {artist.day && (
-              <span className="px-3 py-1 text-xs uppercase tracking-wider" style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", fontFamily: "'Pacaembu', sans-serif" }}>
-                {artist.day}
+            {artist.genre && (
+              <span style={{ padding: "3px 10px", background: "rgba(100,44,255,0.12)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {artist.genre}
               </span>
             )}
-            {artist.genre && (
-              <span className="px-3 py-1 text-xs uppercase tracking-wider" style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", fontFamily: "'Pacaembu', sans-serif" }}>
-                {artist.genre}
+            {artist.nationality && (
+              <span style={{ padding: "3px 10px", background: "rgba(100,44,255,0.08)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 11 }}>
+                {artist.nationality}
               </span>
             )}
           </div>
 
           {/* Time */}
           {artist.startTime && artist.endTime && (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", color: "rgba(255,255,255,0.6)", fontSize: 13 }}>
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#0E4B4D", marginBottom: 10 }}>
               {formatTime(artist.startTime)} – {formatTime(artist.endTime)}
             </p>
           )}
 
-          {/* Description placeholder */}
-          <p style={{ fontFamily: "'Pacaembu', sans-serif", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
-            Részletek hamarosan...
-          </p>
+          {/* Description */}
+          {artist.description ? (
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.6, marginBottom: 16 }}>
+              {artist.description}
+            </p>
+          ) : (
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(0,0,0,0.35)", marginBottom: 16 }}>
+              Részletek hamarosan...
+            </p>
+          )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               onClick={onToggleFav}
-              className="flex items-center gap-2 px-4 py-2 text-sm transition-all"
               style={{
-                background: isFav ? "#e53e3e" : "white",
-                color: isFav ? "white" : "#0E4B4D",
-                fontFamily: "'Pacaembu', sans-serif",
-                borderRadius: 9999, border: "none", cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 7,
+                padding: "8px 18px", borderRadius: 9999, border: "none", cursor: "pointer",
+                background: isFav ? "#e53e3e" : "#642CFF",
+                color: "white",
+                fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                transition: "all 0.15s",
               }}
             >
-              {isFav ? "❤ Kedvenc" : "♡ Kedvencnek"}
+              <HeartIcon filled={isFav} color="white" />
+              {isFav ? "Kedvenc" : "Kedvencnek"}
             </button>
             {artist.url && (
               <a
                 href={`${KOLORADO_BASE_URL}${artist.url}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-sm"
-                style={{ background: "rgba(255,255,255,0.1)", color: "white", fontFamily: "'Pacaembu', sans-serif", borderRadius: 9999, textDecoration: "none" }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "8px 18px", borderRadius: 9999,
+                  background: "rgba(100,44,255,0.1)", color: "#642CFF",
+                  fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                  textDecoration: "none",
+                }}
               >
                 ↗ Kolorádó oldal
               </a>
@@ -158,10 +193,8 @@ export default function LineupGrid() {
   const stageRef = useRef<HTMLDivElement>(null);
   const dayRef = useRef<HTMLDivElement>(null);
 
-  // Sync favourites to cookie whenever they change
   useEffect(() => { saveFavourites(favourites); }, [favourites]);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (stageRef.current && !stageRef.current.contains(e.target as Node)) setStageOpen(false);
@@ -184,6 +217,7 @@ export default function LineupGrid() {
   const filtered = artists.filter((a) => {
     if (showFavOnly && !favourites.has(a.id)) return false;
     if (selectedStage !== "all" && a.stage !== selectedStage) return false;
+    if (selectedDay !== "all" && a.day !== selectedDay) return false;
     return true;
   });
 
@@ -204,12 +238,13 @@ export default function LineupGrid() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0E4B4D", color: "white" }}>
+    <div style={{ minHeight: "100vh", background: "#FEFFC0" }}>
       {/* ── Header ── */}
       <div
         style={{
           position: "sticky", top: 0, zIndex: 30,
-          background: "#062322",
+          background: "#FEFFC0",
+          borderBottom: "2px solid rgba(100,44,255,0.15)",
           padding: "10px 16px",
           display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
         }}
@@ -218,17 +253,22 @@ export default function LineupGrid() {
         <div ref={stageRef} style={{ position: "relative" }}>
           <button
             onClick={() => { setStageOpen((o) => !o); setDayOpen(false); }}
-            style={{ ...pillBase, background: selectedStage !== "all" ? "#E8FF6B" : "rgba(255,255,255,0.1)", color: selectedStage !== "all" ? "#062322" : "white" }}
+            style={{
+              ...pillBase,
+              background: selectedStage !== "all" ? "#642CFF" : "rgba(100,44,255,0.12)",
+              color: selectedStage !== "all" ? "#FEFFC0" : "#642CFF",
+            }}
           >
-            <span>▼</span> {selectedStage === "all" ? "Színpad" : selectedStage}
+            <span style={{ fontSize: 10 }}>▼</span>
+            {selectedStage === "all" ? "Színpad" : selectedStage}
           </button>
           {stageOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#062322", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, minWidth: 180, zIndex: 100, overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)", minWidth: 180, zIndex: 100, overflow: "hidden" }}>
               {stageOptions.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => { setSelectedStage(s.id === "all" ? "all" : s.name); setStageOpen(false); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedStage === (s.id === "all" ? "all" : s.name) ? "rgba(232,255,107,0.15)" : "transparent", color: selectedStage === (s.id === "all" ? "all" : s.name) ? "#E8FF6B" : "white", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer" }}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedStage === (s.id === "all" ? "all" : s.name) ? "rgba(100,44,255,0.1)" : "transparent", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer", fontWeight: selectedStage === (s.id === "all" ? "all" : s.name) ? 700 : 400 }}
                 >
                   {s.name}
                 </button>
@@ -241,17 +281,22 @@ export default function LineupGrid() {
         <div ref={dayRef} style={{ position: "relative" }}>
           <button
             onClick={() => { setDayOpen((o) => !o); setStageOpen(false); }}
-            style={{ ...pillBase, background: selectedDay !== "all" ? "#E8FF6B" : "rgba(255,255,255,0.1)", color: selectedDay !== "all" ? "#062322" : "white" }}
+            style={{
+              ...pillBase,
+              background: selectedDay !== "all" ? "#642CFF" : "rgba(100,44,255,0.12)",
+              color: selectedDay !== "all" ? "#FEFFC0" : "#642CFF",
+            }}
           >
-            <span>▼</span> {selectedDay === "all" ? "Nap" : selectedDay}
+            <span style={{ fontSize: 10 }}>▼</span>
+            {selectedDay === "all" ? "Nap" : selectedDay}
           </button>
           {dayOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#062322", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, minWidth: 160, zIndex: 100, overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)", minWidth: 160, zIndex: 100, overflow: "hidden" }}>
               {dayOptions.map((d) => (
                 <button
                   key={d.id}
                   onClick={() => { setSelectedDay(d.id === "all" ? "all" : d.name); setDayOpen(false); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedDay === (d.id === "all" ? "all" : d.name) ? "rgba(232,255,107,0.15)" : "transparent", color: selectedDay === (d.id === "all" ? "all" : d.name) ? "#E8FF6B" : "white", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer" }}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedDay === (d.id === "all" ? "all" : d.name) ? "rgba(100,44,255,0.1)" : "transparent", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer", fontWeight: selectedDay === (d.id === "all" ? "all" : d.name) ? 700 : 400 }}
                 >
                   {d.name}
                 </button>
@@ -263,18 +308,23 @@ export default function LineupGrid() {
         {/* Kedvencek toggle */}
         <button
           onClick={() => setShowFavOnly((v) => !v)}
-          style={{ ...pillBase, background: showFavOnly ? "#e53e3e" : "rgba(255,255,255,0.1)", color: "white" }}
+          style={{
+            ...pillBase,
+            background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
+            color: showFavOnly ? "white" : "#642CFF",
+          }}
         >
-          {showFavOnly ? "❤" : "♡"} Kedvencek
+          <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
+          Kedvencek
           {favourites.size > 0 && (
-            <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "rgba(232,255,107,0.8)", color: "#062322", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+            <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
               {favourites.size}
             </span>
           )}
         </button>
 
         {/* Count */}
-        <span style={{ marginLeft: "auto", fontFamily: "'Pacaembu', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+        <span style={{ marginLeft: "auto", fontFamily: "'Pacaembu', sans-serif", fontSize: 12, color: "rgba(100,44,255,0.5)" }}>
           {filtered.length} előadó
         </span>
       </div>
@@ -283,10 +333,11 @@ export default function LineupGrid() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(180px, 50%), 1fr))",
-          gap: 2,
-          padding: 2,
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 16,
+          padding: 16,
         }}
+        className="lineup-grid"
       >
         {filtered.map((artist) => {
           const fav = favourites.has(artist.id);
@@ -294,45 +345,66 @@ export default function LineupGrid() {
             <div
               key={artist.id}
               onClick={() => setActiveArtist(artist)}
-              style={{ position: "relative", paddingBottom: "100%", cursor: "pointer", background: "#062322", overflow: "hidden" }}
+              style={{
+                position: "relative", paddingBottom: "100%",
+                cursor: "pointer", overflow: "hidden",
+                background: "#e8e9a0",
+              }}
             >
               {/* Photo */}
               {artist.photo ? (
                 <img
                   src={artist.photo}
                   alt={artist.name}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s" }}
+                  style={{
+                    position: "absolute", inset: 0, width: "100%", height: "100%",
+                    objectFit: "cover", transition: "transform 0.35s ease",
+                  }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)")}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
                 />
               ) : (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, fontWeight: 700, color: "rgba(255,255,255,0.12)", fontFamily: "'SerialBlur', sans-serif" }}>
-                  {artist.name.slice(0, 2).toUpperCase()}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 40, fontFamily: "'SerialBlur', sans-serif",
+                  color: "rgba(100,44,255,0.2)", textTransform: "uppercase",
+                }}>
+                  {artist.name.slice(0, 2)}
                 </div>
               )}
 
-              {/* Name overlay top-left */}
-              <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 10px", background: "rgba(6,35,34,0.7)", maxWidth: "80%" }}>
-                <span style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 13, color: "white", textTransform: "uppercase", letterSpacing: "0.03em", lineHeight: 1.2, display: "block" }}>
+              {/* Name overlay top-left — yellow bg, purple text */}
+              <div style={{
+                position: "absolute", top: 0, left: 0,
+                padding: "6px 10px",
+                background: "#FEFFC0",
+                maxWidth: "85%",
+              }}>
+                <span style={{
+                  fontFamily: "'SerialBlur', sans-serif",
+                  fontSize: 13, color: "#642CFF",
+                  textTransform: "uppercase", letterSpacing: "0.02em",
+                  lineHeight: 1.2, display: "block",
+                }}>
                   {artist.name}
                 </span>
               </div>
 
-              {/* Fav button bottom-right */}
+              {/* Heart fav button bottom-right */}
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFav(artist.id); }}
                 style={{
                   position: "absolute", bottom: 10, right: 10,
-                  width: 34, height: 34, borderRadius: "50%",
-                  background: fav ? "#e53e3e" : "rgba(255,255,255,0.9)",
-                  color: fav ? "white" : "#0E4B4D",
-                  border: "none", cursor: "pointer", fontSize: 16,
+                  width: 36, height: 36, borderRadius: "50%",
+                  background: fav ? "#e53e3e" : "rgba(254,255,192,0.95)",
+                  border: "none", cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
                   transition: "all 0.15s",
                 }}
               >
-                {fav ? "❤" : "+"}
+                <HeartIcon filled={fav} color={fav ? "white" : "#642CFF"} />
               </button>
             </div>
           );
@@ -355,14 +427,21 @@ export default function LineupGrid() {
           onClick={() => setLocation("/")}
           style={{
             padding: "8px 16px", borderRadius: 9999, border: "none", cursor: "pointer",
-            background: "#E8FF6B", color: "#062322",
+            background: "#642CFF", color: "#FEFFC0",
             fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+            boxShadow: "0 2px 12px rgba(100,44,255,0.4)",
           }}
         >
           → Menetrend
         </button>
       </div>
+
+      {/* ── Responsive grid CSS ── */}
+      <style>{`
+        @media (min-width: 640px) { .lineup-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+        @media (min-width: 900px) { .lineup-grid { grid-template-columns: repeat(4, 1fr) !important; } }
+        @media (min-width: 1280px) { .lineup-grid { grid-template-columns: repeat(5, 1fr) !important; } }
+      `}</style>
     </div>
   );
 }
