@@ -318,29 +318,26 @@
   ].join("\n");
 
   // ── Web Component ──────────────────────────────────────────
-  var KoloradoTimetable = (function() {
-    function KoloradoTimetable() {
-      var host = this;
-      host._artists = MOCK_ARTISTS;
-      host._activeDay = FESTIVAL_DAYS[0].id;
-      host._activeStages = new Set(STAGES.map(function(s){return s.id;}));
-      host._favourites = readFavCookie();
-      host._viewMode = window.innerWidth < 768 ? "list" : "grid";
-      host._showKedvencek = false;
-      host._showSearch = false;
-      host._showFilter = false;
-      host._filterFavourites = false;
-      host._searchQuery = "";
-      host._tappedBlockId = null;
-      host._parentUrl = null;
-      host._loading = true;
-      host._nowInterval = null;
+  class KoloradoTimetable extends HTMLElement {
+    constructor() {
+      super();
+      this._artists = MOCK_ARTISTS;
+      this._activeDay = FESTIVAL_DAYS[0].id;
+      this._activeStages = new Set(STAGES.map(function(s){return s.id;}));
+      this._favourites = readFavCookie();
+      this._viewMode = window.innerWidth < 768 ? "list" : "grid";
+      this._showKedvencek = false;
+      this._showSearch = false;
+      this._showFilter = false;
+      this._filterFavourites = false;
+      this._searchQuery = "";
+      this._tappedBlockId = null;
+      this._parentUrl = null;
+      this._loading = true;
+      this._nowInterval = null;
     }
 
-    KoloradoTimetable.prototype = Object.create(HTMLElement.prototype);
-    KoloradoTimetable.prototype.constructor = KoloradoTimetable;
-
-    KoloradoTimetable.prototype.connectedCallback = function() {
+    connectedCallback() {
       var self = this;
       this._shadow = this.attachShadow({ mode: "open" });
       this._render();
@@ -372,12 +369,12 @@
       setTimeout(function(){ self._loading = false; self._render(); }, 400);
     };
 
-    KoloradoTimetable.prototype.disconnectedCallback = function() {
+    disconnectedCallback() {
       if (this._nowInterval) clearInterval(this._nowInterval);
     };
 
-    KoloradoTimetable.observedAttributes = ["lineup-data"];
-    KoloradoTimetable.prototype.attributeChangedCallback = function(name, _old, val) {
+    static get observedAttributes() { return ["lineup-data"]; }
+    attributeChangedCallback(name, _old, val) {
       if (name === "lineup-data" && val) {
         try {
           var raw = JSON.parse(val);
@@ -398,7 +395,7 @@
       }
     };
 
-    KoloradoTimetable.prototype._render = function() {
+    _render() {
       var root = this._shadow;
       if (!root) return;
       root.innerHTML = "";
@@ -440,14 +437,14 @@
       }
     };
 
-    KoloradoTimetable.prototype._renderSkeleton = function() {
+    _renderSkeleton() {
       var el = document.createElement("div");
       el.className = "kt-skeleton";
       el.innerHTML = '<div class="kt-skel-header"><div class="kt-skel-row"><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div><div class="kt-skel-pill"></div></div><div class="kt-skel-row"><div class="kt-skel-pill" style="max-width:80px"></div><div class="kt-skel-pill" style="max-width:80px"></div></div></div><div class="kt-skel-body"><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:60%"></div><div class="kt-skel-line" style="width:35%"></div></div></div><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:70%"></div><div class="kt-skel-line" style="width:40%"></div></div></div><div class="kt-skel-item"><div class="kt-skel-bar"></div><div class="kt-skel-lines"><div class="kt-skel-line" style="width:50%"></div><div class="kt-skel-line" style="width:30%"></div></div></div></div>';
       return el;
     };
 
-    KoloradoTimetable.prototype._renderHeader = function() {
+    _renderHeader() {
       var self = this;
       var header = document.createElement("header");
       header.className = "kt-header";
@@ -534,7 +531,7 @@
       return header;
     };
 
-    KoloradoTimetable.prototype._renderKedvencekPanel = function() {
+    _renderKedvencekPanel() {
       var self = this;
       var panel = document.createElement("div"); panel.className = "kt-panel";
       var favArtists = this._artists.filter(function(a){ return self._favourites.has(a.id); }).sort(function(a,b){ return a.startTime-b.startTime; });
@@ -582,7 +579,7 @@
       return panel;
     };
 
-    KoloradoTimetable.prototype._renderSearchPanel = function() {
+    _renderSearchPanel() {
       var self = this;
       var panel = document.createElement("div"); panel.className = "kt-panel";
       var q = this._searchQuery.toLowerCase();
@@ -605,7 +602,7 @@
       return panel;
     };
 
-    KoloradoTimetable.prototype._renderListView = function() {
+    _renderListView() {
       var self = this;
       var wrap = document.createElement("div"); wrap.className = "kt-list";
       var visible = this._getVisibleArtists().sort(function(a,b){return a.startTime-b.startTime;});
@@ -628,7 +625,7 @@
       return wrap;
     };
 
-    KoloradoTimetable.prototype._renderGridView = function() {
+    _renderGridView() {
       var self = this;
       var isMobile = window.innerWidth < 768;
       var hh = isMobile ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
@@ -675,7 +672,7 @@
       return wrap;
     };
 
-    KoloradoTimetable.prototype._createArtistBlock = function(artist, stage, hh) {
+    _createArtistBlock(artist, stage, hh) {
       var self = this;
       var startH = toFestivalHour(artist.startTime);
       var endH = toFestivalHour(artist.endTime);
@@ -710,7 +707,7 @@
       return block;
     };
 
-    KoloradoTimetable.prototype._createNowLine = function(hh) {
+    _createNowLine(hh) {
       var now = new Date();
       var fh = toFestivalHour(now);
       if (fh < DAY_START_HOUR || fh >= DAY_END_HOUR) return null;
@@ -720,7 +717,7 @@
       return line;
     };
 
-    KoloradoTimetable.prototype._updateNowLine = function() {
+    _updateNowLine() {
       var root = this._shadow;
       if (!root) return;
       var isMobile = window.innerWidth < 768;
@@ -730,7 +727,7 @@
       if (sc) { var nl = this._createNowLine(hh); if(nl) sc.insertBefore(nl, sc.firstChild); }
     };
 
-    KoloradoTimetable.prototype._getVisibleArtists = function() {
+    _getVisibleArtists() {
       var self = this;
       return this._artists.filter(function(a){
         if (getFestivalDayId(a.startTime) !== self._activeDay) return false;
@@ -741,7 +738,7 @@
       });
     };
 
-    KoloradoTimetable.prototype._getVisibleStages = function(visibleArtists) {
+    _getVisibleStages(visibleArtists) {
       var self = this;
       var allActive = STAGES.filter(function(s){return self._activeStages.has(s.id);});
       if (!this._filterFavourites) return allActive;
@@ -749,14 +746,14 @@
       return allActive.filter(function(s){return stagesWithArtists.has(s.name);});
     };
 
-    KoloradoTimetable.prototype._toggleFav = function(id) {
+    _toggleFav(id) {
       if (this._favourites.has(id)) this._favourites.delete(id);
       else this._favourites.add(id);
       writeFavCookie(this._favourites);
       this._render();
     };
 
-    KoloradoTimetable.prototype._jumpToArtist = function(artist) {
+    _jumpToArtist(artist) {
       var self = this;
       var dayId = getFestivalDayId(artist.startTime);
       if (dayId) this._activeDay = dayId;
@@ -772,7 +769,7 @@
       }, 80);
     };
 
-    KoloradoTimetable.prototype._shareFavourites = function() {
+    _shareFavourites() {
       var encoded = encodeFavs(this._favourites);
       if (!encoded) return;
       var base = this._parentUrl ? this._parentUrl.split("#")[0] : (window.location.origin + window.location.pathname);
@@ -783,7 +780,7 @@
       } else { window.prompt("Másold ki ezt a linket:", url); }
     };
 
-    KoloradoTimetable.prototype._showToast = function(msg) {
+    _showToast(msg) {
       var toast = document.createElement("div");
       toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dcea75;color:#062322;padding:8px 18px;font-family:'Pacaembu',sans-serif;font-size:13px;z-index:9999;pointer-events:none;";
       toast.textContent = msg;
@@ -791,8 +788,7 @@
       setTimeout(function(){ toast.remove(); }, 3000);
     };
 
-    return KoloradoTimetable;
-  })();
+  }
 
   if (!customElements.get("kolorado-timetable")) {
     customElements.define("kolorado-timetable", KoloradoTimetable);
