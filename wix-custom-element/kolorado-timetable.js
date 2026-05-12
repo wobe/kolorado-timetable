@@ -382,11 +382,11 @@
             return {
               id: item.id || item._id || String(Math.random()),
               name: item.title || item.name || "Ismeretlen",
-              stage: item.sz\u00ednpad || item.stage || "Nagyszínpad",
-              startTime: new Date(item.kezdId\u0151 || item.startTime),
-              endTime: new Date(item.v\u00e9geId\u0151 || item.endTime),
-              genre: item.genre || item.m\u0171faj || "",
-              url: item["link-lineup-all-title"] || item.url || null,
+              stage: item.sznpad || item.stage || "Nagyszínpad",
+              startTime: new Date(item.id || item.startTime),
+              endTime: new Date(item.id1 || item.endTime),
+              genre: item.genre1 || item.genre || "",
+              url: item.website || item.url || null,
             };
           }).filter(function(a){ return !isNaN(a.startTime) && !isNaN(a.endTime); });
           this._loading = false;

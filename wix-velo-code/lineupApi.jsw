@@ -11,12 +11,12 @@ import wixData from 'wix-data';
  * Returns an array of artist objects formatted for the Custom Element.
  * 
  * CMS field IDs (from your Wix Content Manager):
- *   - title          → "Name" column (Artist name, auto-mapped)
- *   - link-lineup-all-title → "Lineup (Item)" column (URL slug, e.g. "/lineup/analog-balaton")
- *   - kezdIdő        → "Kezdő idő" column (Date/Time: set start time)
- *   - végeIdő        → "Vége idő" column (Date/Time: set end time)
- *   - színpad        → "Színpad" column (Tags/Reference: stage name, stored as JSON array)
- *   - genre          → "Genre" column (Text: music genre)
+ *   - title          → "Name" column (Artist name)
+ *   - id             → "Kezdő idő" column (Date/Time: set start time)
+ *   - id1            → "Vége idő" column (Date/Time: set end time)
+ *   - sznpad         → "Színpad" column (Tags/Reference: stage name)
+ *   - genre1         → "Genre" column (Text: music genre)
+ *   - website        → "Website" column (URL: artist page link)
  *
  * NOTE: The field IDs above use Wix's auto-generated camelCase format.
  * If your field IDs differ, check them in the CMS > Collection > Fields panel.
@@ -24,16 +24,16 @@ import wixData from 'wix-data';
  */
 export async function getLineup() {
   const results = await wixData.query("Team")
-    .ascending("kezdIdő")
+    .ascending("id")
     .limit(1000)
     .find();
 
   return results.items
-    .filter(item => item["kezdIdő"] && item["színpad"]) // Only include items with dates & stages
+    .filter(item => item["id"] && item["sznpad"]) // Only include items with dates & stages
     .map((item, index) => {
-      // Parse stage from JSON array format: '["Nagyszínpad"]' → "Nagyszínpad"
+      // Parse stage from the sznpad field (may be array or string)
       let stage = "";
-      const rawStage = item["színpad"];
+      const rawStage = item["sznpad"];
       if (Array.isArray(rawStage)) {
         stage = rawStage[0] || "";
       } else if (typeof rawStage === "string") {
@@ -45,18 +45,8 @@ export async function getLineup() {
         }
       }
 
-      // Parse the URL slug from the "Lineup (Item)" reference field
-      // This may be a string like "/lineup/analog-balaton" or an object with a url property
-      let url = "";
-      const rawLink = item["link-lineup-all-title"] || item["linkLineupAllTitle"];
-      if (typeof rawLink === "string") {
-        url = rawLink;
-      } else if (rawLink && typeof rawLink === "object" && rawLink.url) {
-        url = rawLink.url;
-      }
-
-      const startTime = item["kezdIdő"];
-      const endTime = item["végeIdő"];
+      const startTime = item["id"];
+      const endTime = item["id1"];
 
       return {
         id: item._id || `artist-${index}`,
@@ -64,8 +54,8 @@ export async function getLineup() {
         stage,
         startTime: startTime instanceof Date ? startTime.toISOString() : startTime,
         endTime: endTime instanceof Date ? endTime.toISOString() : endTime,
-        genre: item.genre || "",
-        url,
+        genre: item["genre1"] || "",
+        url: item["website"] || "",
       };
     });
 }
