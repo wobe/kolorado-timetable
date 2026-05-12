@@ -20,7 +20,6 @@ function saveFavourites(favs: Set<string>) {
 }
 
 // Extended artist type for CMS data fields
-// CMS field mapping: title→name, photo→photo, genre1→genre, id→startTime, id1→endTime, sznpad→stage, website→url, longDescription→description, jobTitle→nationality, youtubeLink2→youtubeLink, newField→soundcloudLink
 type ArtistExtended = Artist & {
   photo?: string;
   day?: string;
@@ -36,6 +35,118 @@ function HeartIcon({ filled, color }: { filled: boolean; color: string }) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
+  );
+}
+
+// ── Checkbox multi-select dropdown ────────────────────────────────────────
+function CheckboxDropdown({
+  label,
+  options,
+  selected,
+  onToggle,
+  onClear,
+  isOpen,
+  onToggleOpen,
+  dropdownRef,
+}: {
+  label: string;
+  options: Array<{ id: string; name: string }>;
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  onClear: () => void;
+  isOpen: boolean;
+  onToggleOpen: () => void;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const hasSelection = selected.size > 0;
+  const buttonLabel = hasSelection
+    ? selected.size === 1
+      ? options.find((o) => selected.has(o.id))?.name ?? label
+      : `${selected.size} kiválasztva`
+    : label;
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <button
+        onClick={onToggleOpen}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "6px 14px", borderRadius: 9999, fontSize: 13, cursor: "pointer",
+          fontFamily: "'Pacaembu', sans-serif", border: "none", transition: "all 0.15s",
+          background: hasSelection ? "#642CFF" : "rgba(100,44,255,0.12)",
+          color: hasSelection ? "#FEFFC0" : "#642CFF",
+        }}
+      >
+        <span style={{ fontSize: 10 }}>▼</span>
+        {buttonLabel}
+        {hasSelection && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            style={{
+              marginLeft: 2, width: 16, height: 16, borderRadius: "50%",
+              background: "rgba(255,255,255,0.3)", display: "inline-flex",
+              alignItems: "center", justifyContent: "center", fontSize: 11, lineHeight: 1,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0,
+          background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)",
+          minWidth: 200, zIndex: 100, overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(100,44,255,0.15)",
+        }}>
+          {options.map((opt) => {
+            const checked = selected.has(opt.id);
+            return (
+              <label
+                key={opt.id}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 14px", cursor: "pointer",
+                  background: checked ? "rgba(100,44,255,0.08)" : "transparent",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={(e) => { if (!checked) (e.currentTarget as HTMLElement).style.background = "rgba(100,44,255,0.04)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = checked ? "rgba(100,44,255,0.08)" : "transparent"; }}
+              >
+                {/* Custom checkbox */}
+                <span style={{
+                  width: 16, height: 16, border: `2px solid #642CFF`,
+                  borderRadius: 3, display: "inline-flex", alignItems: "center",
+                  justifyContent: "center", flexShrink: 0,
+                  background: checked ? "#642CFF" : "transparent",
+                  transition: "all 0.1s",
+                }}>
+                  {checked && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <polyline points="1.5,5 4,7.5 8.5,2" stroke="#FEFFC0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onToggle(opt.id)}
+                  style={{ display: "none" }}
+                />
+                <span style={{
+                  fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                  color: "#642CFF", fontWeight: checked ? 700 : 400,
+                }}>
+                  {opt.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -99,12 +210,10 @@ function ArtistPopup({
 
         {/* Info */}
         <div style={{ padding: "20px 24px 24px" }}>
-          {/* Name */}
           <h2 style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 24, textTransform: "uppercase", color: "#642CFF", marginBottom: 8, lineHeight: 1.1 }}>
             {artist.name}
           </h2>
 
-          {/* Tags */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {artist.stage && (
               <span style={{ padding: "3px 10px", background: "#642CFF", color: "#FEFFC0", fontFamily: "'Pacaembu', sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -123,14 +232,12 @@ function ArtistPopup({
             )}
           </div>
 
-          {/* Time */}
           {artist.startTime && artist.endTime && (
             <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#0E4B4D", marginBottom: 10 }}>
               {formatTime(artist.startTime)} – {formatTime(artist.endTime)}
             </p>
           )}
 
-          {/* Description */}
           {artist.description ? (
             <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.6, marginBottom: 16 }}>
               {artist.description}
@@ -141,7 +248,6 @@ function ArtistPopup({
             </p>
           )}
 
-          {/* Actions */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               onClick={onToggleFav}
@@ -184,17 +290,19 @@ function ArtistPopup({
 export default function LineupGrid() {
   const [, setLocation] = useLocation();
   const [favourites, setFavourites] = useState<Set<string>>(getFavourites);
-  const [selectedStage, setSelectedStage] = useState<string>("all");
-  const [selectedDay, setSelectedDay] = useState<string>("all");
+  // Multi-select: sets of selected IDs
+  const [selectedStages, setSelectedStages] = useState<Set<string>>(new Set());
+  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
   const [showFavOnly, setShowFavOnly] = useState(false);
   const [stageOpen, setStageOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [activeArtist, setActiveArtist] = useState<ArtistExtended | null>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const dayRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const dayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { saveFavourites(favourites); }, [favourites]);
 
+  // Close dropdowns on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (stageRef.current && !stageRef.current.contains(e.target as Node)) setStageOpen(false);
@@ -212,30 +320,36 @@ export default function LineupGrid() {
     });
   }
 
-  const artists = MOCK_ARTISTS as ArtistExtended[];
+  function toggleStage(id: string) {
+    setSelectedStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleDay(id: string) {
+    setSelectedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  // Sort alphabetically, then filter
+  const artists = [...(MOCK_ARTISTS as ArtistExtended[])].sort((a, b) =>
+    a.name.localeCompare(b.name, "hu", { sensitivity: "base" })
+  );
 
   const filtered = artists.filter((a) => {
     if (showFavOnly && !favourites.has(a.id)) return false;
-    if (selectedStage !== "all" && a.stage !== selectedStage) return false;
-    if (selectedDay !== "all" && a.day !== selectedDay) return false;
+    if (selectedStages.size > 0 && !selectedStages.has(a.stage)) return false;
+    if (selectedDays.size > 0 && a.day && !selectedDays.has(a.day)) return false;
     return true;
   });
 
-  const pillBase: React.CSSProperties = {
-    display: "inline-flex", alignItems: "center", gap: 6,
-    padding: "6px 14px", borderRadius: 9999, fontSize: 13, cursor: "pointer",
-    fontFamily: "'Pacaembu', sans-serif", border: "none", transition: "all 0.15s",
-  };
-
-  const stageOptions: Array<{ id: string; name: string }> = [
-    { id: "all", name: "Minden színpad" },
-    ...STAGES.map((s: Stage) => ({ id: s.id, name: s.name })),
-  ];
-
-  const dayOptions = [
-    { id: "all", name: "Minden nap" },
-    ...FESTIVAL_DAYS.map((d) => ({ id: d.id, name: d.label })),
-  ];
+  const stageOptions = STAGES.map((s: Stage) => ({ id: s.id, name: s.name }));
+  const dayOptions = FESTIVAL_DAYS.map((d) => ({ id: d.id, name: d.label }));
 
   return (
     <div style={{ minHeight: "100vh", background: "#FEFFC0" }}>
@@ -249,67 +363,37 @@ export default function LineupGrid() {
           display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
         }}
       >
-        {/* Stage filter */}
-        <div ref={stageRef} style={{ position: "relative" }}>
-          <button
-            onClick={() => { setStageOpen((o) => !o); setDayOpen(false); }}
-            style={{
-              ...pillBase,
-              background: selectedStage !== "all" ? "#642CFF" : "rgba(100,44,255,0.12)",
-              color: selectedStage !== "all" ? "#FEFFC0" : "#642CFF",
-            }}
-          >
-            <span style={{ fontSize: 10 }}>▼</span>
-            {selectedStage === "all" ? "Színpad" : selectedStage}
-          </button>
-          {stageOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)", minWidth: 180, zIndex: 100, overflow: "hidden" }}>
-              {stageOptions.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setSelectedStage(s.id === "all" ? "all" : s.name); setStageOpen(false); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedStage === (s.id === "all" ? "all" : s.name) ? "rgba(100,44,255,0.1)" : "transparent", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer", fontWeight: selectedStage === (s.id === "all" ? "all" : s.name) ? 700 : 400 }}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Stage filter — checkbox dropdown */}
+        <CheckboxDropdown
+          label="Színpad"
+          options={stageOptions}
+          selected={selectedStages}
+          onToggle={toggleStage}
+          onClear={() => setSelectedStages(new Set())}
+          isOpen={stageOpen}
+          onToggleOpen={() => { setStageOpen((o) => !o); setDayOpen(false); }}
+          dropdownRef={stageRef}
+        />
 
-        {/* Day filter */}
-        <div ref={dayRef} style={{ position: "relative" }}>
-          <button
-            onClick={() => { setDayOpen((o) => !o); setStageOpen(false); }}
-            style={{
-              ...pillBase,
-              background: selectedDay !== "all" ? "#642CFF" : "rgba(100,44,255,0.12)",
-              color: selectedDay !== "all" ? "#FEFFC0" : "#642CFF",
-            }}
-          >
-            <span style={{ fontSize: 10 }}>▼</span>
-            {selectedDay === "all" ? "Nap" : selectedDay}
-          </button>
-          {dayOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)", minWidth: 160, zIndex: 100, overflow: "hidden" }}>
-              {dayOptions.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => { setSelectedDay(d.id === "all" ? "all" : d.name); setDayOpen(false); }}
-                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 14px", background: selectedDay === (d.id === "all" ? "all" : d.name) ? "rgba(100,44,255,0.1)" : "transparent", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, border: "none", cursor: "pointer", fontWeight: selectedDay === (d.id === "all" ? "all" : d.name) ? 700 : 400 }}
-                >
-                  {d.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Day filter — checkbox dropdown */}
+        <CheckboxDropdown
+          label="Nap"
+          options={dayOptions}
+          selected={selectedDays}
+          onToggle={toggleDay}
+          onClear={() => setSelectedDays(new Set())}
+          isOpen={dayOpen}
+          onToggleOpen={() => { setDayOpen((o) => !o); setStageOpen(false); }}
+          dropdownRef={dayRef}
+        />
 
         {/* Kedvencek toggle */}
         <button
           onClick={() => setShowFavOnly((v) => !v)}
           style={{
-            ...pillBase,
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", borderRadius: 9999, fontSize: 13, cursor: "pointer",
+            fontFamily: "'Pacaembu', sans-serif", border: "none", transition: "all 0.15s",
             background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
             color: showFavOnly ? "white" : "#642CFF",
           }}
@@ -374,24 +458,7 @@ export default function LineupGrid() {
                 </div>
               )}
 
-              {/* Name overlay top-left — yellow bg, purple text */}
-              <div style={{
-                position: "absolute", top: 0, left: 0,
-                padding: "6px 10px",
-                background: "#FEFFC0",
-                maxWidth: "85%",
-              }}>
-                <span style={{
-                  fontFamily: "'SerialBlur', sans-serif",
-                  fontSize: 13, color: "#642CFF",
-                  textTransform: "uppercase", letterSpacing: "0.02em",
-                  lineHeight: 1.2, display: "block",
-                }}>
-                  {artist.name}
-                </span>
-              </div>
-
-              {/* Heart fav button bottom-right */}
+              {/* Heart fav button — bottom-right */}
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFav(artist.id); }}
                 style={{
@@ -402,10 +469,31 @@ export default function LineupGrid() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
                   transition: "all 0.15s",
+                  zIndex: 2,
                 }}
               >
                 <HeartIcon filled={fav} color={fav ? "white" : "#642CFF"} />
               </button>
+
+              {/* Name overlay — bottom-left, aligned with heart button */}
+              <div style={{
+                position: "absolute",
+                bottom: 10,
+                left: 10,
+                right: 56, // leave room for the heart button (36px + 10px gap + 10px margin)
+                padding: "4px 8px",
+                background: "#FEFFC0",
+              }}>
+                <span style={{
+                  fontFamily: "'SerialBlur', sans-serif",
+                  fontSize: 13, color: "#642CFF",
+                  textTransform: "uppercase", letterSpacing: "0.02em",
+                  lineHeight: 1.2, display: "block",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {artist.name}
+                </span>
+              </div>
             </div>
           );
         })}
