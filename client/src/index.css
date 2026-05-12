@@ -1,6 +1,33 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ============================================================
+   Kolorádó Festival Timetable — Global Styles
+   Typography:
+     - Serial Blur TRIAL: headlines, artist names → ALL CAPS
+     - Pacaembu Medium: everything else → regular caps
+   Design:
+     - No left-side colour borders on event blocks
+     - Sharp corners on all event blocks (no border-radius)
+     - Pill-shaped day selector buttons
+   ============================================================ */
+
+@font-face {
+  font-family: "SerialBlur";
+  src: url("/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pacaembu";
+  src: url("/manus-storage/Pacaembu-Medium_86abdf90.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -42,8 +69,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Kolorádó custom colors */
-  --font-display: "Quicksand", sans-serif;
-  --font-body: "DM Sans", sans-serif;
+  --font-display: "SerialBlur", sans-serif;
+  --font-body: "Pacaembu", sans-serif;
   --color-kolo-bg: #062322;
   --color-kolo-bg-light: #0a3533;
   --color-kolo-bg-lighter: #0e4845;
@@ -60,7 +87,7 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0rem; /* Sharp corners globally */
   --background: #062322;
   --foreground: #e8e6d8;
   --card: #0a3533;
@@ -137,10 +164,13 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "DM Sans", sans-serif;
+    font-family: "Pacaembu", sans-serif;
   }
+  /* Headlines and artist names use Serial Blur in ALL CAPS */
   h1, h2, h3, h4, h5, h6 {
-    font-family: "Quicksand", sans-serif;
+    font-family: "SerialBlur", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -192,11 +222,9 @@
 }
 .timetable-scroll::-webkit-scrollbar-track {
   background: #0a3533;
-  border-radius: 3px;
 }
 .timetable-scroll::-webkit-scrollbar-thumb {
   background: #1a6b66;
-  border-radius: 3px;
 }
 .timetable-scroll::-webkit-scrollbar-thumb:hover {
   background: #2a8b85;
@@ -211,12 +239,24 @@
   animation: nowPulse 2s ease-in-out infinite;
 }
 
-/* Artist block hover glow */
+/* Artist block hover glow — NO border-radius, no left border */
 .artist-block {
   transition: all 0.2s ease-out;
+  border-radius: 0 !important;
 }
 .artist-block:hover {
   box-shadow: 0 0 12px var(--color-kolo-lime-glow), 0 0 24px #dcea7522;
   transform: scale(1.01);
   z-index: 10;
+}
+
+/* Favourite pulse animation */
+@keyframes favPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.fav-pulse {
+  animation: favPulse 0.35s ease-out;
 }
