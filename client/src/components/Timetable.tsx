@@ -549,6 +549,20 @@ export default function Timetable() {
   const timeLabels = useMemo(() => getTimeLabels(), []);
   const totalHeight = (DAY_END_HOUR - DAY_START_HOUR) * hourHeight;
 
+  // Auto-scroll grid to first event of the active day
+  useEffect(() => {
+    if (viewMode !== "grid") return;
+    const firstArtist = MOCK_ARTISTS
+      .filter((a) => getFestivalDayId(a.startTime) === activeDay)
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())[0];
+    if (!firstArtist || !gridRef.current) return;
+    const startHour = toFestivalHour(firstArtist.startTime);
+    const scrollTop = Math.max(0, (startHour - DAY_START_HOUR) * hourHeight - 24);
+    // Use instant scroll on day change, smooth only on initial mount
+    gridRef.current.scrollTo({ top: scrollTop, behavior: "instant" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDay, viewMode, hourHeight]);
+
   const toggleFavourite = useCallback((id: string) => {
     setFavourites((prev) => {
       const next = new Set(prev);
