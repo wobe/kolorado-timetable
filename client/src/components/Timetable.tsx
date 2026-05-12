@@ -657,15 +657,13 @@ export default function Timetable() {
               <button
                 key={day.id}
                 onClick={() => setActiveDay(day.id)}
-                className={`relative flex-1 md:flex-none px-3 md:px-6 py-2 text-sm font-semibold transition-all duration-200 text-center ${
-                  activeDay === day.id
-                    ? "text-kolo-bg"
-                    : "text-foreground/50 hover:text-foreground/80 hover:bg-kolo-bg-light"
-                }`}
+                className={`relative flex-1 md:flex-none px-3 md:px-6 py-2 text-sm font-bold transition-all duration-200 text-center uppercase`}
                 style={{
                   borderRadius: "9999px",
-                  fontFamily: "'Pacaembu', sans-serif",
+                  fontFamily: "'SerialBlur', sans-serif",
+                  letterSpacing: "0.04em",
                   backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
+                  color: activeDay === day.id ? "#062322" : "#dcea75cc",
                 }}
               >
                 <span className="hidden md:inline">{day.label}</span>
