@@ -794,10 +794,6 @@
     return KoloradoTimetable;
   })();
 
-  // Extend HTMLElement properly
-  KoloradoTimetable.prototype = Object.create(HTMLElement.prototype);
-  KoloradoTimetable.prototype.constructor = KoloradoTimetable;
-
   if (!customElements.get("kolorado-timetable")) {
     customElements.define("kolorado-timetable", KoloradoTimetable);
   }
