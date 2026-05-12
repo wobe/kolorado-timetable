@@ -969,12 +969,7 @@ export default function Timetable() {
                       >
                         <Heart size={18} fill={isFav ? "#e86b5a" : "none"} />
                       </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); downloadICS(artist); }}
-                        className="p-2.5 text-muted-foreground"
-                      >
-                        <CalendarPlus size={16} />
-                      </button>
+
                     </div>
                   </div>
                 );
