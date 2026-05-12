@@ -246,9 +246,10 @@ function SearchPanel({
     <motion.div
       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 bg-kolo-bg/98 backdrop-blur-md"
-    >
-      <div className="container py-3">
+          className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 backdrop-blur-md"
+          style={{ backgroundColor: "#062322f8" }}
+      >
+        <div className="container py-3">
         <div className="flex items-center gap-2 mb-3">
           <div className="flex items-center gap-2 flex-1 px-3 py-2 border border-kolo-teal/30 bg-kolo-bg-light" style={{ borderRadius: 0 }}>
             <Search size={15} className="text-muted-foreground shrink-0" />
@@ -344,7 +345,8 @@ function KedvencekPanel({
     <motion.div
       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 bg-kolo-bg/98 backdrop-blur-md"
+          className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 backdrop-blur-md"
+          style={{ backgroundColor: "#062322f8" }}
     >
       <div className="container py-4">
         {/* Header row */}
@@ -468,8 +470,8 @@ function FilterDropdown({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.12 }}
-      className="absolute right-0 top-full mt-1 z-50 min-w-[200px] bg-kolo-bg border border-kolo-teal/30 shadow-xl"
-      style={{ borderRadius: 0 }}
+          className="absolute right-0 top-full mt-1 z-50 min-w-[200px] border border-kolo-teal/30 shadow-xl"
+          style={{ backgroundColor: "#062322", borderRadius: 0 }}
     >
       {/* Csak a kedvenceim */}
       <button
@@ -701,23 +703,23 @@ export default function Timetable() {
   const hasActiveFilters = filterFavourites || activeStages.size < STAGES.length;
 
   return (
-    <div className="w-full min-h-screen bg-kolo-bg">
+    <div className="w-full min-h-screen" style={{ backgroundColor: "#0E4B4D" }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-kolo-bg/95 backdrop-blur-md border-b border-kolo-teal/20">
+      <header className="sticky top-0 z-40 backdrop-blur-md border-b border-kolo-teal/20" style={{ backgroundColor: "#062322f5" }}>
         <div className="container pt-3 pb-2">
 
           {/* ── ROW 1: Day tabs ── */}
-          <div className="flex gap-1.5 mb-2">
+          <div className="flex gap-1.5 mb-2 md:justify-center">
             {FESTIVAL_DAYS.map((day) => (
               <button
                 key={day.id}
                 onClick={() => setActiveDay(day.id)}
-                className="relative flex-1 md:flex-none px-3 md:px-6 py-2 md:py-2 text-sm font-bold transition-all duration-200 text-center uppercase"
+                className="relative flex-1 md:flex-none px-3 md:px-10 py-2 md:py-3 font-bold transition-all duration-200 text-center uppercase"
                 style={{
                   borderRadius: "9999px",
                   fontFamily: "'SerialBlur', sans-serif",
-                  letterSpacing: "0.04em",
-                  fontSize: isMobile ? "13px" : "14px",
+                  letterSpacing: "0.05em",
+                  fontSize: isMobile ? "13px" : "17px",
                   backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
                   color: activeDay === day.id ? "#062322" : "#dcea75cc",
                 }}
@@ -867,30 +869,7 @@ export default function Timetable() {
             </div>
           </div>
 
-          {/* Desktop: stage filter pills always visible */}
-          <div className="hidden md:flex flex-wrap gap-1.5 mt-1">
-            {STAGES.map((stage) => {
-              const isActive = activeStages.has(stage.id);
-              return (
-                <button
-                  key={stage.id}
-                  onClick={() => toggleStage(stage.id)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-all"
-                  style={{
-                    borderRadius: "9999px",
-                    backgroundColor: isActive ? `${stage.color}22` : "transparent",
-                    borderWidth: "1px",
-                    borderColor: isActive ? `${stage.color}66` : "#1a6b6630",
-                    color: isActive ? stage.color : "#7a9e9b",
-                    fontFamily: "'Pacaembu', sans-serif",
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: isActive ? stage.color : "#7a9e9b44" }} />
-                  {stage.name}
-                </button>
-              );
-            })}
-          </div>
+          {/* Desktop stage pills removed — use filter dropdown instead */}
         </div>
 
         {/* Search results panel (desktop) */}

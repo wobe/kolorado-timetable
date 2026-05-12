@@ -71,9 +71,10 @@
   /* Kolorádó custom colors */
   --font-display: "SerialBlur", sans-serif;
   --font-body: "Pacaembu", sans-serif;
-  --color-kolo-bg: #062322;
+  --color-kolo-bg: #0E4B4D;
   --color-kolo-bg-light: #0a3533;
-  --color-kolo-bg-lighter: #0e4845;
+  --color-kolo-bg-lighter: #062322;
+  --color-kolo-header: #062322;
   --color-kolo-lime: #dcea75;
   --color-kolo-lime-dim: #b8c45f;
   --color-kolo-lime-glow: #dcea7566;
@@ -88,7 +89,7 @@
 
 :root {
   --radius: 0rem; /* Sharp corners globally */
-  --background: #062322;
+  --background: #0E4B4D;
   --foreground: #e8e6d8;
   --card: #0a3533;
   --card-foreground: #e8e6d8;
@@ -124,7 +125,7 @@
 
 /* Dark theme is the default and only theme for Kolorádó */
 .dark {
-  --background: #062322;
+  --background: #0E4B4D;
   --foreground: #e8e6d8;
   --card: #0a3533;
   --card-foreground: #e8e6d8;
