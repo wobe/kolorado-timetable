@@ -234,24 +234,25 @@ function NowLineOverlay({ hourHeight }: { hourHeight: number }) {
 // ---- Search panel ----
 
 function SearchPanel({
-  query, onQueryChange, results, stages, favourites, onToggleFavourite, onClose,
+  query, onQueryChange, results, stages, favourites, onToggleFavourite, onClose, onJumpTo,
 }: {
   query: string; onQueryChange: (q: string) => void; results: Artist[];
-  stages: Stage[]; favourites: Set<string>; onToggleFavourite: (id: string) => void; onClose: () => void;
+  stages: Stage[]; favourites: Set<string>; onToggleFavourite: (id: string) => void;
+  onClose: () => void; onJumpTo: (artist: Artist) => void;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-          className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 backdrop-blur-md"
-          style={{ backgroundColor: "#062322f8" }}
-      >
-        <div className="container py-3">
+      className="absolute top-full left-0 right-0 z-50 border-b border-kolo-teal/20 backdrop-blur-md"
+      style={{ backgroundColor: "#062322f8" }}
+    >
+      <div className="container py-3">
         {query.length > 0 && (
           <div className="max-h-64 overflow-y-auto space-y-0.5">
             {results.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
-                Nincs találat: „{query}"
+                Nincs találat: „{query}”
               </p>
             ) : (
               results.map((artist) => {
@@ -262,7 +263,7 @@ function SearchPanel({
                   <div
                     key={artist.id}
                     className="flex items-center gap-3 px-3 py-2 hover:bg-kolo-bg-light transition-colors cursor-pointer group/row"
-                    onClick={() => window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer")}
+                    onClick={() => { onJumpTo(artist); onClose(); }}
                   >
                     <div className="w-1 h-8 shrink-0" style={{ backgroundColor: color }} />
                     <div className="flex-1 min-w-0">
@@ -274,14 +275,21 @@ function SearchPanel({
                         {artist.genre && ` · ${artist.genre}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 shrink-0">
                       <button
                         onClick={(e) => { e.stopPropagation(); onToggleFavourite(artist.id); }}
                         className="p-1.5 transition-colors"
-                        style={{ color: isFav ? "#e86b5a" : undefined }}
+                        style={{ color: isFav ? "#e86b5a" : "#7a9e9b" }}
                         title={isFav ? "Eltávolítás" : "Kedvencekhez"}
                       >
-                        <Heart size={13} fill={isFav ? "#e86b5a" : "none"} className={isFav ? "" : "text-muted-foreground"} />
+                        <Heart size={13} fill={isFav ? "#e86b5a" : "none"} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer"); }}
+                        className="p-1.5 transition-colors text-muted-foreground hover:text-kolo-lime"
+                        title="Előadó oldala"
+                      >
+                        <ExternalLink size={13} />
                       </button>
                     </div>
                   </div>
@@ -565,15 +573,15 @@ export default function Timetable() {
   const visibleArtists = useMemo(() => {
     return MOCK_ARTISTS.filter((a) => {
       if (getFestivalDayId(a.startTime) !== activeDay) return false;
+      // Note: search does NOT filter the calendar — it only populates the search panel
       const stageObj = STAGES.find((s) => s.name === a.stage);
       if (!stageObj || !activeStages.has(stageObj.id)) return false;
       if (filterFavourites && !favourites.has(a.id)) return false;
-      if (searchMatchIds && !searchMatchIds.has(a.id)) return false;
       return true;
     });
-  }, [activeDay, activeStages, filterFavourites, favourites, searchMatchIds]);
+  }, [activeDay, activeStages, filterFavourites, favourites]);
 
-  const isFiltering = filterFavourites || (searchMatchIds !== null && searchMatchIds.size > 0);
+  const isFiltering = filterFavourites;
 
   const visibleStages = useMemo(() => {
     const allActive = STAGES.filter((s) => activeStages.has(s.id));
@@ -873,6 +881,7 @@ export default function Timetable() {
               favourites={favourites}
               onToggleFavourite={toggleFavourite}
               onClose={() => { setShowSearch(false); setSearchQuery(""); }}
+              onJumpTo={jumpToArtist}
             />
           )}
         </AnimatePresence>
