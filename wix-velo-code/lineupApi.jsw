@@ -5,22 +5,27 @@
 // ============================================================
 
 import wixData from 'wix-data';
+import { getImageUrl } from 'wix-media-backend';
 
 /**
- * Fetch all lineup items from the "Lineup" CMS collection.
+ * Fetch all lineup items from the "Team" CMS collection.
  * Returns an array of artist objects formatted for the Custom Element.
- * 
- * CMS field IDs (from your Wix Content Manager):
- *   - title          → "Name" column (Artist name)
- *   - id             → "Kezdő idő" column (Date/Time: set start time)
- *   - id1            → "Vége idő" column (Date/Time: set end time)
- *   - sznpad         → "Színpad" column (Tags/Reference: stage name)
- *   - genre1         → "Genre" column (Text: music genre)
- *   - website        → "Website" column (URL: artist page link)
+ *
+ * CMS field IDs (from your Wix Content Manager — "Team" collection):
+ *   - title          → Artist name
+ *   - photo          → Artist photo (wix:image:// URI — converted to https:// below)
+ *   - id             → "Kezdő idő" — start time (Date/Time field)
+ *   - id1            → "Vége idő"  — end time (Date/Time field)
+ *   - sznpad         → "Színpad"   — stage name (Tags/Reference)
+ *   - genre1         → Genre (Text)
+ *   - website        → Artist website / Kolorádó artist page URL
+ *   - longDescription → Artist bio
+ *   - jobTitle       → Nationality
+ *   - youtubeLink2   → YouTube link
+ *   - newField       → Soundcloud link
  *
  * NOTE: The field IDs above use Wix's auto-generated camelCase format.
  * If your field IDs differ, check them in the CMS > Collection > Fields panel.
- * You can also use the Wix Data API's listDataItems() to inspect actual field keys.
  */
 export async function getLineup() {
   const results = await wixData.query("Team")
@@ -48,14 +53,32 @@ export async function getLineup() {
       const startTime = item["id"];
       const endTime = item["id1"];
 
+      // Convert wix:image:// URI to a real public https:// URL.
+      // getImageUrl() is only available in the Wix backend (jsw files) — it
+      // resolves the proprietary URI to https://static.wixstatic.com/...
+      let photoUrl = "";
+      if (item["photo"]) {
+        try {
+          photoUrl = getImageUrl(item["photo"]);
+        } catch (e) {
+          // Fallback: if the field already contains a plain https:// URL, use it as-is
+          photoUrl = item["photo"];
+        }
+      }
+
       return {
         id: item._id || `artist-${index}`,
         name: item.title || "",
+        photo: photoUrl,
         stage,
         startTime: startTime instanceof Date ? startTime.toISOString() : startTime,
         endTime: endTime instanceof Date ? endTime.toISOString() : endTime,
         genre: item["genre1"] || "",
         url: item["website"] || "",
+        bio: item["longDescription"] || "",
+        nationality: item["jobTitle"] || "",
+        youtube: item["youtubeLink2"] || "",
+        soundcloud: item["newField"] || "",
       };
     });
 }
