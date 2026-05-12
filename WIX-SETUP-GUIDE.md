@@ -1,4 +1,4 @@
-# Kolorádó Timetable — Wix Integration Guide
+# Kolorádó Festival Timetable — Wix Setup Guide (v2)
 
 This document explains how to connect the interactive festival timetable to your Wix site's CMS (Content Manager) using Velo by Wix and the Custom Element feature. The timetable is a self-contained web component that reads lineup data from your CMS and renders an interactive, filterable schedule grid.
 
