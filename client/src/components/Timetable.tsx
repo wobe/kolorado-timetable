@@ -438,7 +438,7 @@ function KedvencekPanel({
 
         {/* Disclaimer */}
         <p className="text-[10px] text-muted-foreground/60 border-t border-kolo-teal/15 pt-2 leading-relaxed" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
-          A kedvencek böngészőben tárolódnak, nem szinkronizálnak eszközök között. Más böngészőhöz a megosztás linkkel add hozzá.
+          A kedvenceid a böngésződben tárolódnak és nem szinkronizálódnak az eszközeid között. A Megosztás linkkel be tudod másolni a kedvenceidet más böngészőbe.
         </p>
       </div>
     </motion.div>
