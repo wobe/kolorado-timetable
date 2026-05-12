@@ -169,7 +169,7 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
           </p>
         )}
         <div className="flex gap-1.5 mt-0.5 items-center">
-          {/* Favourite — prominent */}
+          {/* Favourite — only action on hover */}
           <button
             onClick={handleFavClick}
             className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${favAnimating ? "fav-pulse" : ""}`}
@@ -184,17 +184,6 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
             <Heart size={12} fill={isFavourite ? "#fff" : "none"} />
             {isFavourite ? "Kedvenc" : "Kedvencnek"}
           </button>
-          {/* Calendar — subtle icon-only */}
-          {!isTiny && (
-            <button
-              onClick={handleCalendarClick}
-              className="p-1.5 transition-all hover:scale-105 active:scale-95"
-              style={{ color: "#062322aa" }}
-              title="Naptárba"
-            >
-              <CalendarPlus size={13} />
-            </button>
-          )}
         </div>
       </div>
     </motion.div>
@@ -294,10 +283,10 @@ function SearchPanel({
           </div>
           <button
             onClick={onClose}
-            className="px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            style={{ fontFamily: "'Pacaembu', sans-serif" }}
+            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            title="Bezár"
           >
-            Bezár
+            <X size={16} />
           </button>
         </div>
 
@@ -371,6 +360,7 @@ function ListamPanel({
   onToggleFavourite,
   onClose,
   onJumpTo,
+  onExportAll,
 }: {
   favourites: Set<string>;
   allArtists: Artist[];
@@ -378,6 +368,7 @@ function ListamPanel({
   onToggleFavourite: (id: string) => void;
   onClose: () => void;
   onJumpTo: (artist: Artist) => void;
+  onExportAll: () => void;
 }) {
   const favArtists = useMemo(
     () => allArtists.filter((a) => favourites.has(a.id)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
@@ -411,10 +402,10 @@ function ListamPanel({
           </h2>
           <button
             onClick={onClose}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            style={{ fontFamily: "'Pacaembu', sans-serif" }}
+            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            title="Bezár"
           >
-            Bezár
+            <X size={16} />
           </button>
         </div>
 
@@ -423,79 +414,83 @@ function ListamPanel({
             Még nincs kedvenc. Kattints a ♥ gombra egy előadónál.
           </p>
         ) : (
-          <div className="max-h-72 overflow-y-auto space-y-4">
-            {FESTIVAL_DAYS.filter((d) => byDay.has(d.id)).map((day) => (
-              <div key={day.id}>
-                <p
-                  className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5"
-                  style={{ fontFamily: "'Pacaembu', sans-serif" }}
-                >
-                  {day.label}
-                </p>
-                <div className="space-y-0.5">
-                  {byDay.get(day.id)!.map((artist) => {
-                    const stage = stages.find((s) => s.name === artist.stage);
-                    const color = stage?.color || "#dcea75";
-                    return (
-                      <div
-                        key={artist.id}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-kolo-bg-light transition-colors group/row"
-                      >
-                        <div className="w-1 h-8 shrink-0" style={{ backgroundColor: color }} />
-                        {/* Name — click jumps to slot in grid */}
-                        <button
-                          className="flex-1 min-w-0 text-left"
-                          onClick={() => { onJumpTo(artist); onClose(); }}
+          <div className="space-y-4">
+            <div className="max-h-72 overflow-y-auto space-y-4">
+              {FESTIVAL_DAYS.filter((d) => byDay.has(d.id)).map((day) => (
+                <div key={day.id}>
+                  <p
+                    className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5"
+                    style={{ fontFamily: "'Pacaembu', sans-serif" }}
+                  >
+                    {day.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {byDay.get(day.id)!.map((artist) => {
+                      const stage = stages.find((s) => s.name === artist.stage);
+                      const color = stage?.color || "#dcea75";
+                      return (
+                        <div
+                          key={artist.id}
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-kolo-bg-light transition-colors group/row"
                         >
-                          <p
-                            className="text-sm font-semibold uppercase truncate hover:underline underline-offset-2"
-                            style={{ color, fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.03em" }}
-                          >
-                            {artist.name}
-                          </p>
-                          <p
-                            className="text-[11px] text-muted-foreground"
-                            style={{ fontFamily: "'Pacaembu', sans-serif" }}
-                          >
-                            {formatTime(artist.startTime)}–{formatTime(artist.endTime)} · {artist.stage}
-                          </p>
-                        </button>
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          {/* Open artist page on kolorado.hu */}
-                          <a
-                            href={getArtistPageUrl(artist)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
-                            title="Előadó oldala"
-                          >
-                            <ExternalLink size={13} />
-                          </a>
-                          {/* Calendar — subtle */}
+                          <div className="w-1 h-8 shrink-0" style={{ backgroundColor: color }} />
                           <button
-                            onClick={(e) => { e.stopPropagation(); downloadICS(artist); }}
-                            className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors opacity-0 group-hover/row:opacity-100"
-                            title="Naptárba"
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => { onJumpTo(artist); onClose(); }}
                           >
-                            <CalendarPlus size={13} />
+                            <p
+                              className="text-sm font-semibold uppercase truncate hover:underline underline-offset-2"
+                              style={{ color, fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.03em" }}
+                            >
+                              {artist.name}
+                            </p>
+                            <p
+                              className="text-[11px] text-muted-foreground"
+                              style={{ fontFamily: "'Pacaembu', sans-serif" }}
+                            >
+                              {formatTime(artist.startTime)}–{formatTime(artist.endTime)} · {artist.stage}
+                            </p>
                           </button>
-                          {/* Remove favourite */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onToggleFavourite(artist.id); }}
-                            className="p-1.5 text-kolo-coral transition-colors"
-                            title="Eltávolítás"
-                          >
-                            <Heart size={13} fill="#e86b5a" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <a
+                              href={getArtistPageUrl(artist)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
+                              title="Előadó oldala"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onToggleFavourite(artist.id); }}
+                              className="p-1.5 text-kolo-coral transition-colors"
+                              title="Eltávolítás"
+                            >
+                              <Heart size={13} fill="#e86b5a" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="pt-3 border-t border-kolo-teal/20">
+              <button
+                onClick={onExportAll}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border border-kolo-teal/30 hover:border-kolo-lime/40 hover:text-kolo-lime transition-all"
+                style={{
+                  borderRadius: 0,
+                  color: "#7a9e9b",
+                  fontFamily: "'Pacaembu', sans-serif",
+                }}
+              >
+                <CalendarPlus size={15} />
+                Mentés naptárba
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -608,6 +603,15 @@ export default function Timetable() {
     });
   }, []);
 
+  // Export all favourites as individual ICS downloads
+  const exportAllFavourites = useCallback(() => {
+    const favArtists = MOCK_ARTISTS.filter((a) => favourites.has(a.id));
+    favArtists.forEach((artist, i) => {
+      // Stagger downloads slightly so browser doesn't block them
+      setTimeout(() => downloadICS(artist), i * 120);
+    });
+  }, [favourites]);
+
   // Jump to an artist's slot: switch to their day, then scroll the grid to their time position
   const jumpToArtist = useCallback((artist: Artist) => {
     const dayId = getFestivalDayId(artist.startTime);
@@ -630,13 +634,23 @@ export default function Timetable() {
   }, [hourHeight]);
 
   const handleSearchOpen = () => {
-    setShowListam(false);
-    setShowSearch(true);
+    if (showSearch) {
+      setShowSearch(false);
+      setSearchQuery("");
+    } else {
+      setShowListam(false);
+      setShowSearch(true);
+    }
   };
 
   const handleListamOpen = () => {
-    setShowSearch(false);
-    setShowListam(true);
+    if (showListam) {
+      setShowListam(false);
+    } else {
+      setShowSearch(false);
+      setSearchQuery("");
+      setShowListam(true);
+    }
   };
 
   // Sorted visible artists for list view
@@ -898,6 +912,7 @@ export default function Timetable() {
               onToggleFavourite={toggleFavourite}
               onClose={() => setShowListam(false)}
               onJumpTo={jumpToArtist}
+              onExportAll={exportAllFavourites}
             />
           )}
         </AnimatePresence>
