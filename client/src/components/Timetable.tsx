@@ -15,7 +15,7 @@
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { CalendarPlus, ChevronDown, Filter, ExternalLink, Search, Heart, X, Star } from "lucide-react";
+import { CalendarPlus, ChevronDown, Filter, ExternalLink, Search, Heart, X, Star, LayoutGrid, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   type Artist,
@@ -517,6 +517,7 @@ export default function Timetable() {
   const [showListam, setShowListam] = useState(false);
   const [filterFavourites, setFilterFavourites] = useState(false);
   const [favourites, setFavourites] = useState<Set<string>>(() => readFavouritesFromCookie());
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const gridRef = useRef<HTMLDivElement>(null);
   // Map of artistId → block DOM ref for scroll-to
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -638,46 +639,157 @@ export default function Timetable() {
     setShowListam(true);
   };
 
+  // Sorted visible artists for list view
+  const sortedVisibleArtists = useMemo(
+    () => [...visibleArtists].sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
+    [visibleArtists]
+  );
+
   return (
     <div className="w-full min-h-screen bg-kolo-bg">
       {/* Header — no title, just controls */}
       <header className="sticky top-0 z-40 bg-kolo-bg/95 backdrop-blur-md border-b border-kolo-teal/20">
-        <div className="container py-3">
-          {/* Controls row */}
-          <div className="flex items-center justify-between mb-3">
-            {/* Day tabs — pill-shaped */}
-            <div className="flex gap-1.5">
-              {FESTIVAL_DAYS.map((day) => (
-                <button
-                  key={day.id}
-                  onClick={() => setActiveDay(day.id)}
-                  className={`relative px-4 md:px-6 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                    activeDay === day.id
-                      ? "text-kolo-bg"
-                      : "text-foreground/50 hover:text-foreground/80 hover:bg-kolo-bg-light"
-                  }`}
-                  style={{
-                    borderRadius: "9999px",
-                    fontFamily: "'Pacaembu', sans-serif",
-                    backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
-                  }}
-                >
-                  <span className="hidden md:inline">{day.label}</span>
-                  <span className="md:hidden">{day.shortLabel}</span>
-                  {activeDay === day.id && (
-                    <motion.div
-                      layoutId="dayIndicator"
-                      className="absolute inset-0 bg-kolo-lime -z-10"
-                      style={{ borderRadius: "9999px" }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
+        <div className="container pt-3 pb-2">
 
-            {/* Right controls */}
-            <div className="flex items-center gap-2">
+          {/* ── ROW 1 (all screens): Day tabs ── */}
+          <div className="flex gap-1.5 mb-2">
+            {FESTIVAL_DAYS.map((day) => (
+              <button
+                key={day.id}
+                onClick={() => setActiveDay(day.id)}
+                className={`relative flex-1 md:flex-none px-3 md:px-6 py-2 text-sm font-semibold transition-all duration-200 text-center ${
+                  activeDay === day.id
+                    ? "text-kolo-bg"
+                    : "text-foreground/50 hover:text-foreground/80 hover:bg-kolo-bg-light"
+                }`}
+                style={{
+                  borderRadius: "9999px",
+                  fontFamily: "'Pacaembu', sans-serif",
+                  backgroundColor: activeDay === day.id ? "#dcea75" : "transparent",
+                }}
+              >
+                <span className="hidden md:inline">{day.label}</span>
+                <span className="md:hidden">{day.shortLabel}</span>
+                {activeDay === day.id && (
+                  <motion.div
+                    layoutId="dayIndicator"
+                    className="absolute inset-0 bg-kolo-lime -z-10"
+                    style={{ borderRadius: "9999px" }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── ROW 2 (mobile only): Kedvencek + Listám ── */}
+          <div className="flex gap-2 mb-2 md:hidden">
+            {/* Favourite filter toggle */}
+            <button
+              onClick={() => setFilterFavourites((v) => !v)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border transition-all"
+              style={{
+                borderRadius: "9999px",
+                borderColor: filterFavourites ? "#e86b5a88" : "#1a6b6660",
+                color: filterFavourites ? "#e86b5a" : "#7a9e9b",
+                backgroundColor: filterFavourites ? "#e86b5a18" : "transparent",
+                fontFamily: "'Pacaembu', sans-serif",
+              }}
+            >
+              <Heart size={15} fill={filterFavourites ? "#e86b5a" : "none"} />
+              Kedvencek
+            </button>
+            {/* Listám button */}
+            <button
+              onClick={handleListamOpen}
+              className="relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border transition-all"
+              style={{
+                borderRadius: "9999px",
+                borderColor: showListam ? "#dcea7566" : "#1a6b6660",
+                color: showListam ? "#dcea75" : "#7a9e9b",
+                backgroundColor: showListam ? "#dcea7518" : "transparent",
+                fontFamily: "'Pacaembu', sans-serif",
+              }}
+            >
+              <Star size={15} fill={showListam ? "#dcea75" : "none"} />
+              Listám
+              {favourites.size > 0 && (
+                <span
+                  className="w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-kolo-coral text-white"
+                  style={{ borderRadius: "9999px" }}
+                >
+                  {favourites.size}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* ── ROW 3 (mobile only): Search + Stage filter + View toggle ── */}
+          <div className="flex gap-2 mb-2 md:hidden">
+            {/* Search */}
+            <button
+              onClick={handleSearchOpen}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border transition-all"
+              style={{
+                borderRadius: "9999px",
+                borderColor: showSearch ? "#dcea7566" : "#1a6b6660",
+                color: showSearch ? "#dcea75" : "#7a9e9b",
+                backgroundColor: showSearch ? "#dcea7518" : "transparent",
+                fontFamily: "'Pacaembu', sans-serif",
+              }}
+            >
+              <Search size={15} />
+              Keresés
+            </button>
+            {/* Stage filter toggle */}
+            <button
+              onClick={() => setShowStageFilter(!showStageFilter)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold border transition-all"
+              style={{
+                borderRadius: "9999px",
+                borderColor: showStageFilter ? "#dcea7566" : "#1a6b6660",
+                color: showStageFilter ? "#dcea75" : "#7a9e9b",
+                backgroundColor: showStageFilter ? "#dcea7518" : "transparent",
+                fontFamily: "'Pacaembu', sans-serif",
+              }}
+            >
+              <Filter size={15} />
+              Színpadok
+              <ChevronDown size={13} className={`transition-transform ${showStageFilter ? "rotate-180" : ""}`} />
+            </button>
+            {/* Grid / List view toggle */}
+            <div
+              className="flex border overflow-hidden shrink-0"
+              style={{ borderRadius: "9999px", borderColor: "#1a6b6660" }}
+            >
+              <button
+                onClick={() => setViewMode("grid")}
+                className="flex items-center justify-center w-10 h-10 transition-all"
+                style={{
+                  backgroundColor: viewMode === "grid" ? "#dcea7522" : "transparent",
+                  color: viewMode === "grid" ? "#dcea75" : "#7a9e9b",
+                }}
+                title="Naptár nézet"
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className="flex items-center justify-center w-10 h-10 transition-all"
+                style={{
+                  backgroundColor: viewMode === "list" ? "#dcea7522" : "transparent",
+                  color: viewMode === "list" ? "#dcea75" : "#7a9e9b",
+                }}
+                title="Lista nézet"
+              >
+                <List size={15} />
+              </button>
+            </div>
+          </div>
+
+          {/* ── DESKTOP row: all controls in one line ── */}
+          <div className="hidden md:flex items-center justify-between mb-2">
+            <div className="flex gap-1.5">
               {/* Favourite filter toggle */}
               <button
                 onClick={() => setFilterFavourites((v) => !v)}
@@ -689,13 +801,10 @@ export default function Timetable() {
                   backgroundColor: filterFavourites ? "#e86b5a18" : "transparent",
                   fontFamily: "'Pacaembu', sans-serif",
                 }}
-                title="Szűrés kedvencekre"
               >
                 <Heart size={13} fill={filterFavourites ? "#e86b5a" : "none"} />
-                <span className="hidden sm:inline">Kedvencek</span>
+                Kedvencek
               </button>
-
-              {/* Listám button */}
               <button
                 onClick={handleListamOpen}
                 className="relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-all"
@@ -706,10 +815,9 @@ export default function Timetable() {
                   backgroundColor: showListam ? "#dcea7518" : "transparent",
                   fontFamily: "'Pacaembu', sans-serif",
                 }}
-                title="Listám"
               >
                 <Star size={13} fill={showListam ? "#dcea75" : "none"} />
-                <span className="hidden sm:inline">Listám</span>
+                Listám
                 {favourites.size > 0 && (
                   <span
                     className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-kolo-coral text-white"
@@ -719,8 +827,8 @@ export default function Timetable() {
                   </span>
                 )}
               </button>
-
-              {/* Search button */}
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleSearchOpen}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-all"
@@ -733,22 +841,7 @@ export default function Timetable() {
                 }}
               >
                 <Search size={13} />
-                <span className="hidden sm:inline">Keresés</span>
-              </button>
-
-              {/* Mobile stage filter toggle */}
-              <button
-                onClick={() => setShowStageFilter(!showStageFilter)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border transition-all md:hidden"
-                style={{
-                  borderRadius: "9999px",
-                  borderColor: "#1a6b6660",
-                  color: "#dcea75",
-                  fontFamily: "'Pacaembu', sans-serif",
-                }}
-              >
-                <Filter size={14} />
-                <ChevronDown size={12} className={`transition-transform ${showStageFilter ? "rotate-180" : ""}`} />
+                Keresés
               </button>
             </div>
           </div>
@@ -812,8 +905,75 @@ export default function Timetable() {
         </AnimatePresence>
       </header>
 
-      {/* Grid */}
-      <div className="container pb-8">
+      {/* ── Mobile List View (when viewMode=list) ── */}
+      {isMobile && viewMode === "list" && (
+        <div className="container pb-12">
+          {visibleArtists.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
+                {filterFavourites ? "Ezen a napon nincs kedvenc előadód." : "Ezen a napon nincs program."}
+              </p>
+              <button
+                onClick={() => { setActiveStages(new Set(STAGES.map((s) => s.id))); setFilterFavourites(false); }}
+                className="mt-3 text-xs text-kolo-lime underline underline-offset-2"
+                style={{ fontFamily: "'Pacaembu', sans-serif" }}
+              >
+                Összes program mutatása
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-0.5 pt-3">
+              {sortedVisibleArtists.map((artist) => {
+                const stage = STAGES.find((s) => s.name === artist.stage);
+                const color = stage?.color || "#dcea75";
+                const isFav = favourites.has(artist.id);
+                return (
+                  <div
+                    key={artist.id}
+                    className="flex items-center gap-3 p-3 cursor-pointer transition-all hover:bg-kolo-bg-light active:bg-kolo-bg-lighter"
+                    style={{ borderRadius: 0 }}
+                    onClick={() => window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer")}
+                  >
+                    <div className="w-1 h-12 shrink-0" style={{ backgroundColor: color }} />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-semibold text-base truncate uppercase"
+                        style={{ color, fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.03em" }}
+                      >
+                        {artist.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5" style={{ fontFamily: "'Pacaembu', sans-serif" }}>
+                        {formatTime(artist.startTime)}–{formatTime(artist.endTime)}
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: `${color}88`, fontFamily: "'Pacaembu', sans-serif" }}>
+                        {artist.stage}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavourite(artist.id); }}
+                        className="p-2.5 transition-colors"
+                        style={{ color: isFav ? "#e86b5a" : "#7a9e9b" }}
+                      >
+                        <Heart size={18} fill={isFav ? "#e86b5a" : "none"} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); downloadICS(artist); }}
+                        className="p-2.5 text-muted-foreground"
+                      >
+                        <CalendarPlus size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Grid (hidden on mobile when list view is active) */}
+      <div className={`container pb-8 ${isMobile && viewMode === "list" ? "hidden" : ""}`}>
         <div
           ref={gridRef}
           className="timetable-scroll overflow-x-auto overflow-y-auto mt-4 border border-kolo-teal/15"
@@ -951,102 +1111,8 @@ export default function Timetable() {
         )}
       </div>
 
-      {/* Mobile list view */}
-      {isMobile && visibleArtists.length > 0 && (
-        <MobileListView
-          artists={visibleArtists}
-          stages={STAGES}
-          favourites={favourites}
-          onToggleFavourite={toggleFavourite}
-        />
-      )}
     </div>
   );
 }
 
-// ---- Mobile List View ----
 
-function MobileListView({
-  artists,
-  stages,
-  favourites,
-  onToggleFavourite,
-}: {
-  artists: Artist[];
-  stages: Stage[];
-  favourites: Set<string>;
-  onToggleFavourite: (id: string) => void;
-}) {
-  const sorted = useMemo(
-    () => [...artists].sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
-    [artists]
-  );
-
-  return (
-    <div className="container pb-12 md:hidden">
-      <div className="border-t border-kolo-teal/15 pt-6">
-        <h2
-          className="text-sm font-bold text-foreground/60 uppercase tracking-wider mb-4"
-          style={{ fontFamily: "'SerialBlur', sans-serif" }}
-        >
-          Lista nézet
-        </h2>
-        <div className="space-y-0.5">
-          {sorted.map((artist) => {
-            const stage = stages.find((s) => s.name === artist.stage);
-            const color = stage?.color || "#dcea75";
-            const isFav = favourites.has(artist.id);
-            return (
-              <div
-                key={artist.id}
-                className="flex items-center gap-3 p-3 cursor-pointer transition-all hover:bg-kolo-bg-light"
-                style={{ borderRadius: 0 }}
-                onClick={() => {
-                  window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer");
-                }}
-              >
-                <div className="w-1 h-10 shrink-0" style={{ backgroundColor: color }} />
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="font-semibold text-sm truncate uppercase"
-                    style={{ color, fontFamily: "'SerialBlur', sans-serif", letterSpacing: "0.03em" }}
-                  >
-                    {artist.name}
-                  </p>
-                  <p
-                    className="text-xs text-muted-foreground mt-0.5"
-                    style={{ fontFamily: "'Pacaembu', sans-serif" }}
-                  >
-                    {formatTime(artist.startTime)}–{formatTime(artist.endTime)} · {artist.stage}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFavourite(artist.id);
-                    }}
-                    className="p-1.5 transition-colors"
-                    style={{ color: isFav ? "#e86b5a" : "#7a9e9b" }}
-                  >
-                    <Heart size={14} fill={isFav ? "#e86b5a" : "none"} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      downloadICS(artist);
-                    }}
-                    className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
-                  >
-                    <CalendarPlus size={13} />
-                  </button>
-                  <ExternalLink size={12} style={{ color: `${color}66` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
