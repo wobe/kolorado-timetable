@@ -1,5 +1,5 @@
 // ============================================================
-// Backend/lineupApi.jsw  — v5
+// Backend/lineupApi.jsw  — v7
 // Kolorádó Festival Timetable — Wix Velo Backend Module
 //
 // Place this file at: Backend > lineupApi.jsw in the Velo editor.
@@ -23,7 +23,20 @@
 // ============================================================
 
 import wixData from 'wix-data';
-import { getImageUrl } from 'wix-media-backend';
+
+// Convert wix:image://v1/<hash>/<filename>#... to a real wixstatic.com URL.
+// Direct /media/<hash>/<filename> returns 403; must use /v1/fill/ resize path.
+function wixImageToUrl(uri) {
+  if (!uri) return "";
+  if (uri.startsWith("http")) return uri; // already a plain URL
+  // Format: wix:image://v1/<hash>/<filename>#originWidth=...&originHeight=...
+  const match = uri.match(/wix:image:\/\/v1\/([^/]+)\/([^#]+)/);
+  if (!match) return "";
+  const hash = match[1];
+  const filename = match[2];
+  // Use fill resize — 800x800 square crop, quality 85
+  return `https://static.wixstatic.com/media/${hash}/v1/fill/w_800,h_800,al_c,q_85/${filename}`;
+}
 
 export async function getLineup() {
   const results = await wixData.query("Team")
@@ -59,14 +72,7 @@ export async function getLineup() {
       // getImageUrl() converts wix:image://v1/... to a real https://static.wixstatic.com/... URL.
       // It is only available in backend (jsw) files.
       // If the field already holds a plain https:// URL (e.g. from an older migration), use it as-is.
-      let photo = "";
-      if (item.photo) {
-        try {
-          photo = getImageUrl(item.photo);
-        } catch {
-          photo = item.photo; // already a plain https:// URL
-        }
-      }
+      const photo = wixImageToUrl(item.photo);
 
       // ── Audio player ───────────────────────────────────────
       // audioplayer is a Wix Audio field — pass through as-is.
