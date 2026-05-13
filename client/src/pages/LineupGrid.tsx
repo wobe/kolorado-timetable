@@ -407,10 +407,7 @@ export default function LineupGrid() {
           )}
         </button>
 
-        {/* Count */}
-        <span style={{ marginLeft: "auto", fontFamily: "'Pacaembu', sans-serif", fontSize: 12, color: "rgba(100,44,255,0.5)" }}>
-          {filtered.length} előadó
-        </span>
+
       </div>
 
       {/* ── Grid ── */}
@@ -475,13 +472,13 @@ export default function LineupGrid() {
                 <HeartIcon filled={fav} color={fav ? "white" : "#642CFF"} />
               </button>
 
-              {/* Name overlay — bottom-left, aligned with heart button */}
+              {/* Name overlay — top-left */}
               <div style={{
                 position: "absolute",
-                bottom: 10,
-                left: 10,
-                right: 56, // leave room for the heart button (36px + 10px gap + 10px margin)
-                padding: "4px 8px",
+                top: 0,
+                left: 0,
+                right: 56,
+                padding: "6px 10px",
                 background: "#FEFFC0",
               }}>
                 <span style={{
