@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MOCK_ARTISTS, STAGES, FESTIVAL_DAYS, KOLORADO_BASE_URL,
@@ -140,6 +140,64 @@ function CheckboxDropdown({
   );
 }
 
+// ── Artist card (memoised to prevent image reload on fav toggle) ─────────
+const ArtistCard = React.memo(function ArtistCard({
+  artist,
+  fav,
+  onOpen,
+  onToggleFav,
+}: {
+  artist: Artist;
+  fav: boolean;
+  onOpen: () => void;
+  onToggleFav: () => void;
+}) {
+  return (
+    <div
+      onClick={onOpen}
+      style={{ position: "relative", paddingBottom: "100%", cursor: "pointer", overflow: "hidden", background: "#e8e9a0" }}
+    >
+      {artist.photo ? (
+        <img
+          src={artist.photo} alt={artist.name}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.35s ease" }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
+        />
+      ) : (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, fontFamily: "'SerialBlur', sans-serif", color: "rgba(100,44,255,0.2)", textTransform: "uppercase" }}>
+          {artist.name.slice(0, 2)}
+        </div>
+      )}
+      <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 8px 4px" }}>
+        <span style={{
+          fontFamily: "'SerialBlur', sans-serif",
+          fontSize: 13, color: "#642CFF",
+          textTransform: "uppercase", letterSpacing: "0.02em",
+          lineHeight: 1.3, background: "#FEFFC0",
+          display: "inline", boxDecorationBreak: "clone",
+          WebkitBoxDecorationBreak: "clone", padding: "2px 6px",
+        } as React.CSSProperties}>
+          {artist.name}
+        </span>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
+        style={{
+          position: "absolute", bottom: 10, right: 10,
+          width: 36, height: 36, borderRadius: "50%",
+          background: fav ? "#e53e3e" : "rgba(254,255,192,0.95)",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.25)", transition: "all 0.15s", zIndex: 2,
+        }}
+      >
+        <HeartIcon filled={fav} color={fav ? "white" : "#642CFF"} />
+      </button>
+    </div>
+  );
+});
+
 // ── Main LineupGrid page ───────────────────────────────────────────────────
 export default function LineupGrid() {
   const [, setLocation] = useLocation();
@@ -251,8 +309,8 @@ export default function LineupGrid() {
 
   return (
     <div ref={pageRef} style={{ height: "100vh", overflowY: "auto", background: "#FEFFC0" }}>
-      {/* ── Header ── */}
-      <div
+      {/* ── Header hidden until schedule is announced ── */}
+      {false && <div
         style={{
           background: "#FEFFC0",
           borderBottom: "none",
@@ -425,7 +483,7 @@ export default function LineupGrid() {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </div>}
 
       {/* ── Grid ── */}
       <div
@@ -437,62 +495,15 @@ export default function LineupGrid() {
             <div style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 20, textTransform: "uppercase", marginBottom: 8, color: "rgba(100,44,255,0.3)" }}>Nincs találat</div>
             Próbálj más szűrőt!
           </div>
-        ) : filtered.map((artist) => {
-          const fav = favourites.has(artist.id);
-          return (
-            <div
-              key={artist.id}
-              onClick={() => setActiveArtist(artist)}
-              style={{ position: "relative", paddingBottom: "100%", cursor: "pointer", overflow: "hidden", background: "#e8e9a0" }}
-            >
-              {/* Photo */}
-              {artist.photo ? (
-                <img
-                  src={artist.photo} alt={artist.name}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.35s ease" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.04)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1)")}
-                />
-              ) : (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, fontFamily: "'SerialBlur', sans-serif", color: "rgba(100,44,255,0.2)", textTransform: "uppercase" }}>
-                  {artist.name.slice(0, 2)}
-                </div>
-              )}
-
-              {/* Name overlay — top-left, per-line background width */}
-              <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 8px 4px" }}>
-                <span style={{
-                  fontFamily: "'SerialBlur', sans-serif",
-                  fontSize: 13, color: "#642CFF",
-                  textTransform: "uppercase", letterSpacing: "0.02em",
-                  lineHeight: 1.3,
-                  background: "#FEFFC0",
-                  display: "inline",
-                  boxDecorationBreak: "clone",
-                  WebkitBoxDecorationBreak: "clone",
-                  padding: "2px 6px",
-                } as React.CSSProperties}>
-                  {artist.name}
-                </span>
-              </div>
-
-              {/* Heart fav button — bottom-right */}
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleFav(artist.id); }}
-                style={{
-                  position: "absolute", bottom: 10, right: 10,
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: fav ? "#e53e3e" : "rgba(254,255,192,0.95)",
-                  border: "none", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.25)", transition: "all 0.15s", zIndex: 2,
-                }}
-              >
-                <HeartIcon filled={fav} color={fav ? "white" : "#642CFF"} />
-              </button>
-            </div>
-          );
-        })}
+        ) : filtered.map((artist) => (
+          <ArtistCard
+            key={artist.id}
+            artist={artist}
+            fav={favourites.has(artist.id)}
+            onOpen={() => setActiveArtist(artist)}
+            onToggleFav={() => toggleFav(artist.id)}
+          />
+        ))}
       </div>
 
       {/* ── Popup ── */}
