@@ -55,7 +55,7 @@
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
     ".kap-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
-    ".kap-card{position:relative;background:#FEFFC0;border-radius:12px;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;}",
+    ".kap-card{position:relative;background:#FEFFC0;border-radius:0;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;}",
     ".kap-mobile{display:flex;flex-direction:column;overflow:hidden;max-height:calc(90vh - 0px);}",
     ".kap-desktop{display:none;}",
     /* Desktop: popup height = content, image fills full height, right scrolls */
@@ -131,12 +131,15 @@
       '</div></div>';
   }
   function _kapWire(shadow, a, isFav, callbacks) {
-    var overlay = shadow.getElementById("kap-overlay");
+    var overlay  = shadow.getElementById("kap-overlay");
     var closeBtn = shadow.getElementById("kap-close");
-    var favBtn   = shadow.getElementById("kap-fav");
+    // Use querySelectorAll because the popup renders twice (mobile + desktop panels)
+    var favBtns  = shadow.querySelectorAll("[id='kap-fav'], .kap-fav");
     if (closeBtn) closeBtn.addEventListener("click", function() { if (callbacks.onClose) callbacks.onClose(); });
     if (overlay) overlay.addEventListener("click", function(e) { if (e.target === overlay && callbacks.onClose) callbacks.onClose(); });
-    if (favBtn) favBtn.addEventListener("click", function(e) { e.stopPropagation(); var id=favBtn.getAttribute("data-id"); if(callbacks.onToggleFav) callbacks.onToggleFav(id); });
+    favBtns.forEach(function(btn) {
+      btn.addEventListener("click", function(e) { e.stopPropagation(); var id=btn.getAttribute("data-id"); if(callbacks.onToggleFav) callbacks.onToggleFav(id); });
+    });
   }
   // Compatibility shim — existing code calls KoloradoArtistPopup.render/wire/CSS
   var KoloradoArtistPopup = { CSS: KAP_CSS, render: _kapRender, wire: _kapWire,
@@ -248,7 +251,8 @@
     ".kl-root{background:#FEFFC0;min-height:100vh;color:#642CFF;}",
 
     // ── Header ──
-    ".kl-header{position:sticky;top:0;z-index:40;background:#FEFFC0;border-bottom:2px solid rgba(100,44,255,0.15);padding:10px 16px;display:flex;align-items:center;gap:10px;}",
+    ".kl-header{position:sticky;top:0;z-index:40;background:#FEFFC0;border-bottom:1px solid transparent;padding:10px 16px;display:flex;align-items:center;gap:10px;transition:border-color 0.2s;}",
+    ".kl-header.scrolled{border-bottom:1px solid rgba(100,44,255,0.2);}",
 
     // Desktop filters (hidden on mobile)
     ".kl-desktop-filters{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;}",
@@ -620,9 +624,22 @@
       shadow.innerHTML = '<style>' + CSS + extraCss + '</style>' +
         '<div class="kl-root">' + headerHtml + gridHtml + popupHtml + '</div>';
 
+      // ── Scroll-triggered header border ──
+      var klHeader = shadow.querySelector('.kl-header');
+      if (klHeader) {
+        // Remove any previous listener to avoid stacking on re-renders
+        if (self._scrollHandler) window.removeEventListener('scroll', self._scrollHandler);
+        self._scrollHandler = function() {
+          var scrollY = window.scrollY || window.pageYOffset || 0;
+          if (scrollY > 4) { klHeader.classList.add('scrolled'); }
+          else { klHeader.classList.remove('scrolled'); }
+        };
+        window.addEventListener('scroll', self._scrollHandler, { passive: true });
+        // Apply immediately in case page is already scrolled
+        self._scrollHandler();
+      }
       // ── Event listeners ──
-
-      // Stage filter pill
+      // Stage filter pilll
       var stageBtn = shadow.getElementById("kl-stage-btn");
       if (stageBtn) stageBtn.addEventListener("click", function(e) {
         e.stopPropagation();
