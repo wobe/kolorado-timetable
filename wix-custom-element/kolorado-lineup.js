@@ -395,7 +395,7 @@
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
             };
-          }).filter(function(a){ return a.startTime && !isNaN(a.startTime); });
+          }); // show all artists regardless of whether stage/date is set
           this._loading = false;
           this._render();
         } catch(e) {
@@ -421,10 +421,12 @@
         return a.name.localeCompare(b.name, "hu", { sensitivity: "base" });
       });
       return sorted.filter(function(a) {
-        if (self._selectedStages.size > 0 && !self._selectedStages.has(a.stage)) return false;
-        if (self._selectedDays.size > 0) {
+        // Stage filter: only apply if artist has a stage set
+        if (self._selectedStages.size > 0 && a.stage && !self._selectedStages.has(a.stage)) return false;
+        // Day filter: only apply if artist has a startTime set
+        if (self._selectedDays.size > 0 && a.startTime) {
           var dayId = getFestivalDayId(a.startTime);
-          if (!dayId || !self._selectedDays.has(dayId)) return false;
+          if (dayId && !self._selectedDays.has(dayId)) return false;
         }
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
         if (self._searchQuery.trim()) {

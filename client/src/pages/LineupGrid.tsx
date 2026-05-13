@@ -211,12 +211,12 @@ export default function LineupGrid() {
   const filtered = artists.filter((a) => {
     // Favourites filter
     if (showFavOnly && !favourites.has(a.id)) return false;
-    // Stage filter — compare stage NAME directly
-    if (selectedStages.size > 0 && !selectedStages.has(a.stage)) return false;
-    // Day filter — derive festival day from startTime
-    if (selectedDays.size > 0) {
+    // Stage filter — only apply if artist has a stage set
+    if (selectedStages.size > 0 && a.stage && !selectedStages.has(a.stage)) return false;
+    // Day filter — only apply if artist has a startTime set
+    if (selectedDays.size > 0 && a.startTime) {
       const dayId = getFestivalDayId(a.startTime);
-      if (!dayId || !selectedDays.has(dayId)) return false;
+      if (dayId && !selectedDays.has(dayId)) return false;
     }
     // Search filter
     if (searchQuery.trim()) {

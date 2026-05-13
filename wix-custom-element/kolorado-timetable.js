@@ -488,12 +488,12 @@
           var raw = JSON.parse(val);
           this._artists = raw.map(function(item) {
             return {
-              id:              item.id || item._id || String(Math.random()),
-              name:            item.title || item.name || "Ismeretlen",
-              stage:           item.sznpad || item.stage || "Nagyszínpad",
-              startTime:       new Date(item.id || item.startTime),
-              endTime:         new Date(item.id1 || item.endTime),
-              genre:           item.genre1 || item.genre || "",
+              id:              item._id || item.id || String(Math.random()),
+              name:            item.name || item.title || "Ismeretlen",
+              stage:           item.stage || item.sznpad || "Nagyszínpad",
+              startTime:       new Date(item.startTime),
+              endTime:         new Date(item.endTime),
+              genre:           item.genre || item.genre1 || "",
               url:             item.website || item.url || null,
               photo:           item.photo || "",
               longDescription: item.longDescription || item.bio || "",

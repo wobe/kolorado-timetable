@@ -1,5 +1,5 @@
 // ============================================================
-// Backend/lineupApi.jsw  — v4
+// Backend/lineupApi.jsw  — v5
 // Kolorádó Festival Timetable — Wix Velo Backend Module
 //
 // Place this file at: Backend > lineupApi.jsw in the Velo editor.
@@ -32,7 +32,6 @@ export async function getLineup() {
     .find();
 
   return results.items
-    .filter(item => item.id && item.sznpad)  // must have a start time (Kezdő idő) and a stage
     .map((item, index) => {
 
       // ── Stage ──────────────────────────────────────────────
