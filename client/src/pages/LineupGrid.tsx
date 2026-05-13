@@ -263,7 +263,8 @@ export default function LineupGrid() {
       >
         {/* ── Desktop filters (hidden on mobile) ── */}
         <div className="lineup-desktop-filters" style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, flexWrap: "wrap" }}>
-          <CheckboxDropdown
+          {/* Stage + Day filters hidden until schedule is announced — re-enable by removing the false && wrappers */}
+          {false && <CheckboxDropdown
             label="Színpad"
             options={stageOptions}
             selected={selectedStages}
@@ -272,8 +273,8 @@ export default function LineupGrid() {
             isOpen={stageOpen}
             onToggleOpen={() => { setStageOpen((o) => !o); setDayOpen(false); }}
             dropdownRef={stageRef}
-          />
-          <CheckboxDropdown
+          />}
+          {false && <CheckboxDropdown
             label="Nap"
             options={dayOptions}
             selected={selectedDays}
@@ -282,7 +283,7 @@ export default function LineupGrid() {
             isOpen={dayOpen}
             onToggleOpen={() => { setDayOpen((o) => !o); setStageOpen(false); }}
             dropdownRef={dayRef}
-          />
+          />}
           <button
             onClick={() => setShowFavOnly((v) => !v)}
             style={{
@@ -341,30 +342,7 @@ export default function LineupGrid() {
               padding: "12px",
               display: "flex", flexDirection: "column", gap: 8,
             }}>
-              {/* Stage section */}
-              <div style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 11, color: "rgba(100,44,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>Színpad</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
-                {stageOptions.map((s) => {
-                  const active = selectedStages.has(s.id);
-                  return (
-                    <button key={s.id} onClick={() => toggleStage(s.id)} style={{ ...pillBase, padding: "4px 10px", fontSize: 12, background: active ? "#642CFF" : "rgba(100,44,255,0.1)", color: active ? "#FEFFC0" : "#642CFF" }}>
-                      {s.name}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Day section */}
-              <div style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 11, color: "rgba(100,44,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>Nap</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
-                {dayOptions.map((d) => {
-                  const active = selectedDays.has(d.id);
-                  return (
-                    <button key={d.id} onClick={() => toggleDay(d.id)} style={{ ...pillBase, padding: "4px 10px", fontSize: 12, background: active ? "#642CFF" : "rgba(100,44,255,0.1)", color: active ? "#FEFFC0" : "#642CFF" }}>
-                      {d.name}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Stage + Day sections hidden until schedule is announced */}
               {/* Kedvencek */}
               <button onClick={() => setShowFavOnly((v) => !v)} style={{ ...pillBase, padding: "6px 12px", fontSize: 12, background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.1)", color: showFavOnly ? "white" : "#642CFF", justifyContent: "flex-start" }}>
                 <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
