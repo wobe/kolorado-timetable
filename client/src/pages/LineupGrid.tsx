@@ -168,6 +168,106 @@ function ArtistPopup({
 
   const metaLine = [dayLabel, timeStr, artist.stage].filter(Boolean).join(", ");
 
+  // Image panel — shared between mobile (top) and desktop (left)
+  const imagePanel = (
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {artist.photo ? (
+        <img src={artist.photo} alt={artist.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      ) : (
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#e8e9a0", fontSize: 48, fontFamily: "'SerialBlur', sans-serif", color: "#642CFF", textTransform: "uppercase" }}>
+          {artist.name.slice(0, 2)}
+        </div>
+      )}
+
+      {/* Name — top-left, per-line bg */}
+      <div style={{ position: "absolute", top: 0, left: 0, padding: "8px 10px 4px" }}>
+        <span style={{
+          fontFamily: "'SerialBlur', sans-serif",
+          fontSize: 18, color: "#642CFF",
+          textTransform: "uppercase", letterSpacing: "0.02em",
+          lineHeight: 1.3,
+          background: "#FEFFC0",
+          display: "inline",
+          boxDecorationBreak: "clone",
+          WebkitBoxDecorationBreak: "clone",
+          padding: "2px 8px",
+        } as React.CSSProperties}>
+          {artist.name}
+        </span>
+      </div>
+
+      {/* Fav button — bottom-right */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
+        style={{
+          position: "absolute", bottom: 10, right: 10,
+          width: 40, height: 40, borderRadius: "50%",
+          background: isFav ? "#e53e3e" : "rgba(254,255,192,0.95)",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.25)", transition: "all 0.15s", zIndex: 2,
+        }}
+      >
+        <HeartIcon filled={isFav} color={isFav ? "white" : "#642CFF"} />
+      </button>
+    </div>
+  );
+
+  // Info panel — shared between mobile (bottom) and desktop (right)
+  const infoPanel = (
+    <div style={{ padding: "20px 22px 24px", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", flex: 1 }}>
+      {/* Day, time, stage */}
+      {metaLine && (
+        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 15, color: "#0E4B4D", margin: 0, lineHeight: 1.4 }}>
+          {metaLine}
+        </p>
+      )}
+
+      {/* Genre */}
+      {artist.genre && (
+        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(100,44,255,0.6)", margin: 0, textTransform: "lowercase" }}>
+          {artist.genre}
+        </p>
+      )}
+
+      {/* Long description */}
+      {(artist.longDescription || artist.description) ? (
+        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.65, margin: 0 }}>
+          {artist.longDescription ?? artist.description}
+        </p>
+      ) : (
+        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(0,0,0,0.3)", margin: 0 }}>Részletek hamarosan...</p>
+      )}
+
+      {/* Audio player */}
+      {(artist.soundcloudLink || artist.youtubeLink) && (
+        <div style={{ marginTop: 4 }}>
+          {artist.soundcloudLink ? (
+            <iframe
+              width="100%"
+              height="120"
+              scrolling="no"
+              frameBorder="no"
+              allow="autoplay"
+              src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(artist.soundcloudLink)}&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
+              style={{ display: "block" }}
+            />
+          ) : artist.youtubeLink ? (
+            <iframe
+              width="100%"
+              height="120"
+              src={artist.youtubeLink.replace("watch?v=", "embed/")}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ display: "block" }}
+            />
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -178,109 +278,66 @@ function ArtistPopup({
       }}
       onClick={onClose}
     >
+      {/* Close button — always top-right of the whole card */}
       <div
         style={{
-          position: "relative", width: "100%", maxWidth: 480,
-          background: "#FEFFC0", overflow: "hidden",
+          position: "relative", width: "100%",
+          background: "#FEFFC0",
           boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
-          maxHeight: "90vh", overflowY: "auto",
+          maxHeight: "90vh",
+          overflow: "hidden",
         }}
+        className="artist-popup-card"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Image — 4:3 ratio ── */}
-        <div style={{ position: "relative", width: "100%", paddingBottom: "75%" }}>
-          {artist.photo ? (
-            <img src={artist.photo} alt={artist.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#e8e9a0", fontSize: 48, fontFamily: "'SerialBlur', sans-serif", color: "#642CFF", textTransform: "uppercase" }}>
-              {artist.name.slice(0, 2)}
-            </div>
-          )}
+        {/* Close × — absolute top-right of card */}
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute", top: 10, right: 10,
+            width: 30, height: 30, borderRadius: "50%",
+            background: "rgba(254,255,192,0.9)", border: "none", cursor: "pointer",
+            fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#642CFF", fontWeight: 700, zIndex: 10,
+          }}
+        >
+          ×
+        </button>
 
-          {/* Name — top-left, per-line bg width */}
-          <div style={{ position: "absolute", top: 0, left: 0, padding: "8px 10px 4px" }}>
-            <span style={{
-              fontFamily: "'SerialBlur', sans-serif",
-              fontSize: 18, color: "#642CFF",
-              textTransform: "uppercase", letterSpacing: "0.02em",
-              lineHeight: 1.3,
-              background: "#FEFFC0",
-              display: "inline",
-              boxDecorationBreak: "clone",
-              WebkitBoxDecorationBreak: "clone",
-              padding: "2px 8px",
-            } as React.CSSProperties}>
-              {artist.name}
-            </span>
+        {/* ── Mobile layout: image top (4:3), info below ── */}
+        <div className="popup-mobile-layout" style={{ display: "flex", flexDirection: "column", maxHeight: "90vh", overflowY: "auto" }}>
+          <div style={{ position: "relative", width: "100%", paddingBottom: "75%", flexShrink: 0 }}>
+            <div style={{ position: "absolute", inset: 0 }}>{imagePanel}</div>
           </div>
-
-          {/* Fav button — bottom-right */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
-            style={{
-              position: "absolute", bottom: 10, right: 10,
-              width: 40, height: 40, borderRadius: "50%",
-              background: isFav ? "#e53e3e" : "rgba(254,255,192,0.95)",
-              border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.25)", transition: "all 0.15s", zIndex: 2,
-            }}
-          >
-            <HeartIcon filled={isFav} color={isFav ? "white" : "#642CFF"} />
-          </button>
-
-          {/* Close button — top-right */}
-          <button
-            onClick={onClose}
-            style={{
-              position: "absolute", top: 10, right: 10,
-              width: 30, height: 30, borderRadius: "50%",
-              background: "rgba(254,255,192,0.9)", border: "none", cursor: "pointer",
-              fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#642CFF", fontWeight: 700, zIndex: 3,
-            }}
-          >
-            ×
-          </button>
+          {infoPanel}
         </div>
 
-        {/* ── Info body ── */}
-        <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Day, time, stage */}
-          {metaLine && (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#0E4B4D", margin: 0 }}>
-              {metaLine}
-            </p>
-          )}
-
-          {/* Genre */}
-          {artist.genre && (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(100,44,255,0.6)", margin: 0, textTransform: "lowercase" }}>
-              {artist.genre}
-            </p>
-          )}
-
-          {/* Long description */}
-          {(artist.longDescription || artist.description) ? (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.65, margin: 0 }}>
-              {artist.longDescription ?? artist.description}
-            </p>
-          ) : (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(0,0,0,0.3)", margin: 0 }}>Részletek hamarosan...</p>
-          )}
-
-          {/* Kolorádó link */}
-          {artist.url && (
-            <a
-              href={`${KOLORADO_BASE_URL}${artist.url}`}
-              target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 16px", background: "rgba(100,44,255,0.1)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, textDecoration: "none", alignSelf: "flex-start" }}
-            >
-              ↗ Kolorádó oldal
-            </a>
-          )}
+        {/* ── Desktop layout: image left (3:4), info right scrollable ── */}
+        <div className="popup-desktop-layout" style={{ display: "none", height: "80vh", maxHeight: 640 }}>
+          {/* Left: image at 3:4 — fixed width */}
+          <div style={{ width: "42%", flexShrink: 0, position: "relative" }}>
+            {imagePanel}
+          </div>
+          {/* Right: scrollable info */}
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {infoPanel}
+          </div>
         </div>
       </div>
+
+      {/* Responsive toggle */}
+      <style>{`
+        @media (min-width: 640px) {
+          .artist-popup-card { max-width: 820px !important; }
+          .popup-mobile-layout { display: none !important; }
+          .popup-desktop-layout { display: flex !important; }
+        }
+        @media (max-width: 639px) {
+          .artist-popup-card { max-width: 480px !important; }
+          .popup-mobile-layout { display: flex !important; }
+          .popup-desktop-layout { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
