@@ -56,8 +56,8 @@
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
     ".kap-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
-    ".kap-card{position:relative;background:#FEFFC0;border-radius:0;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;}",
-    ".kap-mobile{display:flex;flex-direction:column;overflow:hidden;max-height:calc(90vh - 0px);}",
+    ".kap-card{position:relative;background:#FEFFC0;border-radius:0;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;}",
+    ".kap-mobile{display:flex;flex-direction:column;overflow-y:auto;max-height:90vh;-webkit-overflow-scrolling:touch;}",
     ".kap-desktop{display:none;}",
     /* Desktop: popup height = content, image fills full height, right scrolls */
     "@media(min-width:640px){",
