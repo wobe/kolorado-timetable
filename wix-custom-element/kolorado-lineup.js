@@ -209,7 +209,34 @@
     return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
   }
 
-  // ── Escape HTML ────────────────────────────────────────────
+  // ── First-favourite toast ────────────────────────────────────────────────
+  var FAV_TOAST_KEY = "kolorado_fav_toast_seen";
+  function showFirstFavToast() {
+    try { if (localStorage.getItem(FAV_TOAST_KEY)) return; } catch(e) { return; }
+    try { localStorage.setItem(FAV_TOAST_KEY, "1"); } catch(e) {}
+    var toast = document.createElement("div");
+    toast.style.cssText = [
+      "position:fixed","bottom:24px","left:50%","transform:translateX(-50%)",
+      "z-index:9999","max-width:calc(100vw - 32px)","width:360px",
+      "background:#1a1a2e","color:#FEFFC0","padding:12px 16px",
+      "display:flex","align-items:flex-start","gap:10px",
+      "box-shadow:0 4px 24px rgba(0,0,0,0.35)",
+      "font-family:'Pacaembu',sans-serif","font-size:13px","line-height:1.5",
+      "pointer-events:auto","cursor:default",
+    ].join(";");
+    toast.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="#e53e3e" stroke="#e53e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
+        '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'+
+      '</svg>'+
+      '<span style="flex:1">A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.</span>'+
+      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="Bezárás">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
+      '</button>';
+    document.body.appendChild(toast);
+    setTimeout(function(){ if (toast.parentNode) toast.remove(); }, 6000);
+  }
+
+  // ── Escape HTML ────────────────────────────────────────────────────────
   function esc(s) {
     return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
@@ -419,8 +446,12 @@
 
     // ── Helpers ──────────────────────────────────────────────
     _toggleFav(id) {
-      if (this._favourites.has(id)) this._favourites.delete(id);
-      else this._favourites.add(id);
+      if (this._favourites.has(id)) {
+        this._favourites.delete(id);
+      } else {
+        this._favourites.add(id);
+        showFirstFavToast();
+      }
       writeFavCookie(this._favourites);
       this._render();
     }
@@ -556,8 +587,9 @@
       var mobileBadge = mobileFilterCount > 0
         ? '<span class="kl-icon-badge">'+mobileFilterCount+'</span>' : '';
 
-      // ── Header HTML ── Stage+Day filters hidden until schedule announced
-      var headerHtml = '<div class="kl-header">' +
+      // ── Header hidden until schedule is announced ──
+      var headerHtml = ''; /* header hidden — re-enable by restoring the block below */
+      if (false) { headerHtml = '<div class="kl-header">' +
         // Desktop filters
         '<div class="kl-desktop-filters">' +
           // Stage+Day filter buttons hidden — uncomment when schedule is ready:
@@ -584,7 +616,7 @@
             ICONS.search(16) +
           '</button>' +
         '</div>' +
-      '</div>';
+      '</div>'; } // end hidden header block
 
       // ── Grid HTML ──
       var gridHtml = '';
