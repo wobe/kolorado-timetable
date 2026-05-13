@@ -28,6 +28,18 @@
 (function () {
   "use strict";
 
+  // ── Shared popup module loader ──────────────────────────────
+  var POPUP_SCRIPT_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/kolorado-artist-popup.js";
+  (function () {
+    if (typeof window.KoloradoArtistPopup !== "undefined") return;
+    if (document.querySelector('script[data-kap]')) return;
+    var s = document.createElement("script");
+    s.src = POPUP_SCRIPT_URL;
+    s.setAttribute("data-kap", "1");
+    document.head.appendChild(s);
+  })();
+
+
   // ── Font URLs ──────────────────────────────────────────────
   var SERIAL_BLUR_URL = "https://koloradotim-bqt3vb73.manus.space/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf";
   var PACAEMBU_URL    = "https://koloradotim-bqt3vb73.manus.space/manus-storage/Pacaembu-Medium_86abdf90.ttf";
