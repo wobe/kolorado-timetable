@@ -3,6 +3,7 @@ import {
   MOCK_ARTISTS, STAGES, FESTIVAL_DAYS, KOLORADO_BASE_URL,
   formatTime, getFestivalDayId,
 } from "@/lib/timetable-data";
+import { useMemo } from "react";
 import type { Artist, Stage } from "@/lib/timetable-data";
 import { useLocation } from "wouter";
 
@@ -26,6 +27,7 @@ function saveFavourites(favs: Set<string>) {
 type ArtistExtended = Artist & {
   photo?: string;
   description?: string;
+  longDescription?: string;
   nationality?: string;
   youtubeLink?: string;
   soundcloudLink?: string;
@@ -153,6 +155,19 @@ function ArtistPopup({
 }: {
   artist: ArtistExtended; isFav: boolean; onToggleFav: () => void; onClose: () => void;
 }) {
+  // Derive the festival day label
+  const dayLabel = useMemo(() => {
+    if (!artist.startTime) return null;
+    const dayId = getFestivalDayId(artist.startTime);
+    return FESTIVAL_DAYS.find((d) => d.id === dayId)?.label ?? null;
+  }, [artist.startTime]);
+
+  const timeStr = artist.startTime && artist.endTime
+    ? `${formatTime(artist.startTime)} – ${formatTime(artist.endTime)}`
+    : null;
+
+  const metaLine = [dayLabel, timeStr, artist.stage].filter(Boolean).join(", ");
+
   return (
     <div
       style={{
@@ -165,13 +180,15 @@ function ArtistPopup({
     >
       <div
         style={{
-          position: "relative", width: "100%", maxWidth: 520,
+          position: "relative", width: "100%", maxWidth: 480,
           background: "#FEFFC0", overflow: "hidden",
           boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
+          maxHeight: "90vh", overflowY: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ position: "relative", width: "100%", paddingBottom: "100%" }}>
+        {/* ── Image — 4:3 ratio ── */}
+        <div style={{ position: "relative", width: "100%", paddingBottom: "75%" }}>
           {artist.photo ? (
             <img src={artist.photo} alt={artist.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
@@ -179,34 +196,89 @@ function ArtistPopup({
               {artist.name.slice(0, 2)}
             </div>
           )}
-          <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", background: "rgba(254,255,192,0.9)", border: "none", cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", color: "#642CFF", fontWeight: 700 }}>×</button>
+
+          {/* Name — top-left, per-line bg width */}
+          <div style={{ position: "absolute", top: 0, left: 0, padding: "8px 10px 4px" }}>
+            <span style={{
+              fontFamily: "'SerialBlur', sans-serif",
+              fontSize: 18, color: "#642CFF",
+              textTransform: "uppercase", letterSpacing: "0.02em",
+              lineHeight: 1.3,
+              background: "#FEFFC0",
+              display: "inline",
+              boxDecorationBreak: "clone",
+              WebkitBoxDecorationBreak: "clone",
+              padding: "2px 8px",
+            } as React.CSSProperties}>
+              {artist.name}
+            </span>
+          </div>
+
+          {/* Fav button — bottom-right */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFav(); }}
+            style={{
+              position: "absolute", bottom: 10, right: 10,
+              width: 40, height: 40, borderRadius: "50%",
+              background: isFav ? "#e53e3e" : "rgba(254,255,192,0.95)",
+              border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.25)", transition: "all 0.15s", zIndex: 2,
+            }}
+          >
+            <HeartIcon filled={isFav} color={isFav ? "white" : "#642CFF"} />
+          </button>
+
+          {/* Close button — top-right */}
+          <button
+            onClick={onClose}
+            style={{
+              position: "absolute", top: 10, right: 10,
+              width: 30, height: 30, borderRadius: "50%",
+              background: "rgba(254,255,192,0.9)", border: "none", cursor: "pointer",
+              fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#642CFF", fontWeight: 700, zIndex: 3,
+            }}
+          >
+            ×
+          </button>
         </div>
-        <div style={{ padding: "20px 24px 24px" }}>
-          <h2 style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 24, textTransform: "uppercase", color: "#642CFF", marginBottom: 8, lineHeight: 1.1 }}>{artist.name}</h2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-            {artist.stage && <span style={{ padding: "3px 10px", background: "#642CFF", color: "#FEFFC0", fontFamily: "'Pacaembu', sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{artist.stage}</span>}
-            {artist.genre && <span style={{ padding: "3px 10px", background: "rgba(100,44,255,0.12)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{artist.genre}</span>}
-            {artist.nationality && <span style={{ padding: "3px 10px", background: "rgba(100,44,255,0.08)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 11 }}>{artist.nationality}</span>}
-          </div>
-          {artist.startTime && artist.endTime && (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#0E4B4D", marginBottom: 10 }}>{formatTime(artist.startTime)} – {formatTime(artist.endTime)}</p>
+
+        {/* ── Info body ── */}
+        <div style={{ padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Day, time, stage */}
+          {metaLine && (
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#0E4B4D", margin: 0 }}>
+              {metaLine}
+            </p>
           )}
-          {artist.description ? (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.6, marginBottom: 16 }}>{artist.description}</p>
+
+          {/* Genre */}
+          {artist.genre && (
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(100,44,255,0.6)", margin: 0, textTransform: "lowercase" }}>
+              {artist.genre}
+            </p>
+          )}
+
+          {/* Long description */}
+          {(artist.longDescription || artist.description) ? (
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "#333", lineHeight: 1.65, margin: 0 }}>
+              {artist.longDescription ?? artist.description}
+            </p>
           ) : (
-            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(0,0,0,0.35)", marginBottom: 16 }}>Részletek hamarosan...</p>
+            <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 13, color: "rgba(0,0,0,0.3)", margin: 0 }}>Részletek hamarosan...</p>
           )}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={onToggleFav} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 18px", borderRadius: 9999, border: "none", cursor: "pointer", background: isFav ? "#e53e3e" : "#642CFF", color: "white", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, transition: "all 0.15s" }}>
-              <HeartIcon filled={isFav} color="white" />
-              {isFav ? "Kedvenc" : "Kedvencnek"}
-            </button>
-            {artist.url && (
-              <a href={`${KOLORADO_BASE_URL}${artist.url}`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 9999, background: "rgba(100,44,255,0.1)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, textDecoration: "none" }}>
-                ↗ Kolorádó oldal
-              </a>
-            )}
-          </div>
+
+          {/* Kolorádó link */}
+          {artist.url && (
+            <a
+              href={`${KOLORADO_BASE_URL}${artist.url}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 16px", background: "rgba(100,44,255,0.1)", color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, textDecoration: "none", alignSelf: "flex-start" }}
+            >
+              ↗ Kolorádó oldal
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -513,9 +585,19 @@ export default function LineupGrid() {
                 </div>
               )}
 
-              {/* Name overlay — top-left, yellow bg, purple text (restored style) */}
-              <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 10px", background: "#FEFFC0", maxWidth: "85%" }}>
-                <span style={{ fontFamily: "'SerialBlur', sans-serif", fontSize: 13, color: "#642CFF", textTransform: "uppercase", letterSpacing: "0.02em", lineHeight: 1.2, display: "block" }}>
+              {/* Name overlay — top-left, per-line background width */}
+              <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 8px 4px" }}>
+                <span style={{
+                  fontFamily: "'SerialBlur', sans-serif",
+                  fontSize: 13, color: "#642CFF",
+                  textTransform: "uppercase", letterSpacing: "0.02em",
+                  lineHeight: 1.3,
+                  background: "#FEFFC0",
+                  display: "inline",
+                  boxDecorationBreak: "clone",
+                  WebkitBoxDecorationBreak: "clone",
+                  padding: "2px 6px",
+                } as React.CSSProperties}>
                   {artist.name}
                 </span>
               </div>
