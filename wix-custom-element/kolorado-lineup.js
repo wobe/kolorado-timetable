@@ -535,10 +535,9 @@
         }).join("");
         var clearBtn = hasActiveFilters ? '<button class="kl-mobile-clear" id="kl-mobile-clear">× Szűrők törlése</button>' : '';
         mobilePanelHtml = '<div class="kl-mobile-panel" id="kl-mobile-panel">' +
-          '<div class="kl-mobile-section-label">Színpad</div>' +
-          '<div class="kl-mobile-pills">' + stagePills + '</div>' +
-          '<div class="kl-mobile-section-label">Nap</div>' +
-          '<div class="kl-mobile-pills">' + dayPills + '</div>' +
+          // Stage+Day sections hidden until schedule announced
+          // '<div class="kl-mobile-section-label">Sz\u00ednpad</div><div class="kl-mobile-pills">' + stagePills + '</div>' +
+          // '<div class="kl-mobile-section-label">Nap</div><div class="kl-mobile-pills">' + dayPills + '</div>' +
           '<button class="kl-fav-toggle'+(this._filterFavourites?" active":"")+'" id="kl-mobile-fav-toggle">' +
             ICONS.heart(this._filterFavourites, 14) + ' Kedvencek' +
             (favCount > 0 ? '<span class="kl-badge">'+favCount+'</span>' : '') +
@@ -552,20 +551,13 @@
       var mobileBadge = mobileFilterCount > 0
         ? '<span class="kl-icon-badge">'+mobileFilterCount+'</span>' : '';
 
-      // ── Header HTML ──
+      // ── Header HTML ── Stage+Day filters hidden until schedule announced
       var headerHtml = '<div class="kl-header">' +
         // Desktop filters
         '<div class="kl-desktop-filters">' +
-          '<div class="kl-filter-wrap">' +
-            '<button class="kl-filter-btn'+(stageActive?" active":"")+'" id="kl-stage-btn">' +
-              '<span style="font-size:10px">▼</span> '+esc(stageLabel)+stageClear +
-            '</button>' + stageDropdown +
-          '</div>' +
-          '<div class="kl-filter-wrap">' +
-            '<button class="kl-filter-btn'+(dayActive?" active":"")+'" id="kl-day-btn">' +
-              '<span style="font-size:10px">▼</span> '+esc(dayLabel)+dayClear +
-            '</button>' + dayDropdown +
-          '</div>' +
+          // Stage+Day filter buttons hidden — uncomment when schedule is ready:
+          // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-stage-btn">▼ Színpad</button></div>' +
+          // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-day-btn">▼ Nap</button></div>' +
           '<button class="kl-fav-toggle'+(this._filterFavourites?" active":"")+'" id="kl-fav-toggle">' +
             ICONS.heart(this._filterFavourites, 14) + ' Kedvencek' +
             (favCount > 0 ? '<span class="kl-badge">'+favCount+'</span>' : '') +
