@@ -503,11 +503,25 @@ export default function Timetable() {
   const gridRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const filterBtnRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   // Simulate brief loading (for CMS integration; in standalone mode, data is immediate)
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(t);
+  }, []);
+
+  // Measure header height and set --header-h so the grid fills exactly the remaining viewport
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => {
+      document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // Wix postMessage bridge: ask the parent page for its URL so share links use kolorado.hu
@@ -711,7 +725,7 @@ export default function Timetable() {
   return (
     <div className="w-full min-h-screen" style={{ backgroundColor: "#0E4B4D" }}>
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-md border-b border-kolo-teal/20" style={{ backgroundColor: "#062322f5" }}>
+      <header ref={headerRef} className="sticky top-0 z-40 backdrop-blur-md border-b border-kolo-teal/20" style={{ backgroundColor: "#062322f5" }}>
         <div className="container pt-3 pb-2">
 
           {/* ── ROW 1: Day tabs ── */}

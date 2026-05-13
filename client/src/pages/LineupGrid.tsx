@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MOCK_ARTISTS, STAGES, FESTIVAL_DAYS, KOLORADO_BASE_URL,
   type Artist, type Stage,
@@ -149,6 +150,7 @@ export default function LineupGrid() {
   const [showFavOnly, setShowFavOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [stageOpen, setStageOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -158,8 +160,17 @@ export default function LineupGrid() {
   const dayRef = useRef<HTMLDivElement | null>(null);
   const mobileFilterRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { saveFavourites(favourites); }, [favourites]);
+  // Scroll-triggered border on header
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+    const handler = () => setScrolled(el.scrollTop > 4);
+    el.addEventListener("scroll", handler, { passive: true });
+    return () => el.removeEventListener("scroll", handler);
+  }, []);
 
   // Auto-focus search input when opened
   useEffect(() => {
@@ -239,13 +250,13 @@ export default function LineupGrid() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FEFFC0" }}>
+    <div ref={pageRef} style={{ height: "100vh", overflowY: "auto", background: "#FEFFC0" }}>
       {/* ── Header ── */}
       <div
         style={{
           position: "sticky", top: 0, zIndex: 30,
           background: "#FEFFC0",
-          borderBottom: "1px solid rgba(100,44,255,0.15)",
+          borderBottom: scrolled ? "1px solid rgba(100,44,255,0.15)" : "1px solid transparent",
           padding: "10px 16px",
           display: "flex", alignItems: "center", gap: 10,
         }}
@@ -370,40 +381,72 @@ export default function LineupGrid() {
           )}
         </div>
 
-        {/* ── Search (right side, always visible) ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
-          {searchOpen && (
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); } }}
-              placeholder="Keresés..."
-              style={{
-                height: 36, padding: "0 12px",
-                border: "2px solid rgba(100,44,255,0.3)",
-                background: "rgba(100,44,255,0.06)",
-                color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
-                outline: "none", width: 160,
-              }}
-            />
-          )}
-          <button
-            onClick={() => { setSearchOpen((o) => !o); if (searchOpen) setSearchQuery(""); }}
-            style={{
-              width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: searchOpen || searchQuery ? "#642CFF" : "rgba(100,44,255,0.12)",
-              color: searchOpen || searchQuery ? "#FEFFC0" : "#642CFF",
-              flexShrink: 0,
-            }}
-            title="Keresés"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </button>
+        {/* ── Search pill (right side, always visible) ── */}
+        <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
+          <AnimatePresence mode="wait">
+            {searchOpen ? (
+              <motion.div
+                key="search-expanded"
+                initial={{ width: 36, opacity: 0 }}
+                animate={{ width: 200, opacity: 1 }}
+                exit={{ width: 36, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "0 10px", height: 36,
+                  borderRadius: 9999,
+                  border: "1.5px solid rgba(100,44,255,0.35)",
+                  background: "rgba(100,44,255,0.07)",
+                  overflow: "hidden",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#642CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); } }}
+                  placeholder="Keresés..."
+                  style={{
+                    flex: 1, background: "transparent", border: "none", outline: "none",
+                    color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                    minWidth: 0,
+                  }}
+                />
+                <button
+                  onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(100,44,255,0.5)", display: "flex", alignItems: "center", padding: 0, flexShrink: 0 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </motion.div>
+            ) : (
+              <motion.button
+                key="search-icon"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSearchOpen(true)}
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  border: "1.5px solid rgba(100,44,255,0.25)",
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: searchQuery ? "#642CFF" : "transparent",
+                  color: searchQuery ? "#FEFFC0" : "#642CFF",
+                  flexShrink: 0,
+                }}
+                title="Keresés"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
