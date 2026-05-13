@@ -61,21 +61,27 @@
     ".kap-card{position:relative;background:#FEFFC0;border-radius:12px;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;}",
     ".kap-mobile{display:flex;flex-direction:column;overflow:hidden;max-height:calc(90vh - 0px);}",
     ".kap-desktop{display:none;}",
-    "@media(min-width:640px){.kap-mobile{display:none;}.kap-desktop{display:flex;flex-direction:row;max-height:80vh;}.kap-card{max-width:820px;height:80vh;}}",
+    /* Desktop: popup height = content, image fills full height, right scrolls */
+    "@media(min-width:640px){",
+    "  .kap-mobile{display:none;}",
+    "  .kap-desktop{display:flex;flex-direction:row;align-items:stretch;}",
+    "  .kap-card{max-width:860px;max-height:90vh;}",
+    "  .kap-left{flex-shrink:0;width:clamp(240px,38%,420px);position:relative;align-self:stretch;}",
+    "  .kap-left-inner{position:absolute;inset:0;}",
+    "  .kap-right{flex:1;overflow-y:auto;max-height:90vh;display:flex;flex-direction:column;}",
+    "}",
+    /* Mobile */
     ".kap-img-wrap{position:relative;width:100%;padding-top:75%;overflow:hidden;flex-shrink:0;}",
     ".kap-img-inner{position:absolute;inset:0;}",
     ".kap-photo{width:100%;height:100%;object-fit:cover;display:block;}",
     ".kap-photo-ph{width:100%;height:100%;background:#642CFF22;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700;color:#642CFF;}",
-    ".kap-name-wrap{position:absolute;top:12px;left:12px;right:52px;}",
-    ".kap-name{font-family:'Serial Blur',sans-serif;font-size:18px;color:#FEFFC0;background:#642CFF;display:inline;padding:2px 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.5;}",
+    ".kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
+    ".kap-name{font-family:'Serial Blur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
     ".kap-fav{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}",
-    ".kap-fav.on{background:#642CFF;}",
-    ".kap-right{flex:1;overflow-y:auto;display:flex;flex-direction:column;}",
-    ".kap-left{flex-shrink:0;width:42%;position:relative;}",
-    ".kap-left-inner{position:absolute;inset:0;}",
+    ".kap-fav.on{background:#e53e3e;}",
     ".kap-left-inner .kap-photo{width:100%;height:100%;object-fit:cover;}",
     ".kap-left-inner .kap-photo-ph{width:100%;height:100%;}",
-    ".kap-left-inner .kap-name-wrap{position:absolute;top:12px;left:12px;right:52px;}",
+    ".kap-left-inner .kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
     ".kap-left-inner .kap-fav{position:absolute;bottom:10px;right:10px;}",
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
@@ -85,6 +91,7 @@
     ".kap-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);}",
     ".kap-player{margin-top:4px;}",
     ".kap-player iframe{display:block;width:100%;}",
+    ".kap-player>div{overflow:hidden;}",
   ].join("\n");
   function _kapImagePanel(a, isFav) {
     var photoHtml = a.photo
@@ -103,10 +110,11 @@
     var metaLine  = metaParts.join(", ");
     var playerHtml = "";
     if (a.soundcloudLink) {
-      playerHtml = '<div class="kap-player"><iframe height="120" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
+      playerHtml = '<div class="kap-player"><iframe height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
     } else if (a.youtubeLink) {
       var ytSrc = a.youtubeLink.replace("watch?v=", "embed/");
-      playerHtml = '<div class="kap-player"><iframe height="120" src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
+      // YouTube: 16:9 aspect ratio wrapper
+      playerHtml = '<div class="kap-player"><div style="position:relative;width:100%;padding-bottom:56.25%;"><iframe style="position:absolute;inset:0;width:100%;height:100%;display:block;" src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
     }
     return '<div class="kap-body">' +
       (metaLine ? '<div class="kap-meta">'+_kapEsc(metaLine)+'</div>' : '') +
