@@ -149,8 +149,8 @@
 
 
   // ── Font URLs ──────────────────────────────────────────────
-  var SERIAL_BLUR_URL = "https://koloradotim-bqt3vb73.manus.space/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf";
-  var PACAEMBU_URL    = "https://koloradotim-bqt3vb73.manus.space/manus-storage/Pacaembu-Medium_86abdf90.ttf";
+  var SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/SerialBlurTRIAL-Bleed.ttf";
+  var PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
 
   // ── Constants ──────────────────────────────────────────────
   var FAV_COOKIE_NAME    = "kolorado_favourites";

@@ -147,8 +147,8 @@
   };
 
   // ── Font URLs (served from the hosted Manus site) ──────────
-  const SERIAL_BLUR_URL = "https://koloradotim-bqt3vb73.manus.space/manus-storage/SerialBlurTRIAL-Bleed_177bb821.ttf";
-  const PACAEMBU_URL    = "https://koloradotim-bqt3vb73.manus.space/manus-storage/Pacaembu-Medium_86abdf90.ttf";
+  const SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/SerialBlurTRIAL-Bleed.ttf";
+  const PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
 
   // ── Constants ──────────────────────────────────────────────
   const KOLORADO_BASE_URL = "https://www.kolorado.hu";
