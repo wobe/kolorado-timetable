@@ -254,9 +254,8 @@ export default function LineupGrid() {
       {/* ── Header ── */}
       <div
         style={{
-          position: "sticky", top: 0, zIndex: 30,
           background: "#FEFFC0",
-          borderBottom: scrolled ? "1px solid rgba(100,44,255,0.15)" : "1px solid transparent",
+          borderBottom: "none",
           padding: "10px 16px",
           display: "flex", alignItems: "center", gap: 10,
         }}

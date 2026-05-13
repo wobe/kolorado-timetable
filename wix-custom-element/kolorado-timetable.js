@@ -76,7 +76,7 @@
     ".kap-photo{width:100%;height:100%;object-fit:cover;display:block;}",
     ".kap-photo-ph{width:100%;height:100%;background:#642CFF22;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700;color:#642CFF;}",
     ".kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
-    ".kap-name{font-family:'Serial Blur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
+    ".kap-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
     ".kap-fav{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}",
     ".kap-fav.on{background:#e53e3e;}",
     ".kap-left-inner .kap-photo{width:100%;height:100%;object-fit:cover;}",
