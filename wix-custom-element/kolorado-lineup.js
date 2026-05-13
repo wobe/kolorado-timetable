@@ -602,9 +602,8 @@
               '<div class="kl-card-inner">' +
                 photoHtml +
                 '<div class="kl-hover-overlay"></div>' +
-                '<button class="kl-fav-circle'+(isFav?" on":"")+'" data-fav="'+esc(a.id)+'">' +
-                  ICONS.heart(isFav, 16) +
-                '</button>' +
+                '<button class="kl-fav-circle'+(isFav?" on":"")+' " data-fav="'+esc(a.id)+'">' +
+                  (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +                '</button>' +
                 '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span></div>' +
               '</div>' +
             '</div>';
