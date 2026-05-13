@@ -13,6 +13,13 @@ export interface Artist {
   genre?: string;
   /** Relative URL slug from CMS "Lineup (Item)" field, e.g. "/lineup/analog-balaton" */
   url?: string;
+  // Extended fields — populated from the lineup CMS (photo, bio, audio links)
+  photo?: string;
+  description?: string;
+  longDescription?: string;
+  nationality?: string;
+  youtubeLink?: string;
+  soundcloudLink?: string;
 }
 
 export interface Stage {

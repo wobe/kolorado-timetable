@@ -13,7 +13,8 @@
 // ============================================================
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { CalendarPlus, Filter, ExternalLink, Search, Heart, X, LayoutGrid, List, Share2, ChevronDown } from "lucide-react";
+import { CalendarPlus, Filter, Search, Heart, X, LayoutGrid, List, Share2, ChevronDown } from "lucide-react";
+import ArtistPopup from "@/components/ArtistPopup";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -98,9 +99,10 @@ interface ArtistBlockProps {
   onToggleFavourite: (id: string) => void;
   isTapped: boolean;
   onTap: (id: string) => void;
+  onOpenPopup: (artist: Artist) => void;
 }
 
-function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite, isTapped, onTap }: ArtistBlockProps) {
+function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite, isTapped, onTap, onOpenPopup }: ArtistBlockProps) {
   const startHour = toFestivalHour(artist.startTime);
   const endHour = toFestivalHour(artist.endTime);
   const top = (startHour - DAY_START_HOUR) * hourHeight;
@@ -122,7 +124,7 @@ function ArtistBlock({ artist, stage, hourHeight, isFavourite, onToggleFavourite
 
   const handleNameClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer");
+    onOpenPopup(artist);
   };
 
   return (
@@ -234,11 +236,11 @@ function NowLineOverlay({ hourHeight }: { hourHeight: number }) {
 // ---- Search panel ----
 
 function SearchPanel({
-  query, onQueryChange, results, stages, favourites, onToggleFavourite, onClose, onJumpTo,
+  query, onQueryChange, results, stages, favourites, onToggleFavourite, onClose, onJumpTo, onOpenPopup,
 }: {
   query: string; onQueryChange: (q: string) => void; results: Artist[];
   stages: Stage[]; favourites: Set<string>; onToggleFavourite: (id: string) => void;
-  onClose: () => void; onJumpTo: (artist: Artist) => void;
+  onClose: () => void; onJumpTo: (artist: Artist) => void; onOpenPopup: (artist: Artist) => void;
 }) {
   return (
     <motion.div
@@ -285,11 +287,11 @@ function SearchPanel({
                         <Heart size={13} fill={isFav ? "#e86b5a" : "none"} />
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer"); }}
+                        onClick={(e) => { e.stopPropagation(); onOpenPopup(artist); }}
                         className="p-1.5 transition-colors text-muted-foreground hover:text-kolo-lime"
-                        title="Előadó oldala"
+                        title="Előadó részletei"
                       >
-                        <ExternalLink size={13} />
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                       </button>
                     </div>
                   </div>
@@ -306,11 +308,11 @@ function SearchPanel({
 // ---- Kedvencek panel (was Listám) ----
 
 function KedvencekPanel({
-  favourites, allArtists, stages, onToggleFavourite, onClose, onJumpTo, onExportAll, onShare,
+  favourites, allArtists, stages, onToggleFavourite, onClose, onJumpTo, onExportAll, onShare, onOpenPopup,
 }: {
   favourites: Set<string>; allArtists: Artist[]; stages: Stage[];
   onToggleFavourite: (id: string) => void; onClose: () => void;
-  onJumpTo: (artist: Artist) => void; onExportAll: () => void; onShare: () => void;
+  onJumpTo: (artist: Artist) => void; onExportAll: () => void; onShare: () => void; onOpenPopup: (artist: Artist) => void;
 }) {
   const favArtists = useMemo(
     () => allArtists.filter((a) => favourites.has(a.id)).sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
@@ -361,14 +363,13 @@ function KedvencekPanel({
                           </p>
                         </button>
                         <div className="flex items-center gap-1 shrink-0">
-                          <a
-                            href={getArtistPageUrl(artist)} target="_blank" rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onOpenPopup(artist); }}
                             className="p-1.5 text-muted-foreground hover:text-kolo-lime transition-colors"
-                            title="Előadó oldala"
+                            title="Előadó részletei"
                           >
-                            <ExternalLink size={13} />
-                          </a>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); onToggleFavourite(artist.id); }}
                             className="p-1.5 text-kolo-coral transition-colors"
@@ -498,6 +499,7 @@ export default function Timetable() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list"); // default list on mobile
   const [tappedBlockId, setTappedBlockId] = useState<string | null>(null);
   const [parentUrl, setParentUrl] = useState<string | null>(null);
+  const [activeArtist, setActiveArtist] = useState<Artist | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const filterBtnRef = useRef<HTMLDivElement>(null);
@@ -892,6 +894,7 @@ export default function Timetable() {
               onToggleFavourite={toggleFavourite}
               onClose={() => { setShowSearch(false); setSearchQuery(""); }}
               onJumpTo={jumpToArtist}
+              onOpenPopup={setActiveArtist}
             />
           )}
         </AnimatePresence>
@@ -908,6 +911,7 @@ export default function Timetable() {
               onJumpTo={jumpToArtist}
               onExportAll={exportAllFavourites}
               onShare={shareFavourites}
+              onOpenPopup={setActiveArtist}
             />
           )}
         </AnimatePresence>
@@ -940,7 +944,7 @@ export default function Timetable() {
                     key={artist.id}
                     className="flex items-center gap-3 p-3 cursor-pointer transition-all hover:bg-kolo-bg-light active:bg-kolo-bg-lighter"
                     style={{ borderRadius: 0 }}
-                    onClick={() => window.open(getArtistPageUrl(artist), "_blank", "noopener,noreferrer")}
+                    onClick={() => setActiveArtist(artist)}
                   >
                     <div className="w-1 h-12 shrink-0" style={{ backgroundColor: color }} />
                     <div className="flex-1 min-w-0">
@@ -1042,6 +1046,7 @@ export default function Timetable() {
                               onToggleFavourite={toggleFavourite}
                               isTapped={tappedBlockId === artist.id}
                               onTap={handleBlockTap}
+                              onOpenPopup={setActiveArtist}
                             />
                           ))}
                         </AnimatePresence>
@@ -1076,6 +1081,15 @@ export default function Timetable() {
             </div>
           )}
         </div>
+      )}
+      {/* ── Artist popup ── */}
+      {activeArtist && (
+        <ArtistPopup
+          artist={activeArtist}
+          isFav={favourites.has(activeArtist.id)}
+          onToggleFav={() => toggleFavourite(activeArtist.id)}
+          onClose={() => setActiveArtist(null)}
+        />
       )}
     </div>
   );

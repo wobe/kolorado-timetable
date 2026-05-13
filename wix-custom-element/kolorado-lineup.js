@@ -228,52 +228,7 @@
     ".kl-skel-card::before{content:'';display:block;padding-top:100%;}",
     "@keyframes kl-pulse{0%,100%{opacity:0.5}50%{opacity:1}}",
 
-    // ── Popup overlay ──
-    ".kl-popup-overlay{position:fixed;inset:0;z-index:100;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}",
-
-    // Popup card — mobile default
-    ".kl-popup{background:#FEFFC0;width:100%;max-width:480px;max-height:90vh;overflow:hidden;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.4);}",
-
-    // Mobile layout: stacked
-    ".kl-popup-mobile{display:flex;flex-direction:column;max-height:90vh;overflow-y:auto;}",
-    ".kl-popup-img-wrap{position:relative;width:100%;padding-bottom:75%;flex-shrink:0;}",  // 4:3
-    ".kl-popup-img-inner{position:absolute;inset:0;}",
-    ".kl-popup-photo{width:100%;height:100%;object-fit:cover;display:block;}",
-    ".kl-popup-photo-placeholder{width:100%;height:100%;background:#e8e9a0;display:flex;align-items:center;justify-content:center;}",
-    ".kl-popup-photo-placeholder span{font-family:'SerialBlur',sans-serif;font-size:48px;text-transform:uppercase;color:#642CFF;}",
-
-    // Desktop layout: landscape
-    ".kl-popup-desktop{display:none;height:80vh;max-height:640px;}",
-    ".kl-popup-left{width:42%;flex-shrink:0;position:relative;}",
-    ".kl-popup-left-inner{position:absolute;inset:0;}",
-    ".kl-popup-right{flex:1;overflow-y:auto;display:flex;flex-direction:column;}",
-
-    "@media(min-width:640px){",
-      ".kl-popup{max-width:820px!important;}",
-      ".kl-popup-mobile{display:none!important;}",
-      ".kl-popup-desktop{display:flex!important;}",
-    "}",
-
-    // Popup name overlay (top-left, per-line bg)
-    ".kl-popup-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;z-index:5;}",
-    ".kl-popup-name{font-family:'SerialBlur',sans-serif;font-size:18px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 8px;}",
-
-    // Popup fav button (bottom-right of image)
-    ".kl-popup-fav{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
-    ".kl-popup-fav.off{background:rgba(254,255,192,0.95);}",
-    ".kl-popup-fav.on{background:#e53e3e;}",
-
-    // Popup close button (top-right of whole card)
-    ".kl-popup-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
-
-    // Popup info body
-    ".kl-popup-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
-    ".kl-popup-meta-line{font-family:'Pacaembu',sans-serif;font-size:15px;color:#0E4B4D;line-height:1.4;}",
-    ".kl-popup-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;}",
-    ".kl-popup-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;}",
-    ".kl-popup-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);}",
-    ".kl-popup-player{margin-top:4px;}",
-    ".kl-popup-player iframe{display:block;width:100%;}",
+    // ── Popup CSS is provided by kolorado-artist-popup.js (KoloradoArtistPopup.CSS) ──
   ].join("\n");
 
   // ── Web Component ──────────────────────────────────────────
@@ -402,84 +357,11 @@
     }
 
     // ── Render image panel (shared mobile/desktop) ────────────
-    _renderImagePanel(a, isFav) {
-      var photoHtml = a.photo
-        ? '<img class="kl-popup-photo" src="'+esc(a.photo)+'" alt="'+esc(a.name)+'" loading="lazy">'
-        : '<div class="kl-popup-photo-placeholder"><span>'+esc(a.name.slice(0,2))+'</span></div>';
-
-      return photoHtml +
-        '<div class="kl-popup-name-wrap">' +
-          '<span class="kl-popup-name">'+esc(a.name)+'</span>' +
-        '</div>' +
-        '<button class="kl-popup-fav '+(isFav?"on":"off")+'" id="kl-popup-fav" data-id="'+esc(a.id)+'">' +
-          ICONS.heartWhite(isFav, 18) +
-        '</button>';
-    }
-
-    // ── Render info panel (shared mobile/desktop) ─────────────
-    _renderInfoPanel(a) {
-      // Meta line: day, time, stage
-      var dayLabel = "";
-      if (a.startTime) {
-        var dayId = getFestivalDayId(a.startTime);
-        for (var i = 0; i < FESTIVAL_DAYS.length; i++) {
-          if (FESTIVAL_DAYS[i].id === dayId) { dayLabel = FESTIVAL_DAYS[i].label; break; }
-        }
-      }
-      var timeStr = a.startTime ? fmt(a.startTime) + (a.endTime ? " – " + fmt(a.endTime) : "") : "";
-      var metaParts = [dayLabel, timeStr, a.stage].filter(Boolean);
-      var metaLine = metaParts.join(", ");
-
-      // Audio player
-      var playerHtml = "";
-      if (a.soundcloudLink) {
-        playerHtml = '<div class="kl-popup-player">' +
-          '<iframe height="120" scrolling="no" frameborder="no" allow="autoplay" ' +
-          'src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false">' +
-          '</iframe></div>';
-      } else if (a.youtubeLink) {
-        var ytSrc = a.youtubeLink.replace("watch?v=", "embed/");
-        playerHtml = '<div class="kl-popup-player">' +
-          '<iframe height="120" src="'+esc(ytSrc)+'" frameborder="0" ' +
-          'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>' +
-          '</iframe></div>';
-      }
-
-      return '<div class="kl-popup-body">' +
-        (metaLine ? '<div class="kl-popup-meta-line">'+esc(metaLine)+'</div>' : '') +
-        (a.genre ? '<div class="kl-popup-genre">'+esc(a.genre)+'</div>' : '') +
-        (a.longDescription
-          ? '<div class="kl-popup-desc">'+esc(a.longDescription)+'</div>'
-          : '<div class="kl-popup-placeholder">Részletek hamarosan...</div>') +
-        playerHtml +
-      '</div>';
-    }
-
-    // ── Render popup ──────────────────────────────────────────
+    // ── Popup is rendered via shared KoloradoArtistPopup module ──
     _renderPopup(a) {
+      if (typeof KoloradoArtistPopup === "undefined") return "";
       var isFav = this._favourites.has(a.id);
-      var imgPanel  = this._renderImagePanel(a, isFav);
-      var infoPanel = this._renderInfoPanel(a);
-
-      return '<div class="kl-popup-overlay" id="kl-popup-overlay">' +
-        '<div class="kl-popup">' +
-          '<button class="kl-popup-close" id="kl-popup-close">×</button>' +
-
-          // Mobile: stacked
-          '<div class="kl-popup-mobile">' +
-            '<div class="kl-popup-img-wrap">' +
-              '<div class="kl-popup-img-inner">' + imgPanel + '</div>' +
-            '</div>' +
-            infoPanel +
-          '</div>' +
-
-          // Desktop: landscape
-          '<div class="kl-popup-desktop">' +
-            '<div class="kl-popup-left"><div class="kl-popup-left-inner">' + imgPanel + '</div></div>' +
-            '<div class="kl-popup-right">' + infoPanel + '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
+      return KoloradoArtistPopup.render(a, isFav);
     }
 
     // ── Main render ───────────────────────────────────────────
@@ -624,7 +506,9 @@
       var popupHtml = this._popupArtist ? this._renderPopup(this._popupArtist) : '';
 
       // ── Assemble ──
-      shadow.innerHTML = '<style>' + CSS + '</style>' +
+      // Inject shared popup CSS if available
+      var extraCss = (typeof KoloradoArtistPopup !== "undefined") ? KoloradoArtistPopup.CSS : "";
+      shadow.innerHTML = '<style>' + CSS + extraCss + '</style>' +
         '<div class="kl-root">' + headerHtml + gridHtml + popupHtml + '</div>';
 
       // ── Event listeners ──
@@ -763,25 +647,18 @@
         });
       });
 
-      // Popup close button
-      var popupClose = shadow.getElementById("kl-popup-close");
-      if (popupClose) popupClose.addEventListener("click", function() { self._closePopup(); });
-
-      // Popup overlay backdrop
-      var popupOverlay = shadow.getElementById("kl-popup-overlay");
-      if (popupOverlay) popupOverlay.addEventListener("click", function(e) {
-        if (e.target === popupOverlay) self._closePopup();
-      });
-
-      // Popup fav button
-      var popupFav = shadow.getElementById("kl-popup-fav");
-      if (popupFav) popupFav.addEventListener("click", function(e) {
-        e.stopPropagation();
-        var id = popupFav.getAttribute("data-id");
-        self._toggleFav(id);
-        self._popupArtist = self._artists.find(function(a){ return a.id === id; }) || self._popupArtist;
-        self._render();
-      });
+      // Popup events — wired via shared KoloradoArtistPopup module
+      if (self._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
+        var isFavPopup = self._favourites.has(self._popupArtist.id);
+        KoloradoArtistPopup.wire(shadow, self._popupArtist, isFavPopup, {
+          onClose: function() { self._closePopup(); },
+          onToggleFav: function(id) {
+            self._toggleFav(id);
+            self._popupArtist = self._artists.find(function(a){ return a.id === id; }) || self._popupArtist;
+            self._render();
+          },
+        });
+      }
 
       // Close dropdowns on shadow click outside
       shadow.addEventListener("click", function(e) {

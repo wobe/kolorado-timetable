@@ -335,6 +335,7 @@
       this._parentUrl = null;
       this._loading = true;
       this._nowInterval = null;
+      this._popupArtist = null;
     }
 
     connectedCallback() {
@@ -380,13 +381,17 @@
           var raw = JSON.parse(val);
           this._artists = raw.map(function(item) {
             return {
-              id: item.id || item._id || String(Math.random()),
-              name: item.title || item.name || "Ismeretlen",
-              stage: item.sznpad || item.stage || "Nagyszínpad",
-              startTime: new Date(item.id || item.startTime),
-              endTime: new Date(item.id1 || item.endTime),
-              genre: item.genre1 || item.genre || "",
-              url: item.website || item.url || null,
+              id:              item.id || item._id || String(Math.random()),
+              name:            item.title || item.name || "Ismeretlen",
+              stage:           item.sznpad || item.stage || "Nagyszínpad",
+              startTime:       new Date(item.id || item.startTime),
+              endTime:         new Date(item.id1 || item.endTime),
+              genre:           item.genre1 || item.genre || "",
+              url:             item.website || item.url || null,
+              photo:           item.photo || "",
+              longDescription: item.longDescription || item.bio || "",
+              soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
+              youtubeLink:     item.youtubeLink || item.youtube || "",
             };
           }).filter(function(a){ return !isNaN(a.startTime) && !isNaN(a.endTime); });
           this._loading = false;
@@ -395,12 +400,24 @@
       }
     };
 
+    _openArtistPopup(artist) {
+      this._popupArtist = artist;
+      this._render();
+    };
+    _closeArtistPopup() {
+      this._popupArtist = null;
+      this._render();
+    };
     _render() {
       var root = this._shadow;
       if (!root) return;
       root.innerHTML = "";
       var style = document.createElement("style");
       style.textContent = CSS;
+      // Inject shared popup CSS if available
+      if (typeof KoloradoArtistPopup !== "undefined") {
+        style.textContent += KoloradoArtistPopup.CSS;
+      }
       root.appendChild(style);
       if (this._loading) { root.appendChild(this._renderSkeleton()); return; }
       var wrap = document.createElement("div");
@@ -411,6 +428,22 @@
       if (this._viewMode === "list") wrap.appendChild(this._renderListView());
       else wrap.appendChild(this._renderGridView());
       root.appendChild(wrap);
+      // Render artist popup if open
+      if (this._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
+        var self = this;
+        var isFav = this._favourites.has(this._popupArtist.id);
+        var popupDiv = document.createElement("div");
+        popupDiv.innerHTML = KoloradoArtistPopup.render(this._popupArtist, isFav);
+        root.appendChild(popupDiv.firstChild);
+        KoloradoArtistPopup.wire(root, this._popupArtist, isFav, {
+          onClose: function() { self._closeArtistPopup(); },
+          onToggleFav: function(id) {
+            self._toggleFav(id);
+            self._popupArtist = self._artists.find(function(a){ return a.id === id; }) || self._popupArtist;
+            self._render();
+          },
+        });
+      }
       // Close filter on outside click
       if (this._showFilter) {
         var self = this;
@@ -552,8 +585,9 @@
             var stage = STAGES.find(function(s){return s.name===artist.stage;});
             var color = stage ? stage.color : "#dcea75";
             var row = document.createElement("div"); row.className = "kt-panel-row";
-            row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+'</div></div><div class="actions"><a href="'+getArtistPageUrl(artist)+'" target="_blank" rel="noopener noreferrer" title="Előadó oldala">'+ICONS.external(13)+'</a><button class="fav-on" data-id="'+artist.id+'" style="color:#e86b5a">'+ICONS.heart("#e86b5a",13)+'</button></div>';
-            row.querySelector("button").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+            row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+'</div></div><div class="actions"><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:'+color+'">'+ICONS.external(13)+'</button><button class="fav-on" data-id="'+artist.id+'" style="color:#e86b5a">'+ICONS.heart("#e86b5a",13)+'</button></div>';
+            row.querySelector("button.fav-on").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+            row.querySelector(".kt-popup-btn").addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
             row.querySelector(".info").addEventListener("click", function(){ self._jumpToArtist(artist); self._showKedvencek=false; self._render(); });
             list.appendChild(row);
           });
@@ -592,9 +626,9 @@
         var stage = STAGES.find(function(s){return s.name===artist.stage;});
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
-        var row = document.createElement("div"); row.className = "kt-panel-row";
-        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+(artist.genre?' · '+artist.genre:'')+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+'" data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><a href="'+getArtistPageUrl(artist)+'" target="_blank" rel="noopener noreferrer" title="Előadó oldala">'+ICONS.external(13)+'</a></div>';
-        row.querySelector("button").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        var row = document.createElement("div"); row.className = "kt-panel-row";        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+(artist.genre?' · '+artist.genre:'')+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+' " data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:#7a9e9b">'+ICONS.external(13)+'</button></div>';
+        row.querySelector("button[data-id]").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        row.querySelector(".kt-popup-btn").addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
         row.querySelector(".info").addEventListener("click", function(){ self._jumpToArtist(artist); self._showSearch=false; self._searchQuery=""; self._render(); });
         list.appendChild(row);
       });
@@ -619,7 +653,7 @@
         var row = document.createElement("div"); row.className = "kt-list-row";
         row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+'</div><div class="stage-label" style="color:'+color+'55">'+artist.stage+'</div></div><button class="fav-btn'+(isFav?" on":"")+'" data-id="'+artist.id+'">'+ICONS.heart(isFav?"#e86b5a":"none",18)+'</button>';
         row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
-        row.addEventListener("click", function(){ window.open(getArtistPageUrl(artist),"_blank","noopener,noreferrer"); });
+        row.addEventListener("click", function(){ self._openArtistPopup(artist); });
         wrap.appendChild(row);
       });
       return wrap;
@@ -696,7 +730,7 @@
       // Overlay
       var ov = document.createElement("div"); ov.className = "kt-block-overlay"; ov.style.background = stage.color+"dd";
       var nb = document.createElement("button"); nb.className = "kt-block-overlay-name"; nb.textContent = artist.name;
-      nb.addEventListener("click", function(e){ e.stopPropagation(); window.open(getArtistPageUrl(artist),"_blank","noopener,noreferrer"); });
+      nb.addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
       ov.appendChild(nb);
       if (!isTiny) { var ot=document.createElement("div"); ot.className="kt-block-overlay-time"; ot.textContent=formatTime(artist.startTime)+" – "+formatTime(artist.endTime); ov.appendChild(ot); }
       var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
