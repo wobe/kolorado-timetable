@@ -1,27 +1,25 @@
 // ============================================================
-// Backend/lineupApi.jsw  — v3
+// Backend/lineupApi.jsw  — v4
 // Kolorádó Festival Timetable — Wix Velo Backend Module
 //
 // Place this file at: Backend > lineupApi.jsw in the Velo editor.
 // Both the timetable page and the lineup grid page import from here:
 //   import { getLineup } from 'backend/lineupApi';
 //
-// CMS collection: "Team"
-// Field IDs (Wix auto-generated camelCase — check yours in CMS > Fields):
+// CMS collection: "Lineup" (internal name: "Team")
+// Verified field IDs (from CMS > Fields panel):
 //   title           → Artist name
 //   photo           → Artist photo  (wix:image:// URI → converted to https://)
-//   id              → Start time    (Date/Time field)
-//   id1             → End time      (Date/Time field)
-//   sznpad          → Stage name    (Text / Tags)
+//   id              → Kezdő idő     (Date/Time — NOTE: item.id is the date field, item._id is the system doc ID)
+//   id1             → Vége idő      (Date/Time)
+//   sznpad          → Színpad       (Tags / Array)
 //   genre1          → Genre         (Text)
-//   longDescription → Long bio      (Rich Text / Text)
-//   newField        → SoundCloud URL (Text)
-//   youtubeLink2    → YouTube URL   (Text)
-//   jobTitle        → Nationality   (Text)
-//   website         → Artist URL    (Text)
-//
-// NOTE: If your field IDs differ, update the mapping below.
-//       Check them in the CMS > Collection > Fields panel.
+//   longDescription → Long Description (Text)
+//   newField        → Soundcloud link  (URL)
+//   youtubeLink2    → Youtube link     (URL)
+//   audioplayer     → PLAYER           (Audio / URL)
+//   jobTitle        → Nationality / Live (Text)
+//   website         → Website          (URL)
 // ============================================================
 
 import wixData from 'wix-data';
@@ -34,13 +32,13 @@ export async function getLineup() {
     .find();
 
   return results.items
-    .filter(item => item["id"] && item["sznpad"])  // must have a start time and a stage
+    .filter(item => item.id && item.sznpad)  // must have a start time (Kezdő idő) and a stage
     .map((item, index) => {
 
       // ── Stage ──────────────────────────────────────────────
       // sznpad may be a plain string, a JSON-encoded array, or an actual array
       let stage = "";
-      const rawStage = item["sznpad"];
+      const rawStage = item.sznpad;
       if (Array.isArray(rawStage)) {
         stage = rawStage[0] || "";
       } else if (typeof rawStage === "string") {
@@ -53,21 +51,27 @@ export async function getLineup() {
       }
 
       // ── Times ──────────────────────────────────────────────
-      const startTime = item["id"];
-      const endTime   = item["id1"];
+      // item.id  = Kezdő idő (start time Date field — NOT the system _id)
+      // item.id1 = Vége idő  (end time Date field)
+      const startTime = item.id;
+      const endTime   = item.id1;
 
       // ── Photo ──────────────────────────────────────────────
       // getImageUrl() converts wix:image://v1/... to a real https://static.wixstatic.com/... URL.
       // It is only available in backend (jsw) files.
       // If the field already holds a plain https:// URL (e.g. from an older migration), use it as-is.
       let photo = "";
-      if (item["photo"]) {
+      if (item.photo) {
         try {
-          photo = getImageUrl(item["photo"]);
+          photo = getImageUrl(item.photo);
         } catch {
-          photo = item["photo"];
+          photo = item.photo; // already a plain https:// URL
         }
       }
+
+      // ── Audio player ───────────────────────────────────────
+      // audioplayer is a Wix Audio field — pass through as-is.
+      const audioPlayer = item.audioplayer || "";
 
       // ── Return shape ───────────────────────────────────────
       // Field names here MUST match what kolorado-lineup.js and kolorado-timetable.js expect.
@@ -78,12 +82,13 @@ export async function getLineup() {
         stage,
         startTime:       startTime instanceof Date ? startTime.toISOString() : (startTime || null),
         endTime:         endTime   instanceof Date ? endTime.toISOString()   : (endTime   || null),
-        genre:           item["genre1"]          || "",
-        longDescription: item["longDescription"] || "",           // popup body text
-        soundcloudLink:  item["newField"]        || "",           // SoundCloud embed URL
-        youtubeLink:     item["youtubeLink2"]    || "",           // YouTube embed URL
-        nationality:     item["jobTitle"]        || "",
-        url:             item["website"]         || "",           // Kolorádó artist page path
+        genre:           item.genre1          || "",
+        longDescription: item.longDescription || "",
+        soundcloudLink:  item.newField        || "",
+        youtubeLink:     item.youtubeLink2    || "",
+        audioPlayer,
+        nationality:     item.jobTitle        || "",
+        url:             item.website         || "",
       };
     });
 }
