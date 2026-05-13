@@ -245,7 +245,7 @@ export default function LineupGrid() {
         style={{
           position: "sticky", top: 0, zIndex: 30,
           background: "#FEFFC0",
-          borderBottom: "2px solid rgba(100,44,255,0.15)",
+          borderBottom: "1px solid rgba(100,44,255,0.15)",
           padding: "10px 16px",
           display: "flex", alignItems: "center", gap: 10,
         }}
