@@ -483,6 +483,16 @@
 
     connectedCallback() {
       var self = this;
+      // Inject @font-face into document <head> — shadow DOM @font-face is not
+      // reliably supported across browsers; fonts must live in the main document.
+      if (!document.getElementById('kt-fonts')) {
+        var fontStyle = document.createElement('style');
+        fontStyle.id = 'kt-fonts';
+        fontStyle.textContent =
+          "@font-face{font-family:'SerialBlur';src:url('" + SERIAL_BLUR_URL + "') format('truetype');font-weight:normal;font-style:normal;font-display:swap;}" +
+          "@font-face{font-family:'Pacaembu';src:url('" + PACAEMBU_URL + "') format('truetype');font-weight:normal;font-style:normal;font-display:swap;}";
+        document.head.appendChild(fontStyle);
+      }
       this._shadow = this.attachShadow({ mode: "open" });
       this._render();
       // postMessage bridge for parent URL
