@@ -51,8 +51,9 @@ function HeartIcon({ filled, color }: { filled: boolean; color: string }) {
   );
 }
 
-// ── Checkbox multi-select dropdown ────────────────────────────────────────
-function CheckboxDropdown({
+/*
+// ── CheckboxDropdown (kept for reference, not currently used) ──
+function CheckboxDropdown_UNUSED({
   label,
   options,
   selected,
@@ -157,6 +158,7 @@ function CheckboxDropdown({
     </div>
   );
 }
+*/
 
 // ── Artist card (memoised to prevent image reload on fav toggle) ─────────
 const ArtistCard = React.memo(function ArtistCard({
@@ -216,17 +218,48 @@ const ArtistCard = React.memo(function ArtistCard({
   );
 });
 
+// ── URL helpers ───────────────────────────────────────────────────────────
+type MusicType = "zene" | "nemzene" | null; // null = all
+
+function readUrlParams(): { stage: string; day: string; tipus: MusicType } {
+  const p = new URLSearchParams(window.location.search);
+  const t = p.get("tipus");
+  return {
+    stage: p.get("szinhely") ?? "",
+    day: p.get("nap") ?? "",
+    tipus: t === "nemzene" ? "nemzene" : t === "all" ? null : "zene",
+  };
+}
+
+function pushUrlParams(stage: string, day: string, tipus: MusicType) {
+  const p = new URLSearchParams();
+  if (stage) p.set("szinhely", stage);
+  if (day) p.set("nap", day);
+  if (tipus === "nemzene") p.set("tipus", "nemzene");
+  else if (tipus === null) p.set("tipus", "all");
+  // zene is default — no param needed
+  const qs = p.toString();
+  const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  window.history.replaceState(null, "", newUrl);
+}
+
 // ── Main LineupGrid page ───────────────────────────────────────────────────
 export default function LineupGrid() {
   const [, setLocation] = useLocation();
   const [favourites, setFavourites] = useState<Set<string>>(getFavourites);
-  // Multi-select filters — store stage NAMES (not slugs) and day IDs
-  const [selectedStages, setSelectedStages] = useState<Set<string>>(new Set());
-  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
+
+  // Read initial state from URL
+  const initialParams = useState(() => readUrlParams())[0];
+
+  // Single-select filters (dropdown pills)
+  const [selectedStage, setSelectedStage] = useState<string>(initialParams.stage);
+  const [selectedDay, setSelectedDay] = useState<string>(initialParams.day);
+  // ZENE / NEMZENE split pill — null means "all"
+  const [musicType, setMusicType] = useState<MusicType>(initialParams.tipus);
+
   const [showFavOnly, setShowFavOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [stageOpen, setStageOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -239,20 +272,15 @@ export default function LineupGrid() {
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { saveFavourites(favourites); }, [favourites]);
-  // Scroll-triggered border on header
+
+  // Sync URL when filters change
   useEffect(() => {
-    const el = pageRef.current;
-    if (!el) return;
-    const handler = () => setScrolled(el.scrollTop > 4);
-    el.addEventListener("scroll", handler, { passive: true });
-    return () => el.removeEventListener("scroll", handler);
-  }, []);
+    pushUrlParams(selectedStage, selectedDay, musicType);
+  }, [selectedStage, selectedDay, musicType]);
 
   // Auto-focus search input when opened
   useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
+    if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [searchOpen]);
 
   // Close dropdowns on outside click
@@ -269,30 +297,14 @@ export default function LineupGrid() {
   function toggleFav(id: string) {
     setFavourites((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        showFirstFavToast();
-      }
+      if (next.has(id)) { next.delete(id); } else { next.add(id); showFirstFavToast(); }
       return next;
     });
   }
 
-  function toggleStage(name: string) {
-    setSelectedStages((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
-      return next;
-    });
-  }
-
-  function toggleDay(id: string) {
-    setSelectedDays((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  // Toggle ZENE / NEMZENE — clicking the active side deactivates (shows all)
+  function handleMusicType(clicked: "zene" | "nemzene") {
+    setMusicType((prev) => (prev === clicked ? null : clicked));
   }
 
   // Sort alphabetically
@@ -301,14 +313,20 @@ export default function LineupGrid() {
   );
 
   const filtered = artists.filter((a) => {
-    // Favourites filter
     if (showFavOnly && !favourites.has(a.id)) return false;
-    // Stage filter — only apply if artist has a stage set
-    if (selectedStages.size > 0 && a.stage && !selectedStages.has(a.stage)) return false;
-    // Day filter — only apply if artist has a startTime set
-    if (selectedDays.size > 0 && a.startTime) {
+    // Stage filter (single-select by name)
+    if (selectedStage && a.stage && a.stage !== selectedStage) return false;
+    // Day filter (single-select by day id)
+    if (selectedDay && a.startTime) {
       const dayId = getFestivalDayId(a.startTime);
-      if (dayId && !selectedDays.has(dayId)) return false;
+      if (dayId && dayId !== selectedDay) return false;
+    }
+    // Music type filter
+    if (musicType === "zene") {
+      // Show Élőzene, Elektronikus zene, and artists with no programtipus
+      if (a.programtipus === "Nemzene") return false;
+    } else if (musicType === "nemzene") {
+      if (a.programtipus !== "Nemzene") return false;
     }
     // Search filter
     if (searchQuery.trim()) {
@@ -318,11 +336,11 @@ export default function LineupGrid() {
     return true;
   });
 
-  // Options for dropdowns — use stage NAMES as IDs for direct comparison
+  // Options for dropdowns
   const stageOptions = STAGES.map((s: Stage) => ({ id: s.name, name: s.name }));
   const dayOptions = FESTIVAL_DAYS.map((d) => ({ id: d.id, name: d.label }));
 
-  const hasActiveFilters = selectedStages.size > 0 || selectedDays.size > 0 || showFavOnly;
+  const hasActiveFilters = !!selectedStage || !!selectedDay || showFavOnly || musicType !== "zene";
 
   const pillBase: React.CSSProperties = {
     display: "inline-flex", alignItems: "center", gap: 6,
@@ -332,114 +350,147 @@ export default function LineupGrid() {
 
   return (
     <div ref={pageRef} style={{ height: "100vh", overflowY: "auto", background: "#FEFFC0" }}>
-      {/* ── Header hidden until schedule is announced ── */}
-      {false && <div
+      {/* ── Filter header ── */}
+      <div
         style={{
           background: "#FEFFC0",
-          borderBottom: "none",
           padding: "10px 16px",
-          display: "flex", alignItems: "center", gap: 10,
+          display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+          position: "sticky", top: 0, zIndex: 10,
+          borderBottom: "1.5px solid rgba(100,44,255,0.1)",
         }}
       >
-        {/* ── Desktop filters (hidden on mobile) ── */}
-        <div className="lineup-desktop-filters" style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, flexWrap: "wrap" }}>
-          {/* Stage + Day filters hidden until schedule is announced — re-enable by removing the false && wrappers */}
-          {false && <CheckboxDropdown
-            label="Színpad"
-            options={stageOptions}
-            selected={selectedStages}
-            onToggle={toggleStage}
-            onClear={() => setSelectedStages(new Set())}
-            isOpen={stageOpen}
-            onToggleOpen={() => { setStageOpen((o) => !o); setDayOpen(false); }}
-            dropdownRef={stageRef}
-          />}
-          {false && <CheckboxDropdown
-            label="Nap"
-            options={dayOptions}
-            selected={selectedDays}
-            onToggle={toggleDay}
-            onClear={() => setSelectedDays(new Set())}
-            isOpen={dayOpen}
-            onToggleOpen={() => { setDayOpen((o) => !o); setStageOpen(false); }}
-            dropdownRef={dayRef}
-          />}
+        {/* ── Stage dropdown ── */}
+        <div ref={stageRef} style={{ position: "relative" }}>
           <button
-            onClick={() => setShowFavOnly((v) => !v)}
+            onClick={() => { setStageOpen((o) => !o); setDayOpen(false); }}
             style={{
               ...pillBase,
-              background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
-              color: showFavOnly ? "white" : "#642CFF",
+              background: selectedStage ? "#642CFF" : "rgba(100,44,255,0.12)",
+              color: selectedStage ? "#FEFFC0" : "#642CFF",
             }}
           >
-            <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
-            Kedvencek
-            {favourites.size > 0 && (
-              <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
-                {favourites.size}
-              </span>
+            <span style={{ fontSize: 10 }}>▼</span>
+            {selectedStage || "Színpad"}
+            {selectedStage && (
+              <span
+                onClick={(e) => { e.stopPropagation(); setSelectedStage(""); }}
+                style={{ marginLeft: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(254,255,192,0.3)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, cursor: "pointer" }}
+              >×</span>
             )}
           </button>
-        </div>
-
-        {/* ── Mobile filter icon (hidden on desktop) ── */}
-        <div className="lineup-mobile-filters" ref={mobileFilterRef} style={{ position: "relative", flex: 1 }}>
-          <button
-            onClick={() => setMobileFiltersOpen((o) => !o)}
-            style={{
-              width: 36, height: 36, borderRadius: "50%", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: hasActiveFilters ? "#642CFF" : "rgba(100,44,255,0.12)",
-              color: hasActiveFilters ? "#FEFFC0" : "#642CFF",
-              position: "relative",
-            }}
-            title="Szűrők"
-          >
-            {/* Filter icon */}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-            {hasActiveFilters && (
-              <span style={{
-                position: "absolute", top: -3, right: -3,
-                width: 14, height: 14, borderRadius: "50%",
-                background: "#e53e3e", color: "white",
-                fontSize: 9, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {selectedStages.size + selectedDays.size + (showFavOnly ? 1 : 0)}
-              </span>
-            )}
-          </button>
-
-          {/* Mobile filter panel */}
-          {mobileFiltersOpen && (
+          {stageOpen && (
             <div style={{
-              position: "absolute", top: "calc(100% + 8px)", left: 0,
+              position: "absolute", top: "calc(100% + 6px)", left: 0,
               background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)",
-              minWidth: 240, zIndex: 100,
-              boxShadow: "0 8px 24px rgba(100,44,255,0.15)",
-              padding: "12px",
-              display: "flex", flexDirection: "column", gap: 8,
+              minWidth: 180, zIndex: 200, boxShadow: "0 8px 24px rgba(100,44,255,0.15)",
+              borderRadius: 12, overflow: "hidden",
             }}>
-              {/* Stage + Day sections hidden until schedule is announced */}
-              {/* Kedvencek */}
-              <button onClick={() => setShowFavOnly((v) => !v)} style={{ ...pillBase, padding: "6px 12px", fontSize: 12, background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.1)", color: showFavOnly ? "white" : "#642CFF", justifyContent: "flex-start" }}>
-                <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
-                Kedvencek
-                {favourites.size > 0 && <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{favourites.size}</span>}
-              </button>
-              {/* Clear all */}
-              {hasActiveFilters && (
-                <button onClick={() => { setSelectedStages(new Set()); setSelectedDays(new Set()); setShowFavOnly(false); }} style={{ ...pillBase, padding: "4px 10px", fontSize: 12, background: "rgba(100,44,255,0.06)", color: "#642CFF", justifyContent: "center" }}>
-                  × Szűrők törlése
-                </button>
-              )}
+              {stageOptions.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => { setSelectedStage(selectedStage === o.id ? "" : o.id); setStageOpen(false); }}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "8px 14px", border: "none", cursor: "pointer",
+                    fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                    background: selectedStage === o.id ? "#642CFF" : "transparent",
+                    color: selectedStage === o.id ? "#FEFFC0" : "#642CFF",
+                  }}
+                >{o.name}</button>
+              ))}
             </div>
           )}
         </div>
 
-        {/* ── Search pill (right side, always visible) ── */}
+        {/* ── Day dropdown ── */}
+        <div ref={dayRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => { setDayOpen((o) => !o); setStageOpen(false); }}
+            style={{
+              ...pillBase,
+              background: selectedDay ? "#642CFF" : "rgba(100,44,255,0.12)",
+              color: selectedDay ? "#FEFFC0" : "#642CFF",
+            }}
+          >
+            <span style={{ fontSize: 10 }}>▼</span>
+            {selectedDay ? FESTIVAL_DAYS.find((d) => d.id === selectedDay)?.label ?? selectedDay : "Nap"}
+            {selectedDay && (
+              <span
+                onClick={(e) => { e.stopPropagation(); setSelectedDay(""); }}
+                style={{ marginLeft: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(254,255,192,0.3)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, cursor: "pointer" }}
+              >×</span>
+            )}
+          </button>
+          {dayOpen && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 6px)", left: 0,
+              background: "#FEFFC0", border: "2px solid rgba(100,44,255,0.2)",
+              minWidth: 160, zIndex: 200, boxShadow: "0 8px 24px rgba(100,44,255,0.15)",
+              borderRadius: 12, overflow: "hidden",
+            }}>
+              {dayOptions.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => { setSelectedDay(selectedDay === o.id ? "" : o.id); setDayOpen(false); }}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "8px 14px", border: "none", cursor: "pointer",
+                    fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
+                    background: selectedDay === o.id ? "#642CFF" : "transparent",
+                    color: selectedDay === o.id ? "#FEFFC0" : "#642CFF",
+                  }}
+                >{o.name}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── ZENE / NEMZENE split pill ── */}
+        <div style={{
+          display: "inline-flex", borderRadius: 9999, overflow: "hidden",
+          border: "1.5px solid rgba(100,44,255,0.25)",
+        }}>
+          <button
+            onClick={() => handleMusicType("zene")}
+            style={{
+              padding: "6px 14px", border: "none", cursor: "pointer",
+              fontFamily: "'Pacaembu', sans-serif", fontSize: 13, transition: "all 0.15s",
+              background: musicType === "zene" ? "#642CFF" : "transparent",
+              color: musicType === "zene" ? "#FEFFC0" : "#642CFF",
+              borderRight: "1px solid rgba(100,44,255,0.2)",
+            }}
+          >ZENE</button>
+          <button
+            onClick={() => handleMusicType("nemzene")}
+            style={{
+              padding: "6px 14px", border: "none", cursor: "pointer",
+              fontFamily: "'Pacaembu', sans-serif", fontSize: 13, transition: "all 0.15s",
+              background: musicType === "nemzene" ? "#642CFF" : "transparent",
+              color: musicType === "nemzene" ? "#FEFFC0" : "#642CFF",
+            }}
+          >NEMZENE</button>
+        </div>
+
+        {/* ── Kedvencek pill ── */}
+        <button
+          onClick={() => setShowFavOnly((v) => !v)}
+          style={{
+            ...pillBase,
+            background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
+            color: showFavOnly ? "white" : "#642CFF",
+          }}
+        >
+          <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
+          Kedvencek
+          {favourites.size > 0 && (
+            <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+              {favourites.size}
+            </span>
+          )}
+        </button>
+
+        {/* ── Search (right side) ── */}
         <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
           <AnimatePresence mode="wait">
             {searchOpen ? (
@@ -451,11 +502,9 @@ export default function LineupGrid() {
                 transition={{ duration: 0.2 }}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "0 10px", height: 36,
-                  borderRadius: 9999,
+                  padding: "0 10px", height: 36, borderRadius: 9999,
                   border: "1.5px solid rgba(100,44,255,0.35)",
-                  background: "rgba(100,44,255,0.07)",
-                  overflow: "hidden",
+                  background: "rgba(100,44,255,0.07)", overflow: "hidden",
                 }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#642CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -470,8 +519,7 @@ export default function LineupGrid() {
                   placeholder="Keresés..."
                   style={{
                     flex: 1, background: "transparent", border: "none", outline: "none",
-                    color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13,
-                    minWidth: 0,
+                    color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, minWidth: 0,
                   }}
                 />
                 <button
@@ -491,11 +539,9 @@ export default function LineupGrid() {
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
                   border: "1.5px solid rgba(100,44,255,0.25)",
-                  cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   background: searchQuery ? "#642CFF" : "transparent",
-                  color: searchQuery ? "#FEFFC0" : "#642CFF",
-                  flexShrink: 0,
+                  color: searchQuery ? "#FEFFC0" : "#642CFF", flexShrink: 0,
                 }}
                 title="Keresés"
               >
@@ -506,7 +552,7 @@ export default function LineupGrid() {
             )}
           </AnimatePresence>
         </div>
-      </div>}
+      </div>
 
       {/* ── Grid ── */}
       <div

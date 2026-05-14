@@ -20,6 +20,8 @@ export interface Artist {
   nationality?: string;
   youtubeLink?: string;
   soundcloudLink?: string;
+  /** CMS field slug: programtipus — Élőzene | Elektronikus zene | Nemzene */
+  programtipus?: "Élőzene" | "Elektronikus zene" | "Nemzene";
 }
 
 export interface Stage {
