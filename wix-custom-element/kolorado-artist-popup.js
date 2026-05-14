@@ -188,7 +188,17 @@
         'src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false">' +
         '</iframe></div>';
     } else if (a.youtubeLink) {
-      var ytSrc = a.youtubeLink.replace("watch?v=", "embed/");
+      // Robustly extract the YouTube video ID from any URL format:
+      // watch?v=ID, youtu.be/ID, /embed/ID — ignoring extra params like ?si=, &feature=youtu.be
+      var ytId = null;
+      try {
+        var ytUrl = a.youtubeLink;
+        var mEmbed = ytUrl.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+        var mWatch = ytUrl.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+        var mShort = ytUrl.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+        ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]) || null;
+      } catch(e) {}
+      var ytSrc = ytId ? 'https://www.youtube.com/embed/' + ytId : a.youtubeLink;
       playerHtml = '<div class="kap-player">' +
         '<iframe height="120" src="'+esc(ytSrc)+'" frameborder="0" ' +
         'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>' +

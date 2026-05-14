@@ -205,7 +205,14 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
             <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%" }}>
               <iframe
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }}
-                src={artist.youtubeLink!.replace("watch?v=", "embed/")}
+                src={(() => {
+                  const url = artist.youtubeLink!;
+                  const mEmbed = url.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+                  const mWatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+                  const mShort = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+                  const id = (mEmbed?.[1]) || (mWatch?.[1]) || (mShort?.[1]);
+                  return id ? `https://www.youtube.com/embed/${id}` : url;
+                })()}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
