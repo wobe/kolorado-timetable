@@ -72,21 +72,25 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
     if (dx > 0 && onPrev) onPrev(); // swipe right → prev
   };
 
-  // ── Nav arrow button style ───────────────────────────────────
+  // ── Nav arrow button style ────────────────────────────────────────────
+  // Arrows are flex siblings of the card in the overlay row,
+  // so they naturally sit in the gap between the card and the screen edge.
   const navBtnStyle = (disabled: boolean): React.CSSProperties => ({
-    position: "absolute", top: "50%", transform: "translateY(-50%)",
-    zIndex: 20, width: 36, height: 36, borderRadius: "50%",
+    flexShrink: 0,
+    alignSelf: "center",
+    zIndex: 20, width: 40, height: 40, borderRadius: "50%",
     background: "rgba(254,255,192,0.92)", border: "none",
     cursor: disabled ? "default" : "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#642CFF", fontSize: 22, fontWeight: 700,
+    color: "#642CFF", fontSize: 24, fontWeight: 700,
     boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-    opacity: disabled ? 0.25 : 0.85,
+    opacity: disabled ? 0.2 : 0.85,
     pointerEvents: disabled ? "none" : "auto",
     transition: "opacity 0.15s",
+    margin: "0 8px",
   });
 
-  // ── Image panel ──────────────────────────────────────────────
+  // ── Image panel ────────────────────────────────────────────
   const imagePanel = (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {artist.photo ? (
@@ -220,11 +224,11 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
       }}
       onClick={onClose}
     >
-      {/* Prev arrow */}
+      {/* Prev arrow — sits in the gap to the left of the card */}
       {(onPrev !== undefined || onNext !== undefined) && (
         <button
           onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
-          style={{ ...navBtnStyle(!onPrev), left: "calc(50% - min(240px, 43vw) - 26px)" }}
+          style={navBtnStyle(!onPrev)}
           aria-label="Previous artist"
           className="popup-nav-btn"
         >
@@ -285,11 +289,11 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
         </div>
       </div>
 
-      {/* Next arrow */}
+      {/* Next arrow — sits in the gap to the right of the card */}
       {(onPrev !== undefined || onNext !== undefined) && (
         <button
           onClick={(e) => { e.stopPropagation(); onNext?.(); }}
-          style={{ ...navBtnStyle(!onNext), right: "calc(50% - min(240px, 43vw) - 26px)" }}
+          style={navBtnStyle(!onNext)}
           aria-label="Next artist"
           className="popup-nav-btn"
         >
@@ -303,7 +307,7 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
 
         /* Desktop */
         @media (min-width: 640px) {
-          .artist-popup-card { max-width: 860px !important; }
+          .artist-popup-card { max-width: 720px !important; }
           .popup-mobile-layout { display: none !important; }
           .popup-desktop-layout { display: flex !important; align-items: stretch; }
           .popup-nav-btn { display: flex !important; }
