@@ -865,6 +865,9 @@
       // Popup events — wired via shared KoloradoArtistPopup module
       if (self._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
         var isFavPopup = self._favourites.has(self._popupArtist.id);
+        // Build the navigation list from the current filtered+sorted artist list
+        var navList = self._filteredArtists();
+        var navIdx  = navList.findIndex(function(a){ return a.id === self._popupArtist.id; });
         KoloradoArtistPopup.wire(shadow, self._popupArtist, isFavPopup, {
           onClose: function() { self._closePopup(); },
           onToggleFav: function(id) {
@@ -872,6 +875,12 @@
             self._popupArtist = self._artists.find(function(a){ return a.id === id; }) || self._popupArtist;
             self._render();
           },
+          onPrev: navIdx > 0 ? function() {
+            self._popupArtist = navList[navIdx - 1]; self._render();
+          } : null,
+          onNext: navIdx < navList.length - 1 ? function() {
+            self._popupArtist = navList[navIdx + 1]; self._render();
+          } : null,
         });
       }
 

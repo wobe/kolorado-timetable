@@ -530,14 +530,19 @@ export default function LineupGrid() {
       </div>
 
       {/* ── Popup ── */}
-      {activeArtist && (
-        <ArtistPopup
-          artist={activeArtist}
-          isFav={favourites.has(activeArtist.id)}
-          onToggleFav={() => toggleFav(activeArtist.id)}
-          onClose={() => setActiveArtist(null)}
-        />
-      )}
+      {activeArtist && (() => {
+        const navIdx = filtered.findIndex((a) => a.id === activeArtist.id);
+        return (
+          <ArtistPopup
+            artist={activeArtist}
+            isFav={favourites.has(activeArtist.id)}
+            onToggleFav={() => toggleFav(activeArtist.id)}
+            onClose={() => setActiveArtist(null)}
+            onPrev={navIdx > 0 ? () => setActiveArtist(filtered[navIdx - 1]) : undefined}
+            onNext={navIdx < filtered.length - 1 ? () => setActiveArtist(filtered[navIdx + 1]) : undefined}
+          />
+        );
+      })()}
 
       {/* ── Page switcher ── */}
       <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 999 }}>

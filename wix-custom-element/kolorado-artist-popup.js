@@ -137,6 +137,13 @@
     // Close — top-right of card
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
 
+    // Nav arrows — prev/next
+    ".kap-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:36px;height:36px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#642CFF;font-size:18px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:opacity 0.15s,transform 0.15s;opacity:0.85;}",
+    ".kap-nav:hover{opacity:1;transform:translateY(-50%) scale(1.08);}",
+    ".kap-nav-prev{left:-18px;}",
+    ".kap-nav-next{right:-18px;}",
+    ".kap-nav[disabled]{opacity:0.25;cursor:default;pointer-events:none;}",
+
     // Info body
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
     ".kap-meta{font-family:'Pacaembu',sans-serif;font-size:15px;color:#0E4B4D;line-height:1.4;}",
@@ -196,6 +203,8 @@
     var imgPanel  = _imagePanel(a, isFav);
     var infoPanel = _infoPanel(a);
     return '<div class="kap-overlay" id="kap-overlay">' +
+      '<button class="kap-nav kap-nav-prev" id="kap-nav-prev" aria-label="Previous artist">&#8249;</button>' +
+      '<button class="kap-nav kap-nav-next" id="kap-nav-next" aria-label="Next artist">&#8250;</button>' +
       '<div class="kap-card">' +
         '<button class="kap-close" id="kap-close">×</button>' +
         // Mobile portrait
@@ -214,10 +223,13 @@
 
   // ── Public: wire events after HTML is in shadow DOM ────────
   function wire(shadow, a, isFav, callbacks) {
-    // callbacks: { onClose, onToggleFav }
-    var overlay = shadow.getElementById("kap-overlay");
+    // callbacks: { onClose, onToggleFav, onPrev, onNext }
+    var overlay  = shadow.getElementById("kap-overlay");
     var closeBtn = shadow.getElementById("kap-close");
     var favBtn   = shadow.getElementById("kap-fav");
+    var prevBtn  = shadow.getElementById("kap-nav-prev");
+    var nextBtn  = shadow.getElementById("kap-nav-next");
+    var card     = overlay ? overlay.querySelector(".kap-card") : null;
 
     if (closeBtn) closeBtn.addEventListener("click", function() {
       if (callbacks.onClose) callbacks.onClose();
@@ -230,6 +242,44 @@
       var id = favBtn.getAttribute("data-id");
       if (callbacks.onToggleFav) callbacks.onToggleFav(id);
     });
+
+    // ── Nav arrow buttons ────────────────────────────────────────────
+    if (prevBtn) {
+      if (!callbacks.onPrev) { prevBtn.setAttribute("disabled", ""); }
+      else { prevBtn.addEventListener("click", function(e) { e.stopPropagation(); callbacks.onPrev(); }); }
+    }
+    if (nextBtn) {
+      if (!callbacks.onNext) { nextBtn.setAttribute("disabled", ""); }
+      else { nextBtn.addEventListener("click", function(e) { e.stopPropagation(); callbacks.onNext(); }); }
+    }
+
+    // ── Touch swipe on the card ────────────────────────────────────────────
+    if (card && (callbacks.onPrev || callbacks.onNext)) {
+      var _tx = 0, _ty = 0;
+      card.addEventListener("touchstart", function(e) {
+        _tx = e.touches[0].clientX;
+        _ty = e.touches[0].clientY;
+      }, { passive: true });
+      card.addEventListener("touchend", function(e) {
+        var dx = e.changedTouches[0].clientX - _tx;
+        var dy = e.changedTouches[0].clientY - _ty;
+        // Only trigger if horizontal swipe is dominant and > 40px
+        if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        if (dx < 0 && callbacks.onNext) callbacks.onNext();  // swipe left  → next
+        if (dx > 0 && callbacks.onPrev) callbacks.onPrev();  // swipe right → prev
+      }, { passive: true });
+    }
+
+    // ── Keyboard arrow navigation ────────────────────────────────────────────
+    function _onKey(e) {
+      if (e.key === "ArrowLeft"  && callbacks.onPrev) { e.preventDefault(); callbacks.onPrev(); }
+      if (e.key === "ArrowRight" && callbacks.onNext) { e.preventDefault(); callbacks.onNext(); }
+      if (e.key === "Escape"     && callbacks.onClose) { callbacks.onClose(); }
+    }
+    document.addEventListener("keydown", _onKey);
+    // Clean up keyboard listener when popup closes
+    if (closeBtn) closeBtn.addEventListener("click", function() { document.removeEventListener("keydown", _onKey); }, { once: true });
+    if (overlay)  overlay.addEventListener("click",  function(e) { if (e.target === overlay) document.removeEventListener("keydown", _onKey); }, { once: true });
   }
 
   // ── Public: configure festival days ───────────────────────

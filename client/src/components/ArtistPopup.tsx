@@ -6,8 +6,10 @@
 //   name top-left on image, heart bottom-right on image,
 //   right panel scrolls when content exceeds screen height,
 //   popup height = content height (not fixed).
+// Navigation: optional onPrev/onNext props enable swipe (touch),
+//   arrow buttons (desktop), and keyboard ← → navigation.
 // ============================================================
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import {
   type Artist,
   FESTIVAL_DAYS,
@@ -20,9 +22,15 @@ export interface ArtistPopupProps {
   isFav: boolean;
   onToggleFav: () => void;
   onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 }
 
-export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: ArtistPopupProps) {
+export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPrev, onNext }: ArtistPopupProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
   const dayLabel = useMemo(() => {
     if (!artist.startTime) return null;
     const dayId = getFestivalDayId(artist.startTime);
@@ -39,6 +47,44 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: Art
   // Detect player type
   const hasSoundcloud = !!artist.soundcloudLink;
   const hasYoutube = !hasSoundcloud && !!artist.youtubeLink;
+
+  // ── Keyboard navigation ──────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft"  && onPrev) { e.preventDefault(); onPrev(); }
+      if (e.key === "ArrowRight" && onNext) { e.preventDefault(); onNext(); }
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onPrev, onNext, onClose]);
+
+  // ── Touch swipe ──────────────────────────────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && onNext) onNext(); // swipe left  → next
+    if (dx > 0 && onPrev) onPrev(); // swipe right → prev
+  };
+
+  // ── Nav arrow button style ───────────────────────────────────
+  const navBtnStyle = (disabled: boolean): React.CSSProperties => ({
+    position: "absolute", top: "50%", transform: "translateY(-50%)",
+    zIndex: 20, width: 36, height: 36, borderRadius: "50%",
+    background: "rgba(254,255,192,0.92)", border: "none",
+    cursor: disabled ? "default" : "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: "#642CFF", fontSize: 22, fontWeight: 700,
+    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+    opacity: disabled ? 0.25 : 0.85,
+    pointerEvents: disabled ? "none" : "auto",
+    transition: "opacity 0.15s",
+  });
 
   // ── Image panel ──────────────────────────────────────────────
   const imagePanel = (
@@ -174,7 +220,20 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: Art
       }}
       onClick={onClose}
     >
+      {/* Prev arrow */}
+      {(onPrev !== undefined || onNext !== undefined) && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+          style={{ ...navBtnStyle(!onPrev), left: "calc(50% - min(240px, 43vw) - 26px)" }}
+          aria-label="Previous artist"
+          className="popup-nav-btn"
+        >
+          ‹
+        </button>
+      )}
+
       <div
+        ref={cardRef}
         style={{
           position: "relative", width: "100%",
           background: "#FEFFC0",
@@ -182,6 +241,8 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: Art
         }}
         className="artist-popup-card"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Close × */}
         <button
@@ -209,12 +270,6 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: Art
         </div>
 
         {/* ── Desktop: landscape ── */}
-        {/*
-          Image column: clamps width so aspect ratio stays between 1:1 (square) and 3:4 (portrait).
-          The popup height is determined by the right panel content.
-          Right panel scrolls when taller than 90vh.
-          Image stretches to fill the full height of the popup via align-self: stretch.
-        */}
         <div
           className="popup-desktop-layout"
           style={{ display: "none" }}
@@ -230,21 +285,29 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose }: Art
         </div>
       </div>
 
+      {/* Next arrow */}
+      {(onPrev !== undefined || onNext !== undefined) && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+          style={{ ...navBtnStyle(!onNext), right: "calc(50% - min(240px, 43vw) - 26px)" }}
+          aria-label="Next artist"
+          className="popup-nav-btn"
+        >
+          ›
+        </button>
+      )}
+
       <style>{`
         .artist-popup-card { max-width: 480px; }
+        .popup-nav-btn { display: none; }
 
         /* Desktop */
         @media (min-width: 640px) {
           .artist-popup-card { max-width: 860px !important; }
           .popup-mobile-layout { display: none !important; }
           .popup-desktop-layout { display: flex !important; align-items: stretch; }
+          .popup-nav-btn { display: flex !important; }
 
-          /* Image column: height is driven by right panel.
-             Width = height * ratio, clamped between 1:1 and 3:4.
-             We use a CSS trick: set width as a % of the card width,
-             but also clamp it so the ratio stays in range.
-             Since we can't know height at CSS time, we use aspect-ratio
-             with min/max width constraints. */
           .popup-image-col {
             width: clamp(240px, 38%, 420px);
             aspect-ratio: unset !important;
