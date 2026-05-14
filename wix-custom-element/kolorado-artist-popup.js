@@ -182,7 +182,7 @@
     }
 
     return '<div class="kap-body">' +
-      (metaLine ? '<div class="kap-meta">'+esc(metaLine)+'</div>' : '') +
+      (metaLine ? '<div class="kap-meta" style="display:none">'+esc(metaLine)+'</div>' : '') + /* hidden until schedule data is ready */
       (a.genre ? '<div class="kap-genre">'+esc(a.genre)+'</div>' : '') +
       (a.longDescription
         ? '<div class="kap-desc">'+esc(a.longDescription)+'</div>'
