@@ -360,8 +360,8 @@ export default function LineupGrid() {
           borderBottom: "1.5px solid rgba(100,44,255,0.1)",
         }}
       >
-        {/* ── Stage dropdown ── */}
-        <div ref={stageRef} style={{ position: "relative" }}>
+        {/* ── Stage dropdown — hidden until schedule is announced ── */}
+        <div ref={stageRef} style={{ position: "relative", display: "none" }}>
           <button
             onClick={() => { setStageOpen((o) => !o); setDayOpen(false); }}
             style={{
@@ -403,8 +403,8 @@ export default function LineupGrid() {
           )}
         </div>
 
-        {/* ── Day dropdown ── */}
-        <div ref={dayRef} style={{ position: "relative" }}>
+        {/* ── Day dropdown — hidden until schedule is announced ── */}
+        <div ref={dayRef} style={{ position: "relative", display: "none" }}>
           <button
             onClick={() => { setDayOpen((o) => !o); setStageOpen(false); }}
             style={{
@@ -475,6 +475,7 @@ export default function LineupGrid() {
         {/* ── Kedvencek pill ── */}
         <button
           onClick={() => setShowFavOnly((v) => !v)}
+          className="lineup-fav-btn"
           style={{
             ...pillBase,
             background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
@@ -482,9 +483,9 @@ export default function LineupGrid() {
           }}
         >
           <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
-          Kedvencek
+          <span className="lineup-fav-label">Kedvencek</span>
           {favourites.size > 0 && (
-            <span style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+            <span className="lineup-fav-count" style={{ background: showFavOnly ? "rgba(255,255,255,0.3)" : "#642CFF", color: "#FEFFC0", borderRadius: 9999, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
               {favourites.size}
             </span>
           )}
@@ -606,14 +607,11 @@ export default function LineupGrid() {
         @media (min-width: 900px) { .lineup-grid { grid-template-columns: repeat(4, 1fr) !important; } }
         @media (min-width: 1280px) { .lineup-grid { grid-template-columns: repeat(5, 1fr) !important; } }
 
-        /* Desktop: show full filters, hide mobile icon */
-        .lineup-desktop-filters { display: flex !important; }
-        .lineup-mobile-filters { display: none !important; }
-
-        /* Mobile: hide full filters, show icon */
+        /* Mobile: Kedvencek — icon only, no label or count badge */
         @media (max-width: 639px) {
-          .lineup-desktop-filters { display: none !important; }
-          .lineup-mobile-filters { display: block !important; }
+          .lineup-fav-label { display: none !important; }
+          .lineup-fav-count { display: none !important; }
+          .lineup-fav-btn { padding: 6px 10px !important; }
         }
       `}</style>
     </div>
