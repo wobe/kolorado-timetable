@@ -33,12 +33,35 @@
 (function (global) {
   "use strict";
 
+  // ── Language detection ──────────────────────────────────────────────────────
+  function detectLang() {
+    try {
+      var u = (window.location.pathname + window.location.search).toLowerCase();
+      if (/\/en(\/|$|\?)|[?&]lang=en/.test(u)) return "en";
+      var htmlLang = (document.documentElement.lang || "").toLowerCase();
+      if (htmlLang.startsWith("en")) return "en";
+    } catch(e) {}
+    return "hu";
+  }
+  var LANG = detectLang();
+  var _i18n = {
+    hu: {
+      detailsSoon: "Részletek hamarosan...",
+      days: { wed: "Szerda", thu: "Csütörtök", fri: "Péntek", sat: "Szombat" },
+    },
+    en: {
+      detailsSoon: "Details coming soon...",
+      days: { wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday" },
+    },
+  };
+  var i18n = _i18n[LANG];
+
   // ── Defaults (override via setConfig) ─────────────────────
   var _festivalDays = [
-    { id: "wed", label: "Szerda",    date: "2026-07-15" },
-    { id: "thu", label: "Csütörtök", date: "2026-07-16" },
-    { id: "fri", label: "Péntek",    date: "2026-07-17" },
-    { id: "sat", label: "Szombat",   date: "2026-07-18" },
+    { id: "wed", label: i18n.days.wed, date: "2026-07-15" },
+    { id: "thu", label: i18n.days.thu, date: "2026-07-16" },
+    { id: "fri", label: i18n.days.fri, date: "2026-07-17" },
+    { id: "sat", label: i18n.days.sat, date: "2026-07-18" },
   ];
   var _dayStartHour = 10;
 
@@ -163,7 +186,7 @@
       (a.genre ? '<div class="kap-genre">'+esc(a.genre)+'</div>' : '') +
       (a.longDescription
         ? '<div class="kap-desc">'+esc(a.longDescription)+'</div>'
-        : '<div class="kap-placeholder">Részletek hamarosan...</div>') +
+        : '<div class="kap-placeholder">'+i18n.detailsSoon+'</div>') +
       playerHtml +
     '</div>';
   }

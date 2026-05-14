@@ -153,15 +153,61 @@
   var PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
 
   // ── Constants ──────────────────────────────────────────────
+  // ── Language detection ──────────────────────────────────
+  // Checks URL path/query for /en/ or ?lang=en, then html[lang], defaults HU.
+  function detectLang() {
+    try {
+      var url = (window.location.pathname + window.location.search).toLowerCase();
+      if (/\/en(\/|$|\?)|[?&]lang=en/.test(url)) return "en";
+      var htmlLang = (document.documentElement.lang || "").toLowerCase();
+      if (htmlLang.startsWith("en")) return "en";
+    } catch(e) {}
+    return "hu";
+  }
+  var LANG = detectLang();
+
+  // ── Translations ──────────────────────────────────────────
+  var T = {
+    hu: {
+      favToast:        "A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.",
+      close:           "Bezárás",
+      favourites:      "Kedvencek",
+      search:          "Keresés...",
+      stage:           "Színpad",
+      day:             "Nap",
+      selected:        " kiválasztva",
+      clearFilters:    "× Szűrők törlése",
+      noResults:       "Nincs találat",
+      tryOtherFilter:  "Próbálj más szűrőt!",
+      unknown:         "Ismeretlen",
+      days: { wed: "Szerda", thu: "Csütörtök", fri: "Péntek", sat: "Szombat" },
+    },
+    en: {
+      favToast:        "Your favourites are stored in your browser. You can find them here later, but they won't sync across your devices.",
+      close:           "Close",
+      favourites:      "Favourites",
+      search:          "Search...",
+      stage:           "Stage",
+      day:             "Day",
+      selected:        " selected",
+      clearFilters:    "× Clear filters",
+      noResults:       "No results",
+      tryOtherFilter:  "Try a different filter!",
+      unknown:         "Unknown",
+      days: { wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday" },
+    },
+  };
+  var i18n = T[LANG];
+
   var FAV_COOKIE_NAME    = "kolorado_favourites";
   var FAV_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
   var DAY_START_HOUR     = 10; // festival day boundary
 
   var FESTIVAL_DAYS = [
-    { id: "wed", label: "Szerda",    date: "2026-07-15" },
-    { id: "thu", label: "Csütörtök", date: "2026-07-16" },
-    { id: "fri", label: "Péntek",    date: "2026-07-17" },
-    { id: "sat", label: "Szombat",   date: "2026-07-18" },
+    { id: "wed", label: i18n.days.wed, date: "2026-07-15" },
+    { id: "thu", label: i18n.days.thu, date: "2026-07-16" },
+    { id: "fri", label: i18n.days.fri, date: "2026-07-17" },
+    { id: "sat", label: i18n.days.sat, date: "2026-07-18" },
   ];
 
   var STAGES = [
@@ -228,8 +274,8 @@
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="#e53e3e" stroke="#e53e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
         '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'+
       '</svg>'+
-      '<span style="flex:1">A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.</span>'+
-      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="Bezárás">'+
+      '<span style="flex:1">'+i18n.favToast+'</span>'+
+      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="'+i18n.close+'">'+
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
       '</button>';
     document.body.appendChild(toast);
@@ -434,7 +480,7 @@
           this._artists = raw.map(function(item) {
             return {
               id:              item.id || String(Math.random()),
-              name:            item.name || item.title || "Ismeretlen",
+              name:            item.name || item.title || i18n.unknown,
               // photo is already a full https:// URL (converted by lineupApi.jsw)
               photo:           item.photo || "",
               stage:           item.stage || "",
@@ -543,19 +589,19 @@
       var hasActiveFilters = this._selectedStages.size > 0 || this._selectedDays.size > 0 || this._filterFavourites;
 
       // ── Stage pill label ──
-      var stageLabel = "Színpad";
+      var stageLabel = i18n.stage;
       if (this._selectedStages.size === 1) stageLabel = Array.from(this._selectedStages)[0];
-      else if (this._selectedStages.size > 1) stageLabel = this._selectedStages.size + " kiválasztva";
+      else if (this._selectedStages.size > 1) stageLabel = this._selectedStages.size + i18n.selected;
 
       // ── Day pill label ──
-      var dayLabel = "Nap";
+      var dayLabel = i18n.day;
       if (this._selectedDays.size === 1) {
         var did = Array.from(this._selectedDays)[0];
         for (var j = 0; j < FESTIVAL_DAYS.length; j++) {
           if (FESTIVAL_DAYS[j].id === did) { dayLabel = FESTIVAL_DAYS[j].label; break; }
         }
       } else if (this._selectedDays.size > 1) {
-        dayLabel = this._selectedDays.size + " kiválasztva";
+        dayLabel = this._selectedDays.size + i18n.selected;
       }
 
       var stageActive = this._selectedStages.size > 0;
@@ -579,13 +625,13 @@
           var active = self._selectedDays.has(d.id);
           return '<button class="kl-mobile-pill'+(active?" active":"")+'" data-mobile-day="'+d.id+'">'+esc(d.label)+'</button>';
         }).join("");
-        var clearBtn = hasActiveFilters ? '<button class="kl-mobile-clear" id="kl-mobile-clear">× Szűrők törlése</button>' : '';
+        var clearBtn = hasActiveFilters ? '<button class="kl-mobile-clear" id="kl-mobile-clear">'+i18n.clearFilters+'</button>' : '';
         mobilePanelHtml = '<div class="kl-mobile-panel" id="kl-mobile-panel">' +
           // Stage+Day sections hidden until schedule announced
           // '<div class="kl-mobile-section-label">Sz\u00ednpad</div><div class="kl-mobile-pills">' + stagePills + '</div>' +
           // '<div class="kl-mobile-section-label">Nap</div><div class="kl-mobile-pills">' + dayPills + '</div>' +
           '<button class="kl-fav-toggle'+(this._filterFavourites?" active":"")+'" id="kl-mobile-fav-toggle">' +
-            ICONS.heart(this._filterFavourites, 14) + ' Kedvencek' +
+            ICONS.heart(this._filterFavourites, 14) + ' ' + i18n.favourites +
             (favCount > 0 ? '<span class="kl-badge">'+favCount+'</span>' : '') +
           '</button>' +
           clearBtn +
@@ -606,7 +652,7 @@
           // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-stage-btn">▼ Színpad</button></div>' +
           // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-day-btn">▼ Nap</button></div>' +
           '<button class="kl-fav-toggle'+(this._filterFavourites?" active":"")+'" id="kl-fav-toggle">' +
-            ICONS.heart(this._filterFavourites, 14) + ' Kedvencek' +
+            ICONS.heart(this._filterFavourites, 14) + ' ' + i18n.favourites +
             (favCount > 0 ? '<span class="kl-badge">'+favCount+'</span>' : '') +
           '</button>' +
         '</div>' +
@@ -621,7 +667,7 @@
 
         // Search (always visible)
         '<div class="kl-search-row">' +
-          (this._searchOpen ? '<input class="kl-search-input" id="kl-search-input" type="text" placeholder="Keresés..." value="'+esc(this._searchQuery)+'">' : '') +
+          (this._searchOpen ? '<input class="kl-search-input" id="kl-search-input" type="text" placeholder="'+i18n.search+'" value="'+esc(this._searchQuery)+'">' : '') +
           '<button class="kl-icon-btn'+(this._searchOpen||this._searchQuery?" active":" inactive")+'" id="kl-search-btn">' +
             ICONS.search(16) +
           '</button>' +
@@ -632,8 +678,8 @@
       var gridHtml = '';
       if (artists.length === 0) {
         gridHtml = '<div class="kl-empty">' +
-          '<div class="kl-empty-title">Nincs találat</div>' +
-          '<div>Próbálj más szűrőt!</div>' +
+          '<div class="kl-empty-title">'+i18n.noResults+'</div>' +
+          '<div>'+i18n.tryOtherFilter+'</div>' +
         '</div>';
       } else {
         gridHtml = '<div class="kl-grid">';

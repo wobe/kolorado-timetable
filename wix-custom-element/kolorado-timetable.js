@@ -146,6 +146,81 @@
     setConfig: function(o){ if(o.festivalDays)_kapFestivalDays=o.festivalDays; if(o.dayStartHour!==undefined)_kapDayStartHour=o.dayStartHour; }
   };
 
+  // ── Language detection ──────────────────────────────────────────────────────
+  // Checks URL path/query for /en/ or ?lang=en, then html[lang], defaults HU.
+  // Also reacts to the postMessage parent URL forwarded by timetable-page.js.
+  function detectLang(url) {
+    try {
+      var u = (url || window.location.pathname + window.location.search).toLowerCase();
+      if (/\/en(\/|$|\?)|[?&]lang=en/.test(u)) return "en";
+      var htmlLang = (document.documentElement.lang || "").toLowerCase();
+      if (htmlLang.startsWith("en")) return "en";
+    } catch(e) {}
+    return "hu";
+  }
+  var LANG = detectLang();
+
+  // ── Translations ──────────────────────────────────────────────────────────
+  var T = {
+    hu: {
+      favToast:        "A kedvenceid a b\u00f6ng\u00e9sz\u0151dben t\u00e1rol\u00f3dnak. Itt megtal\u00e1lod k\u00e9s\u0151bb is, azonban m\u00e1s eszk\u00f6zeidre nem szinkroniz\u00e1l\u00f3dnak.",
+      close:           "Bez\u00e1r\u00e1s",
+      favourites:      "Kedvencek",
+      noFavourites:    "M\u00e9g nincs kedvenc. Kattints a \u2665 gombra egy el\u0151ad\u00f3n\u00e1l.",
+      favDisclaimer:   "A kedvenceid a b\u00f6ng\u00e9sz\u0151dben t\u00e1rol\u00f3dnak \u00e9s nem szinkroniz\u00e1l\u00f3dnak az eszk\u00f6zeid k\u00f6z\u00f6tt. A Megoszt\u00e1s linkkel be tudod m\u00e1solni a kedvenceidet m\u00e1s b\u00f6ng\u00e9sz\u0151be.",
+      addToCalendar:   "Napt\u00e1rba",
+      share:           "Megoszt\u00e1s",
+      search:          "Keres\u00e9s\u2026",
+      searchTitle:     "Keres\u00e9s",
+      filtersTitle:    "Sz\u0171r\u0151k",
+      onlyFavourites:  "Csak a kedvenceim",
+      calendar:        "Napt\u00e1r",
+      list:            "Lista",
+      noResults:       "Nincs tal\u00e1lat: \u201e",
+      noResultsClose:  "\u201d",
+      noProgram:       "Ezen a napon nincs program.",
+      noFavProgram:    "Ezen a napon nincs kedvenc el\u0151ad\u00f3d.",
+      showAll:         "\u00d6sszes program mutat\u00e1sa",
+      favPillOn:       "Kedvenc",
+      favPillOff:      "Kedvencnek",
+      nowLabel:        "MOST",
+      linkCopied:      "Link m\u00e1solva a v\u00e1g\u00f3lapra!",
+      copyLink:        "M\u00e1sold ki ezt a linket:",
+      unknown:         "Ismeretlen",
+      days: { wed: "Szerda", thu: "Cs\u00fct\u00f6rt\u00f6k", fri: "P\u00e9ntek", sat: "Szombat" },
+      shortDays: { wed: "Sze", thu: "Cs\u00fct", fri: "P\u00e9n", sat: "Szo" },
+    },
+    en: {
+      favToast:        "Your favourites are stored in your browser. You can find them here later, but they won't sync across your devices.",
+      close:           "Close",
+      favourites:      "Favourites",
+      noFavourites:    "No favourites yet. Tap the \u2665 button on an artist.",
+      favDisclaimer:   "Your favourites are stored in your browser and won't sync across devices. Use the Share link to copy your favourites to another browser.",
+      addToCalendar:   "Add to calendar",
+      share:           "Share",
+      search:          "Search\u2026",
+      searchTitle:     "Search",
+      filtersTitle:    "Filters",
+      onlyFavourites:  "Only my favourites",
+      calendar:        "Calendar",
+      list:            "List",
+      noResults:       "No results: \u201c",
+      noResultsClose:  "\u201d",
+      noProgram:       "No programme on this day.",
+      noFavProgram:    "No favourite artists on this day.",
+      showAll:         "Show all programme",
+      favPillOn:       "Favourite",
+      favPillOff:      "Add fav",
+      nowLabel:        "NOW",
+      linkCopied:      "Link copied to clipboard!",
+      copyLink:        "Copy this link:",
+      unknown:         "Unknown",
+      days: { wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday" },
+      shortDays: { wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat" },
+    },
+  };
+  var i18n = T[LANG];
+
   // ── Font URLs (served from the hosted Manus site) ──────────
   const SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/SerialBlurTRIAL-Bleed.ttf";
   const PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
@@ -160,10 +235,10 @@
   const MOBILE_HOUR_HEIGHT_PX = 60;
 
   const FESTIVAL_DAYS = [
-    { id: "wed", label: "Szerda",    shortLabel: "Sze",  date: "2026-07-15" },
-    { id: "thu", label: "Csütörtök", shortLabel: "Csüt", date: "2026-07-16" },
-    { id: "fri", label: "Péntek",    shortLabel: "Pén",  date: "2026-07-17" },
-    { id: "sat", label: "Szombat",   shortLabel: "Szo",  date: "2026-07-18" },
+    { id: "wed", label: i18n.days.wed, shortLabel: i18n.shortDays.wed, date: "2026-07-15" },
+    { id: "thu", label: i18n.days.thu, shortLabel: i18n.shortDays.thu, date: "2026-07-16" },
+    { id: "fri", label: i18n.days.fri, shortLabel: i18n.shortDays.fri, date: "2026-07-17" },
+    { id: "sat", label: i18n.days.sat, shortLabel: i18n.shortDays.sat, date: "2026-07-18" },
   ];
 
   const STAGES = [
@@ -292,8 +367,8 @@
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="#e53e3e" stroke="#e53e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
         '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'+
       '</svg>'+
-      '<span style="flex:1">A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.</span>'+
-      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="Bezárás">'+
+      '<span style="flex:1">'+i18n.favToast+'</span>'+
+      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="'+i18n.close+'">'+
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
       '</button>';
     document.body.appendChild(t);
@@ -535,7 +610,7 @@
           this._artists = raw.map(function(item) {
             return {
               id:              item._id || item.id || String(Math.random()),
-              name:            item.name || item.title || "Ismeretlen",
+              name:            item.name || item.title || i18n.unknown,
               stage:           item.stage || item.sznpad || "Nagyszínpad",
               startTime:       new Date(item.startTime),
               endTime:         new Date(item.endTime),
@@ -652,7 +727,7 @@
       var favCount = this._favourites.size;
       var favBtn = document.createElement("button");
       favBtn.className = "kt-fav-btn" + (this._showKedvencek ? " active" : "");
-      favBtn.innerHTML = (this._showKedvencek ? ICONS.x(13) : ICONS.heart("none",13)) + " Kedvencek" + (favCount > 0 ? '<span class="kt-badge">'+favCount+'</span>' : "");
+      favBtn.innerHTML = (this._showKedvencek ? ICONS.x(13) : ICONS.heart("none",13)) + " " + i18n.favourites + (favCount > 0 ? '<span class="kt-badge">'+favCount+'</span>' : "");
       favBtn.addEventListener("click", function(){ self._showKedvencek = !self._showKedvencek; if(self._showKedvencek) self._showSearch=false; self._render(); });
       toolbar.appendChild(favBtn);
       var spacer = document.createElement("div"); spacer.className = "kt-spacer";
@@ -661,7 +736,7 @@
       if (this._showSearch) {
         var sw = document.createElement("div"); sw.className = "kt-search-expanded";
         sw.innerHTML = ICONS.search(13);
-        var inp = document.createElement("input"); inp.placeholder = "Keresés…"; inp.value = this._searchQuery;
+        var inp = document.createElement("input"); inp.placeholder = i18n.search; inp.value = this._searchQuery;
         inp.addEventListener("input", function(e){ self._searchQuery = e.target.value; self._render(); });
         inp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
         sw.appendChild(inp);
@@ -673,21 +748,21 @@
         toolbar.appendChild(sw);
         setTimeout(function(){ var i = self._shadow.querySelector(".kt-search-expanded input"); if(i) i.focus(); }, 30);
       } else {
-        var sb = document.createElement("button"); sb.className = "kt-icon-btn"; sb.innerHTML = ICONS.search(15); sb.title = "Keresés";
+        var sb = document.createElement("button"); sb.className = "kt-icon-btn"; sb.innerHTML = ICONS.search(15); sb.title = i18n.searchTitle;
         sb.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
         toolbar.appendChild(sb);
       }
       // Filter
       var hasFilters = this._filterFavourites || this._activeStages.size < STAGES.length;
       var fw = document.createElement("div"); fw.className = "kt-filter-wrap";
-      var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = "Szűrők";
+      var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = i18n.filtersTitle;
       fb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
       fw.appendChild(fb);
       if (this._showFilter) {
         var dd = document.createElement("div"); dd.className = "kt-filter-dropdown";
         var favItem = document.createElement("button");
         favItem.className = "kt-filter-item" + (this._filterFavourites ? " active" : "");
-        favItem.innerHTML = ICONS.heart(this._filterFavourites ? "#e86b5a" : "none", 13) + " Csak a kedvenceim";
+        favItem.innerHTML = ICONS.heart(this._filterFavourites ? "#e86b5a" : "none", 13) + " " + i18n.onlyFavourites;
         favItem.addEventListener("click", function(){ self._filterFavourites = !self._filterFavourites; self._showFilter=false; self._render(); });
         dd.appendChild(favItem);
         var sep = document.createElement("hr"); sep.className = "kt-filter-sep"; dd.appendChild(sep);
@@ -707,9 +782,9 @@
       toolbar.appendChild(fw);
       // View toggle
       var vt = document.createElement("div"); vt.className = "kt-view-toggle";
-      var gb = document.createElement("button"); gb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); gb.innerHTML = ICONS.grid(14); gb.title = "Naptár";
+      var gb = document.createElement("button"); gb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); gb.innerHTML = ICONS.grid(14); gb.title = i18n.calendar;
       gb.addEventListener("click", function(){ self._viewMode="grid"; self._render(); });
-      var lb = document.createElement("button"); lb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); lb.innerHTML = ICONS.list(14); lb.title = "Lista";
+      var lb = document.createElement("button"); lb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); lb.innerHTML = ICONS.list(14); lb.title = i18n.list;
       lb.addEventListener("click", function(){ self._viewMode="list"; self._render(); });
       vt.appendChild(gb); vt.appendChild(lb);
       toolbar.appendChild(vt);
@@ -722,7 +797,7 @@
       var panel = document.createElement("div"); panel.className = "kt-panel";
       var favArtists = this._artists.filter(function(a){ return self._favourites.has(a.id); }).sort(function(a,b){ return a.startTime-b.startTime; });
       if (!favArtists.length) {
-        panel.innerHTML = '<div class="kt-empty">Még nincs kedvenc. Kattints a ♥ gombra egy előadónál.</div>';
+        panel.innerHTML = '<div class="kt-empty">'+i18n.noFavourites+'</div>';
       } else {
         var list = document.createElement("div"); list.className = "kt-panel-list";
         var byDay = {};
@@ -749,15 +824,15 @@
       }
       var footer = document.createElement("div"); footer.className = "kt-panel-footer";
       var disc = document.createElement("p"); disc.className = "kt-panel-disclaimer";
-      disc.textContent = "A kedvenceid a böngésződben tárolódnak és nem szinkronizálódnak az eszközeid között. A Megosztás linkkel be tudod másolni a kedvenceidet más böngészőbe.";
+      disc.textContent = i18n.favDisclaimer;
       footer.appendChild(disc);
       if (favArtists.length) {
         var actions = document.createElement("div"); actions.className = "kt-panel-actions";
         var calBtn = document.createElement("button"); calBtn.className = "kt-action-btn";
-        calBtn.innerHTML = ICONS.calendar(12) + " Naptárba";
+        calBtn.innerHTML = ICONS.calendar(12) + " " + i18n.addToCalendar;
         calBtn.addEventListener("click", function(){ downloadAllICS(favArtists); });
         var shareBtn = document.createElement("button"); shareBtn.className = "kt-action-btn";
-        shareBtn.innerHTML = ICONS.share(12) + " Megosztás";
+        shareBtn.innerHTML = ICONS.share(12) + " " + i18n.share;
         shareBtn.addEventListener("click", function(){ self._shareFavourites(); });
         actions.appendChild(calBtn); actions.appendChild(shareBtn);
         footer.appendChild(actions);
@@ -773,7 +848,7 @@
       var results = this._artists.filter(function(a){
         return a.name.toLowerCase().indexOf(q)!==-1 || (a.genre && a.genre.toLowerCase().indexOf(q)!==-1) || a.stage.toLowerCase().indexOf(q)!==-1;
       }).slice(0,20);
-      if (!results.length) { panel.innerHTML = '<div class="kt-empty">Nincs találat: „'+this._searchQuery+'"</div>'; return panel; }
+      if (!results.length) { panel.innerHTML = '<div class="kt-empty">'+i18n.noResults+this._searchQuery+i18n.noResultsClose+'</div>'; return panel; }
       var list = document.createElement("div"); list.className = "kt-panel-list";
       results.forEach(function(artist){
         var stage = STAGES.find(function(s){return s.name===artist.stage;});
@@ -795,7 +870,7 @@
       var visible = this._getVisibleArtists().sort(function(a,b){return a.startTime-b.startTime;});
       if (!visible.length) {
         var empty = document.createElement("div"); empty.className = "kt-empty";
-        empty.innerHTML = (this._filterFavourites?"Ezen a napon nincs kedvenc előadód.":"Ezen a napon nincs program.")+'<br><button>Összes program mutatása</button>';
+        empty.innerHTML = (this._filterFavourites?i18n.noFavProgram:i18n.noProgram)+'<br><button>'+i18n.showAll+'</button>';
         empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
         wrap.appendChild(empty); return wrap;
       }
@@ -823,7 +898,7 @@
       var wrap = document.createElement("div"); wrap.className = "kt-grid-wrap";
       if (!visibleArtists.length) {
         var empty = document.createElement("div"); empty.className = "kt-empty";
-        empty.innerHTML = (this._filterFavourites?"Ezen a napon nincs kedvenc előadód.":"Ezen a napon nincs program.")+'<br><button>Összes program mutatása</button>';
+        empty.innerHTML = (this._filterFavourites?i18n.noFavProgram:i18n.noProgram)+'<br><button>'+i18n.showAll+'</button>';
         empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
         wrap.appendChild(empty); return wrap;
       }
@@ -887,7 +962,7 @@
       ov.appendChild(nb);
       if (!isTiny) { var ot=document.createElement("div"); ot.className="kt-block-overlay-time"; ot.textContent=formatTime(artist.startTime)+" – "+formatTime(artist.endTime); ov.appendChild(ot); }
       var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
-      fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?"Kedvenc":"Kedvencnek");
+      fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?i18n.favPillOn:i18n.favPillOff);
       fp.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
       ov.appendChild(fp); block.appendChild(ov);
       block.addEventListener("click", function(e){ e.stopPropagation(); self._tappedBlockId=(self._tappedBlockId===artist.id)?null:artist.id; self._render(); });
@@ -900,7 +975,7 @@
       if (fh < DAY_START_HOUR || fh >= DAY_END_HOUR) return null;
       var top = (fh - DAY_START_HOUR) * hh + 40;
       var line = document.createElement("div"); line.className = "kt-now-line"; line.style.top = top+"px";
-      line.innerHTML = '<div class="kt-now-bar"><div class="kt-now-dot"></div><div class="kt-now-label">MOST</div></div>';
+      line.innerHTML = '<div class="kt-now-bar"><div class="kt-now-dot"></div><div class="kt-now-label">'+i18n.nowLabel+'</div></div>';
       return line;
     };
 
@@ -967,8 +1042,8 @@
       var url = base + "#fav:" + encoded;
       var self = this;
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(function(){ self._showToast("Link másolva a vágólapra!"); }).catch(function(){ window.prompt("Másold ki ezt a linket:", url); });
-      } else { window.prompt("Másold ki ezt a linket:", url); }
+        navigator.clipboard.writeText(url).then(function(){ self._showToast(i18n.linkCopied); }).catch(function(){ window.prompt(i18n.copyLink, url); });
+      } else { window.prompt(i18n.copyLink, url); }
     };
 
     _showToast(msg) {
