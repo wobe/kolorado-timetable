@@ -98,8 +98,8 @@
 
   // ── CSS (inject into shadow root) ─────────────────────────
   var CSS = [
-    // Overlay
-    ".kap-overlay{position:fixed;inset:0;z-index:200;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}",
+    // Overlay — flex row so arrows sit in the gap between card and screen edge
+    ".kap-overlay{position:fixed;inset:0;z-index:200;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);display:flex;flex-direction:row;align-items:center;justify-content:center;padding:16px;gap:0;}",
 
     // Card — mobile default (portrait)
     ".kap-card{background:#FEFFC0;width:100%;max-width:480px;max-height:90vh;overflow:hidden;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.4);}",
@@ -120,7 +120,7 @@
 
     // Responsive switch
     "@media(min-width:640px){",
-      ".kap-card{max-width:820px!important;}",
+      ".kap-card{max-width:720px!important;}",
       ".kap-mobile{display:none!important;}",
       ".kap-desktop{display:flex!important;}",
     "}",
@@ -137,12 +137,17 @@
     // Close — top-right of card
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
 
-    // Nav arrows — prev/next
-    ".kap-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:36px;height:36px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#642CFF;font-size:18px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:opacity 0.15s,transform 0.15s;opacity:0.85;}",
-    ".kap-nav:hover{opacity:1;transform:translateY(-50%) scale(1.08);}",
-    ".kap-nav-prev{left:-18px;}",
-    ".kap-nav-next{right:-18px;}",
-    ".kap-nav[disabled]{opacity:0.25;cursor:default;pointer-events:none;}",
+    // Nav arrows — flex siblings of the card, sit in the gap outside the card
+    ".kap-nav{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:24px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:opacity 0.15s;opacity:0.85;margin:0 8px;}",
+    ".kap-nav:hover{opacity:1;}",
+    ".kap-nav[disabled]{opacity:0.2;cursor:default;pointer-events:none;}",
+    "@media(min-width:640px){.kap-nav{display:flex!important;}}",
+
+    // Slide animation for card navigation
+    "@keyframes kap-slide-in-right{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}",
+    "@keyframes kap-slide-in-left{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}",
+    ".kap-card.slide-in-right{animation:kap-slide-in-right 0.18s ease-in-out;}",
+    ".kap-card.slide-in-left{animation:kap-slide-in-left 0.18s ease-in-out;}",
 
     // Info body
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
@@ -203,9 +208,8 @@
     var imgPanel  = _imagePanel(a, isFav);
     var infoPanel = _infoPanel(a);
     return '<div class="kap-overlay" id="kap-overlay">' +
-      '<button class="kap-nav kap-nav-prev" id="kap-nav-prev" aria-label="Previous artist">&#8249;</button>' +
-      '<button class="kap-nav kap-nav-next" id="kap-nav-next" aria-label="Next artist">&#8250;</button>' +
-      '<div class="kap-card">' +
+      '<button class="kap-nav" id="kap-nav-prev" aria-label="Previous artist">&#8249;</button>' +
+      '<div class="kap-card" id="kap-card">' +
         '<button class="kap-close" id="kap-close">×</button>' +
         // Mobile portrait
         '<div class="kap-mobile">' +
@@ -218,6 +222,7 @@
           '<div class="kap-right">' + infoPanel + '</div>' +
         '</div>' +
       '</div>' +
+      '<button class="kap-nav" id="kap-nav-next" aria-label="Next artist">&#8250;</button>' +
     '</div>';
   }
 
@@ -244,13 +249,21 @@
     });
 
     // ── Nav arrow buttons ────────────────────────────────────────────
+    var kapCard = shadow.getElementById("kap-card");
+    function triggerSlide(dir) {
+      if (!kapCard) return;
+      kapCard.classList.remove("slide-in-right", "slide-in-left");
+      // Force reflow to restart animation
+      void kapCard.offsetWidth;
+      kapCard.classList.add(dir > 0 ? "slide-in-right" : "slide-in-left");
+    }
     if (prevBtn) {
       if (!callbacks.onPrev) { prevBtn.setAttribute("disabled", ""); }
-      else { prevBtn.addEventListener("click", function(e) { e.stopPropagation(); callbacks.onPrev(); }); }
+      else { prevBtn.addEventListener("click", function(e) { e.stopPropagation(); triggerSlide(-1); callbacks.onPrev(); }); }
     }
     if (nextBtn) {
       if (!callbacks.onNext) { nextBtn.setAttribute("disabled", ""); }
-      else { nextBtn.addEventListener("click", function(e) { e.stopPropagation(); callbacks.onNext(); }); }
+      else { nextBtn.addEventListener("click", function(e) { e.stopPropagation(); triggerSlide(1); callbacks.onNext(); }); }
     }
 
     // ── Touch swipe on the card ────────────────────────────────────────────

@@ -10,6 +10,7 @@
 //   arrow buttons (desktop), and keyboard ← → navigation.
 // ============================================================
 import { useMemo, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   type Artist,
   FESTIVAL_DAYS,
@@ -30,6 +31,8 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
   const cardRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  // Track swipe/nav direction: 1 = forward (next), -1 = backward (prev)
+  const navDirection = useRef<1 | -1>(1);
 
   const dayLabel = useMemo(() => {
     if (!artist.startTime) return null;
@@ -68,8 +71,8 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (dx < 0 && onNext) onNext(); // swipe left  → next
-    if (dx > 0 && onPrev) onPrev(); // swipe right → prev
+    if (dx < 0 && onNext) { navDirection.current = 1;  onNext(); } // swipe left  → next
+    if (dx > 0 && onPrev) { navDirection.current = -1; onPrev(); } // swipe right → prev
   };
 
   // ── Nav arrow button style ────────────────────────────────────────────
@@ -227,7 +230,7 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
       {/* Prev arrow — sits in the gap to the left of the card */}
       {(onPrev !== undefined || onNext !== undefined) && (
         <button
-          onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+          onClick={(e) => { e.stopPropagation(); navDirection.current = -1; onPrev?.(); }}
           style={navBtnStyle(!onPrev)}
           aria-label="Previous artist"
           className="popup-nav-btn"
@@ -236,8 +239,14 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
         </button>
       )}
 
-      <div
+      <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={artist.id}
         ref={cardRef}
+        initial={{ x: navDirection.current * 60, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: navDirection.current * -60, opacity: 0 }}
+        transition={{ duration: 0.18, ease: "easeInOut" }}
         style={{
           position: "relative", width: "100%",
           background: "#FEFFC0",
@@ -287,12 +296,13 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
             {infoPanel}
           </div>
         </div>
-      </div>
+      </motion.div>
+      </AnimatePresence>
 
       {/* Next arrow — sits in the gap to the right of the card */}
       {(onPrev !== undefined || onNext !== undefined) && (
         <button
-          onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+          onClick={(e) => { e.stopPropagation(); navDirection.current = 1; onNext?.(); }}
           style={navBtnStyle(!onNext)}
           aria-label="Next artist"
           className="popup-nav-btn"
