@@ -334,9 +334,10 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
 
         /* Mobile */
         @media (max-width: 639px) {
-          .artist-popup-card { max-width: 480px !important; }
+          .artist-popup-card { max-width: 100% !important; }
           .popup-mobile-layout { display: flex !important; }
           .popup-desktop-layout { display: none !important; }
+          .popup-nav-btn { display: none !important; }
         }
       `}</style>
     </div>

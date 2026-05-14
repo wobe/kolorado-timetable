@@ -101,8 +101,8 @@
     // Overlay — flex row so arrows sit in the gap between card and screen edge
     ".kap-overlay{position:fixed;inset:0;z-index:200;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);display:flex;flex-direction:row;align-items:center;justify-content:center;padding:16px;gap:0;}",
 
-    // Card — mobile default (portrait)
-    ".kap-card{background:#FEFFC0;width:100%;max-width:480px;max-height:90vh;overflow:hidden;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.4);}",
+    // Card — mobile default (portrait, full width)
+    ".kap-card{background:#FEFFC0;width:100%;max-width:100%;max-height:90vh;overflow:hidden;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.4);}",
 
     // Mobile stack
     ".kap-mobile{display:flex;flex-direction:column;max-height:90vh;overflow-y:auto;}",
@@ -137,11 +137,13 @@
     // Close — top-right of card
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
 
-    // Nav arrows — flex siblings of the card, sit in the gap outside the card
+    // Nav arrows — flex siblings of the card, sit in the gap outside the card (desktop only)
     ".kap-nav{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:24px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);transition:opacity 0.15s;opacity:0.85;margin:0 8px;}",
     ".kap-nav:hover{opacity:1;}",
     ".kap-nav[disabled]{opacity:0.2;cursor:default;pointer-events:none;}",
     "@media(min-width:640px){.kap-nav{display:flex!important;}}",
+    // Mobile: full width card, no arrows
+    "@media(max-width:639px){.kap-card{max-width:100%!important;}.kap-nav{display:none!important;}}",
 
     // Slide animation for card navigation
     "@keyframes kap-slide-in-right{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}",
