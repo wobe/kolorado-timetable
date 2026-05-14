@@ -493,6 +493,16 @@
             };
           }); // show all artists regardless of whether stage/date is set
           this._loading = false;
+          // Auto-open popup if ?artist= is in the URL
+          if (!this._popupArtist) {
+            try {
+              var urlArtistId = new URLSearchParams(window.location.search).get('artist');
+              if (urlArtistId) {
+                var found = this._artists.find(function(a) { return a.id === urlArtistId; });
+                if (found) this._popupArtist = found;
+              }
+            } catch(e2) {}
+          }
           this._render();
         } catch(e) {
           console.error("kolorado-lineup: failed to parse lineup-data", e);
@@ -512,8 +522,25 @@
       this._render();
     }
 
-    _openPopup(artist) { this._popupArtist = artist; this._render(); }
-    _closePopup()      { this._popupArtist = null;   this._render(); }
+    _openPopup(artist) {
+      this._popupArtist = artist;
+      this._pushArtistUrl(artist ? artist.id : null);
+      this._render();
+    }
+    _closePopup() {
+      this._popupArtist = null;
+      this._pushArtistUrl(null);
+      this._render();
+    }
+    _pushArtistUrl(artistId) {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        if (artistId) { p.set('artist', artistId); } else { p.delete('artist'); }
+        var qs = p.toString();
+        var newUrl = qs ? window.location.pathname + '?' + qs : window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+      } catch(e) {}
+    }
 
     _filteredArtists() {
       var self = this;

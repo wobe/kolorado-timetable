@@ -221,23 +221,25 @@ const ArtistCard = React.memo(function ArtistCard({
 // ── URL helpers ───────────────────────────────────────────────────────────
 type MusicType = "zene" | "nemzene" | null; // null = all
 
-function readUrlParams(): { stage: string; day: string; tipus: MusicType } {
+function readUrlParams(): { stage: string; day: string; tipus: MusicType; artist: string } {
   const p = new URLSearchParams(window.location.search);
   const t = p.get("tipus");
   return {
     stage: p.get("szinhely") ?? "",
     day: p.get("nap") ?? "",
     tipus: t === "nemzene" ? "nemzene" : t === "all" ? null : "zene",
+    artist: p.get("artist") ?? "",
   };
 }
 
-function pushUrlParams(stage: string, day: string, tipus: MusicType) {
+function pushUrlParams(stage: string, day: string, tipus: MusicType, artist?: string) {
   const p = new URLSearchParams();
   if (stage) p.set("szinhely", stage);
   if (day) p.set("nap", day);
   if (tipus === "nemzene") p.set("tipus", "nemzene");
   else if (tipus === null) p.set("tipus", "all");
   // zene is default — no param needed
+  if (artist) p.set("artist", artist);
   const qs = p.toString();
   const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
   window.history.replaceState(null, "", newUrl);
@@ -263,7 +265,17 @@ export default function LineupGrid() {
   const [stageOpen, setStageOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [activeArtist, setActiveArtist] = useState<Artist | null>(null);
+  const [activeArtist, setActiveArtistRaw] = useState<Artist | null>(() => {
+    const slug = readUrlParams().artist;
+    if (!slug) return null;
+    return MOCK_ARTISTS.find((a) => a.id === slug || a.name.toLowerCase().replace(/\s+/g, "-") === slug) ?? null;
+  });
+
+  // Wrapper that also updates the URL
+  function setActiveArtist(artist: Artist | null) {
+    setActiveArtistRaw(artist);
+    pushUrlParams(selectedStage, selectedDay, musicType, artist?.id ?? undefined);
+  }
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dayRef = useRef<HTMLDivElement | null>(null);
@@ -273,10 +285,10 @@ export default function LineupGrid() {
 
   useEffect(() => { saveFavourites(favourites); }, [favourites]);
 
-  // Sync URL when filters change
+  // Sync URL when filters change (preserve active artist in URL)
   useEffect(() => {
-    pushUrlParams(selectedStage, selectedDay, musicType);
-  }, [selectedStage, selectedDay, musicType]);
+    pushUrlParams(selectedStage, selectedDay, musicType, activeArtist?.id ?? undefined);
+  }, [selectedStage, selectedDay, musicType, activeArtist]);
 
   // Auto-focus search input when opened
   useEffect(() => {
