@@ -162,7 +162,7 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
       }}
     >
       {metaLine && (
-        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 15, color: "#0E4B4D", margin: 0, lineHeight: 1.4 }}>
+        <p style={{ fontFamily: "'Pacaembu', sans-serif", fontSize: 15, color: "#0E4B4D", margin: 0, lineHeight: 1.4, display: 'none' }}>
           {metaLine}
         </p>
       )}
