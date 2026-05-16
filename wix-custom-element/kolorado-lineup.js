@@ -586,12 +586,14 @@
           if (dayId && !self._selectedDays.has(dayId)) return false;
         }
         // Music type filter (ZENE/NEMZENE split pill)
+        // programtipus may be a string or array (Wix CMS Tags field returns array)
+        var rawPt = a.programtipus || '';
+        var ptStr = Array.isArray(rawPt) ? rawPt.join(',') : String(rawPt);
+        var pt = ptStr.toLowerCase();
         if (self._musicType === 'zene') {
-          var pt = (a.programtipus || '').toLowerCase();
-          if (pt === 'nemzene') return false; // exclude Nemzene from ZENE view
+          if (pt.indexOf('nemzene') !== -1) return false; // exclude Nemzene from ZENE view
         } else if (self._musicType === 'nemzene') {
-          var pt2 = (a.programtipus || '').toLowerCase();
-          if (pt2 !== 'nemzene') return false; // only Nemzene
+          if (pt.indexOf('nemzene') === -1) return false; // only Nemzene
         }
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
         if (self._searchQuery.trim()) {
