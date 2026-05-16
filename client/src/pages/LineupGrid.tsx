@@ -192,7 +192,7 @@ const ArtistCard = React.memo(function ArtistCard({
       <div style={{ position: "absolute", top: 0, left: 0, padding: "6px 8px 4px" }}>
         <span style={{
           fontFamily: "'SerialBlur', sans-serif",
-          fontSize: 13, color: "#642CFF",
+          fontSize: 13.65, color: "#642CFF",
           textTransform: "uppercase", letterSpacing: "0.02em",
           lineHeight: 1.3, background: "#FEFFC0",
           display: "inline", boxDecorationBreak: "clone",
@@ -200,6 +200,21 @@ const ArtistCard = React.memo(function ArtistCard({
         } as React.CSSProperties}>
           {artist.name}
         </span>
+        {artist.title1 && (
+          <>
+            <br />
+            <span style={{
+              fontFamily: "'SerialBlur', sans-serif",
+              fontSize: 11, color: "#642CFF",
+              textTransform: "uppercase", letterSpacing: "0.02em",
+              lineHeight: 1.3, background: "#FEFFC0",
+              display: "inline", boxDecorationBreak: "clone",
+              WebkitBoxDecorationBreak: "clone", padding: "2px 6px",
+            } as React.CSSProperties}>
+              {artist.title1}
+            </span>
+          </>
+        )}
       </div>
       <button
         onClick={(e) => { e.stopPropagation(); onToggleFav(); }}

@@ -417,8 +417,9 @@
 
     // Name label — top-left, per-line background via inline style
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
-    ".kl-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
-    "@media(min-width:768px){.kl-name{font-size:14px;}}",
+    ".kl-name{font-family:'SerialBlur',sans-serif;font-size:13.65px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
+    ".kl-title1{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
+    "@media(min-width:768px){.kl-name{font-size:14.35px;}}",
 
     // Fav circle button — bottom right
     ".kl-fav-circle{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(254,255,192,0.95);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;z-index:4;box-shadow:0 2px 10px rgba(0,0,0,0.25);}",
@@ -518,6 +519,7 @@
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
               programtipus:    item.programtipus || "",
+              title1:          item.title1 || "",
             };
           }); // show all artists regardless of whether stage/date is set
           this._loading = false;
@@ -676,7 +678,9 @@
                 '<button class="kl-fav-circle'+(isFav?' on':'')+' " data-fav="'+esc(a.id)+'">' +
                   (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +
                 '</button>' +
-                '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span></div>' +
+                '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span>' +
+                  (a.title1 ? '<br><span class="kl-title1">'+esc(a.title1)+'</span>' : '') +
+                '</div>' +
               '</div>' +
             '</div>';
         });
@@ -824,7 +828,9 @@
                 '<div class="kl-hover-overlay"></div>' +
                 '<button class="kl-fav-circle'+(isFav?" on":"")+' " data-fav="'+esc(a.id)+'">' +
                   (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +                '</button>' +
-                '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span></div>' +
+                '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span>' +
+                  (a.title1 ? '<br><span class="kl-title1">'+esc(a.title1)+'</span>' : '') +
+                '</div>' +
               '</div>' +
             '</div>';
         });

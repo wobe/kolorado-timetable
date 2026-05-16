@@ -127,7 +127,8 @@
 
     // Name overlay — top-left, per-line background
     ".kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;z-index:5;}",
-    ".kap-name{font-family:'SerialBlur',sans-serif;font-size:18px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 8px;}",
+    ".kap-name{font-family:'SerialBlur',sans-serif;font-size:18.9px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 8px;}",
+    ".kap-title1{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 8px;}",
 
     // Fav button — bottom-right of image
     ".kap-fav{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
@@ -168,7 +169,9 @@
       ? '<img class="kap-photo" src="'+esc(a.photo)+'" alt="'+esc(a.name)+'" loading="lazy">'
       : '<div class="kap-photo-ph"><span>'+esc((a.name||"").slice(0,2))+'</span></div>';
     return photoHtml +
-      '<div class="kap-name-wrap"><span class="kap-name">'+esc(a.name)+'</span></div>' +
+      '<div class="kap-name-wrap"><span class="kap-name">'+esc(a.name)+'</span>' +
+      (a.title1 ? '<br><span class="kap-title1">'+esc(a.title1)+'</span>' : '') +
+      '</div>' +
       '<button class="kap-fav '+(isFav?"on":"off")+'" id="kap-fav" data-id="'+esc(a.id)+'">' +
         heartSvg(isFav, 18) +
       '</button>';

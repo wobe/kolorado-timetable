@@ -22,6 +22,8 @@ export interface Artist {
   soundcloudLink?: string;
   /** CMS field slug: programtipus — Élőzene | Elektronikus zene | Nemzene */
   programtipus?: "Élőzene" | "Elektronikus zene" | "Nemzene";
+  /** CMS field slug: title1 — subtitle displayed below the artist name */
+  title1?: string;
 }
 
 export interface Stage {
