@@ -67,7 +67,8 @@
 
   // ── Helpers ────────────────────────────────────────────────
   function esc(s) {
-    return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    if (Array.isArray(s)) s = s.join(', ');
+    return (s == null ? '' : String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
   function fmt(d) {
     if (!d) return "";

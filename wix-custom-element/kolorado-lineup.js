@@ -288,7 +288,8 @@
 
   // ── Escape HTML ────────────────────────────────────────────────────────
   function esc(s) {
-    return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    if (Array.isArray(s)) s = s.join(', ');
+    return (s == null ? '' : String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
   // ── SVG icons ──────────────────────────────────────────────
@@ -519,7 +520,7 @@
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
               programtipus:    item.programtipus || "",
-              title1:          item.title1 || "",
+              title1:          Array.isArray(item.title1) ? item.title1.join(', ') : (item.title1 || ""),
             };
           }); // show all artists regardless of whether stage/date is set
           this._loading = false;
