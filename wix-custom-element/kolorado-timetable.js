@@ -39,7 +39,7 @@
     { id: "sat", label: "Szombat",   date: "2026-07-18" },
   ];
   var _kapDayStartHour = 10;
-  function _kapEsc(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function _kapEsc(s) { var _s=Array.isArray(s)?s.join(', '):(s==null?'':(typeof s==='string'?s:String(s))); return _s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function _kapFmt(d) { if(!d)return""; var t=d instanceof Date?d:new Date(d); if(isNaN(t))return""; var h=t.getHours(),m=t.getMinutes(); return(h<10?"0":"")+h+":"+(m<10?"0":"")+m; }
   function _kapDayLabel(startTime) {
     if(!startTime)return"";
