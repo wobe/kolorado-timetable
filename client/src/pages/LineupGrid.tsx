@@ -503,67 +503,64 @@ export default function LineupGrid() {
           )}
         </button>
 
-        {/* ── Search (right side) ── */}
+        {/* ── Search (right side) — pill expands via CSS transition, input stays mounted to avoid reversed-typing bug ── */}
         <div style={{ display: "flex", alignItems: "center", marginLeft: "auto" }}>
-          <AnimatePresence mode="wait">
-            {searchOpen ? (
-              <motion.div
-                key="search-expanded"
-                initial={{ width: 36, opacity: 0 }}
-                animate={{ width: 200, opacity: 1 }}
-                exit={{ width: 36, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "0 10px", height: 36, borderRadius: 9999,
-                  border: "1.5px solid rgba(100,44,255,0.35)",
-                  background: "rgba(100,44,255,0.07)", overflow: "hidden",
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#642CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); } }}
-                  placeholder="Keresés..."
-                  style={{
-                    flex: 1, background: "transparent", border: "none", outline: "none",
-                    color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, minWidth: 0,
-                  }}
-                />
-                <button
-                  onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(100,44,255,0.5)", display: "flex", alignItems: "center", padding: 0, flexShrink: 0 }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </motion.div>
-            ) : (
-              <motion.button
-                key="search-icon"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSearchOpen(true)}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  border: "1.5px solid rgba(100,44,255,0.25)",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  background: searchQuery ? "#642CFF" : "transparent",
-                  color: searchQuery ? "#FEFFC0" : "#642CFF", flexShrink: 0,
-                }}
-                title="Keresés"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </motion.button>
+          <div
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              height: 36, borderRadius: 9999,
+              border: searchOpen ? "1.5px solid rgba(100,44,255,0.35)" : "1.5px solid rgba(100,44,255,0.25)",
+              background: searchOpen ? "rgba(100,44,255,0.07)" : (searchQuery ? "#642CFF" : "transparent"),
+              overflow: "hidden",
+              width: searchOpen ? 200 : 36,
+              transition: "width 0.2s ease, background 0.15s ease, border-color 0.15s ease",
+              cursor: searchOpen ? "default" : "pointer",
+              padding: searchOpen ? "0 10px" : "0",
+              justifyContent: searchOpen ? "flex-start" : "center",
+              flexShrink: 0,
+            }}
+            onClick={() => { if (!searchOpen) setSearchOpen(true); }}
+          >
+            {/* Search icon — always visible when closed, hidden when open */}
+            {!searchOpen && (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke={searchQuery ? "#FEFFC0" : "#642CFF"}
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
             )}
-          </AnimatePresence>
+            {searchOpen && (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#642CFF"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            )}
+            {/* Input — always mounted to prevent cursor/reversed-typing bug */}
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); } }}
+              placeholder="Keresés..."
+              style={{
+                flex: 1, background: "transparent", border: "none", outline: "none",
+                color: "#642CFF", fontFamily: "'Pacaembu', sans-serif", fontSize: 13, minWidth: 0,
+                display: searchOpen ? "block" : "none",
+                width: searchOpen ? "100%" : 0,
+              }}
+            />
+            {searchOpen && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setSearchOpen(false); setSearchQuery(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(100,44,255,0.5)", display: "flex", alignItems: "center", padding: 0, flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

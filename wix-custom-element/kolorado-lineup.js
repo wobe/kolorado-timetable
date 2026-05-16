@@ -388,8 +388,17 @@
     ".kl-mobile-clear{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:9999px;border:none;font-family:'Pacaembu',sans-serif;font-size:12px;cursor:pointer;background:rgba(100,44,255,0.06);color:#642CFF;width:100%;}",
 
     // Search input
-    ".kl-search-row{display:flex;align-items:center;gap:8px;margin-left:auto;}",
-    ".kl-search-input{height:36px;padding:0 12px;border:2px solid rgba(100,44,255,0.3);background:rgba(100,44,255,0.06);color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;outline:none;width:160px;}",
+    ".kl-search-row{display:flex;align-items:center;gap:0;margin-left:auto;}",
+    /* Search pill — always in DOM, expands via CSS transition */
+    ".kl-search-pill{display:flex;align-items:center;gap:6px;height:36px;border-radius:9999px;border:1.5px solid rgba(100,44,255,0.25);background:transparent;overflow:hidden;width:36px;transition:width 0.2s ease,background 0.15s ease,border-color 0.15s ease,padding 0.2s ease;cursor:pointer;padding:0;justify-content:center;flex-shrink:0;}",
+    ".kl-search-pill.open{width:200px;background:rgba(100,44,255,0.07);border-color:rgba(100,44,255,0.35);padding:0 10px;justify-content:flex-start;cursor:default;}",
+    ".kl-search-icon{display:flex;align-items:center;flex-shrink:0;}",
+    ".kl-search-pill:not(.open) .kl-search-icon svg{width:15px;height:15px;}",
+    ".kl-search-input{flex:1;background:transparent;border:none;outline:none;color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;min-width:0;display:none;width:0;}",
+    ".kl-search-pill.open .kl-search-input{display:block;width:100%;}",
+    ".kl-search-clear{background:none;border:none;cursor:pointer;color:rgba(100,44,255,0.5);display:none;align-items:center;padding:0;flex-shrink:0;}",
+    ".kl-search-pill.open .kl-search-clear{display:flex;}",
+    ".kl-search-toggle{display:none !important;}",
 
     // ── Grid ──
     ".kl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:16px;background:#FEFFC0;}",
@@ -641,6 +650,43 @@
       return KoloradoArtistPopup.render(a, isFav);
     }
 
+    // ── Partial grid-only re-render (used by search input to avoid focus loss) ──
+    _renderGridOnly() {
+      var self = this;
+      var shadow = this._shadow;
+      var artists = this._filteredArtists();
+      var gridContainer = shadow.getElementById('kl-grid-container');
+      if (!gridContainer) { this._render(); return; } // fallback
+      var gridHtml = '';
+      if (artists.length === 0) {
+        gridHtml = '<div class="kl-empty"><div class="kl-empty-title">'+i18n.noResults+'</div><div>'+i18n.tryOtherFilter+'</div></div>';
+      } else {
+        gridHtml = '<div class="kl-grid">';
+        artists.forEach(function(a) {
+          var isFav = self._favourites.has(a.id);
+          var initials = a.name.split(" ").slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+          var photoHtml = a.photo
+            ? '<img class="kl-photo" src="'+esc(a.photo)+'" alt="'+esc(a.name)+'" loading="lazy">'
+            : '<div class="kl-photo-placeholder"><span>'+esc(initials)+'</span></div>';
+          gridHtml +=
+            '<div class="kl-card" data-id="'+esc(a.id)+'">' +
+              '<div class="kl-card-inner">' +
+                photoHtml +
+                '<div class="kl-hover-overlay"></div>' +
+                '<button class="kl-fav-circle'+(isFav?' on':'')+' " data-fav="'+esc(a.id)+'">' +
+                  (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +
+                '</button>' +
+                '<div class="kl-name-wrap"><span class="kl-name">'+esc(a.name)+'</span></div>' +
+              '</div>' +
+            '</div>';
+        });
+        gridHtml += '</div>';
+      }
+      gridContainer.innerHTML = gridHtml;
+      // Re-wire card clicks and fav buttons
+      this._wireGridEvents(shadow);
+    }
+
     // ── Main render ───────────────────────────────────────────
     _render() {
       var self = this;
@@ -742,10 +788,14 @@
           mobilePanelHtml +
         '</div>' +
 
-        // Search
+        // Search — pill expands via CSS, input always in DOM to avoid reversed-typing bug
         '<div class="kl-search-row">' +
-          (this._searchOpen ? '<input class="kl-search-input" id="kl-search-input" type="text" placeholder="'+i18n.search+'" value="'+esc(this._searchQuery)+'">' : '') +
-          '<button class="kl-icon-btn'+(this._searchOpen||this._searchQuery?' active':' inactive')+' " id="kl-search-btn">' +
+          '<div class="kl-search-pill'+(this._searchOpen?' open':'')+'" id="kl-search-pill">' +
+            '<span class="kl-search-icon">'+ICONS.search(13)+'</span>' +
+            '<input class="kl-search-input" id="kl-search-input" type="text" placeholder="'+i18n.search+'" value="'+esc(this._searchQuery)+'">' +
+            '<button class="kl-search-clear" id="kl-search-clear">'+ICONS.close(12)+'</button>' +
+          '</div>' +
+          '<button class="kl-icon-btn'+(this._searchOpen||this._searchQuery?' active':' inactive')+' kl-search-toggle" id="kl-search-btn">' +
             ICONS.search(16) +
           '</button>' +
         '</div>' +
@@ -788,7 +838,7 @@
       // Inject shared popup CSS if available
       var extraCss = (typeof KoloradoArtistPopup !== "undefined") ? KoloradoArtistPopup.CSS : "";
       shadow.innerHTML = '<style>' + CSS + extraCss + '</style>' +
-        '<div class="kl-root">' + headerHtml + gridHtml + popupHtml + '</div>';
+        '<div class="kl-root">' + headerHtml + '<div id="kl-grid-container">' + gridHtml + '</div>' + popupHtml + '</div>';
 
       // ── Scroll-triggered header border ──
       var klHeader = shadow.querySelector('.kl-header');
@@ -925,35 +975,49 @@
         }
       });
 
-      // Search input
+      // Search pill — click on closed pill to open
+      var searchPill = shadow.getElementById("kl-search-pill");
+      if (searchPill) searchPill.addEventListener("click", function() {
+        if (!self._searchOpen) {
+          self._searchOpen = true;
+          searchPill.classList.add('open');
+          var inp = shadow.getElementById("kl-search-input");
+          if (inp) { inp.style.display = 'block'; inp.focus(); }
+        }
+      });
+
+      // Search clear button
+      var searchClear = shadow.getElementById("kl-search-clear");
+      if (searchClear) searchClear.addEventListener("click", function(e) {
+        e.stopPropagation();
+        self._searchOpen = false;
+        self._searchQuery = "";
+        if (searchPill) searchPill.classList.remove('open');
+        self._renderGridOnly();
+      });
+
+      // Search input — use _renderGridOnly to avoid rebuilding shadow DOM and losing focus
       var searchInput = shadow.getElementById("kl-search-input");
       if (searchInput) {
-        searchInput.addEventListener("input", function() {
-          self._searchQuery = searchInput.value; self._render();
-          var inp2 = shadow.getElementById("kl-search-input");
-          if (inp2) { inp2.focus(); inp2.value = self._searchQuery; }
+        searchInput.addEventListener("input", function(e) {
+          self._searchQuery = searchInput.value;
+          self._renderGridOnly();
+          // Re-focus the input (it stays in DOM so cursor position is preserved)
+          var inp = shadow.getElementById("kl-search-input");
+          if (inp) inp.focus();
         });
         searchInput.addEventListener("keydown", function(e) {
-          if (e.key === "Escape") { self._searchOpen = false; self._searchQuery = ""; self._render(); }
+          if (e.key === "Escape") {
+            self._searchOpen = false;
+            self._searchQuery = "";
+            if (searchPill) searchPill.classList.remove('open');
+            self._renderGridOnly();
+          }
         });
       }
 
-      // Card clicks → popup
-      shadow.querySelectorAll(".kl-card").forEach(function(card) {
-        card.addEventListener("click", function(e) {
-          if (e.target.closest("[data-fav]")) return;
-          var id = card.getAttribute("data-id");
-          var artist = self._artists.find(function(a){ return a.id === id; });
-          if (artist) self._openPopup(artist);
-        });
-      });
-
-      // Card fav buttons
-      shadow.querySelectorAll("[data-fav]").forEach(function(btn) {
-        btn.addEventListener("click", function(e) {
-          e.stopPropagation(); self._toggleFav(btn.getAttribute("data-fav"));
-        });
-      });
+      // Card clicks + fav buttons — extracted to _wireGridEvents for reuse
+      this._wireGridEvents(shadow);
 
       // Popup events — wired via shared KoloradoArtistPopup module
       if (self._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
@@ -985,6 +1049,24 @@
         if (!inStage && self._showStageFilter) { self._showStageFilter = false; self._render(); }
         if (!inDay   && self._showDayFilter)   { self._showDayFilter   = false; self._render(); }
         if (!inMob   && self._showMobileFilters) { self._showMobileFilters = false; self._render(); }
+      });
+    }
+
+    // ── Wire card click and fav events (called after full render and after _renderGridOnly) ──
+    _wireGridEvents(shadow) {
+      var self = this;
+      shadow.querySelectorAll(".kl-card").forEach(function(card) {
+        card.addEventListener("click", function(e) {
+          if (e.target.closest("[data-fav]")) return;
+          var id = card.getAttribute("data-id");
+          var artist = self._artists.find(function(a){ return a.id === id; });
+          if (artist) self._openPopup(artist);
+        });
+      });
+      shadow.querySelectorAll("[data-fav]").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation(); self._toggleFav(btn.getAttribute("data-fav"));
+        });
       });
     }
   }
