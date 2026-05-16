@@ -181,6 +181,8 @@
       tryOtherFilter:  "Próbálj más szűrőt!",
       unknown:         "Ismeretlen",
       days: { wed: "Szerda", thu: "Csütörtök", fri: "Péntek", sat: "Szombat" },
+      zene:            "ZENE",
+      nemzene:         "NEMZENE",
     },
     en: {
       favToast:        "Your favourites are stored in your browser. You can find them here later, but they won't sync across your devices.",
@@ -195,6 +197,8 @@
       tryOtherFilter:  "Try a different filter!",
       unknown:         "Unknown",
       days: { wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday" },
+      zene:            "ZENE",
+      nemzene:         "NEMZENE",
     },
   };
   var i18n = T[LANG];
@@ -350,8 +354,16 @@
     ".kl-filter-btn.active{background:#642CFF;color:#FEFFC0;}",
     ".kl-filter-clear{margin-left:2px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.3);display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:pointer;}",
 
+    // ZENE/NEMZENE split pill
+    ".kl-split-pill{display:inline-flex;border-radius:9999px;overflow:hidden;border:2px solid rgba(100,44,255,0.25);}",
+    ".kl-split-half{padding:5px 16px;border:none;background:transparent;color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}",
+    ".kl-split-half:first-child{border-right:1px solid rgba(100,44,255,0.2);}",
+    ".kl-split-half.active{background:#642CFF;color:#FEFFC0;}",
+    ".kl-split-half:hover:not(.active){background:rgba(100,44,255,0.08);}",
+
     // Fav toggle
     ".kl-fav-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9999px;border:none;background:rgba(100,44,255,0.12);color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s;}",
+    "@media(max-width:639px){.kl-fav-label{display:none;}}",
     ".kl-fav-toggle.active{background:#e53e3e;color:#fff;}",
     ".kl-badge{background:#642CFF;color:#FEFFC0;border-radius:9999px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px;}",
     ".kl-fav-toggle.active .kl-badge{background:rgba(255,255,255,0.3);color:#fff;}",
@@ -436,6 +448,12 @@
       this._selectedDays = new Set();    // day IDs
       this._showStageFilter = false;
       this._showDayFilter = false;
+      // Music type: 'zene' (default), 'nemzene', or '' (all)
+      try {
+        var initParams = new URLSearchParams(window.location.search);
+        var initTipus = (initParams.get('tipus') || '').toLowerCase();
+        this._musicType = (initTipus === 'nemzene') ? 'nemzene' : (initTipus === 'all' ? '' : 'zene');
+      } catch(e) { this._musicType = 'zene'; }
       this._showMobileFilters = false;
       this._searchOpen = false;
       this._searchQuery = "";
@@ -490,6 +508,7 @@
               longDescription: item.longDescription || item.bio || item.description || "",
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
+              programtipus:    item.programtipus || "",
             };
           }); // show all artists regardless of whether stage/date is set
           this._loading = false;
@@ -541,6 +560,17 @@
         window.history.replaceState(null, '', newUrl);
       } catch(e) {}
     }
+    _pushTypeUrl(musicType) {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        if (musicType === 'nemzene') { p.set('tipus', 'nemzene'); }
+        else if (musicType === '') { p.set('tipus', 'all'); }
+        else { p.delete('tipus'); } // 'zene' is default, no param needed
+        var qs = p.toString();
+        var newUrl = qs ? window.location.pathname + '?' + qs : window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+      } catch(e) {}
+    }
 
     _filteredArtists() {
       var self = this;
@@ -554,6 +584,14 @@
         if (self._selectedDays.size > 0 && a.startTime) {
           var dayId = getFestivalDayId(a.startTime);
           if (dayId && !self._selectedDays.has(dayId)) return false;
+        }
+        // Music type filter (ZENE/NEMZENE split pill)
+        if (self._musicType === 'zene') {
+          var pt = (a.programtipus || '').toLowerCase();
+          if (pt === 'nemzene') return false; // exclude Nemzene from ZENE view
+        } else if (self._musicType === 'nemzene') {
+          var pt2 = (a.programtipus || '').toLowerCase();
+          if (pt2 !== 'nemzene') return false; // only Nemzene
         }
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
         if (self._searchQuery.trim()) {
@@ -670,36 +708,46 @@
       var mobileBadge = mobileFilterCount > 0
         ? '<span class="kl-icon-badge">'+mobileFilterCount+'</span>' : '';
 
-      // ── Header hidden until schedule is announced ──
-      var headerHtml = ''; /* header hidden — re-enable by restoring the block below */
-      if (false) { headerHtml = '<div class="kl-header">' +
-        // Desktop filters
+      // ── Header with ZENE/NEMZENE split pill ──
+      var zeActive  = this._musicType === 'zene';
+      var nzActive  = this._musicType === 'nemzene';
+      var headerHtml = '<div class="kl-header">' +
+        // Desktop filters row
         '<div class="kl-desktop-filters">' +
-          // Stage+Day filter buttons hidden — uncomment when schedule is ready:
-          // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-stage-btn">▼ Színpad</button></div>' +
-          // '<div class="kl-filter-wrap"><button class="kl-filter-btn" id="kl-day-btn">▼ Nap</button></div>' +
-          '<button class="kl-fav-toggle'+(this._filterFavourites?" active":"")+'" id="kl-fav-toggle">' +
-            ICONS.heart(this._filterFavourites, 14) + ' ' + i18n.favourites +
+          // Stage+Day filter buttons hidden until schedule is ready:
+          // '<div class="kl-filter-wrap" style="display:none"><button class="kl-filter-btn" id="kl-stage-btn">▼ '+i18n.stage+'</button>'+stageClear+stageDropdown+'</div>' +
+          // '<div class="kl-filter-wrap" style="display:none"><button class="kl-filter-btn" id="kl-day-btn">▼ '+i18n.day+'</button>'+dayClear+dayDropdown+'</div>' +
+
+          // ZENE / NEMZENE split pill
+          '<div class="kl-split-pill" id="kl-split-pill">' +
+            '<button class="kl-split-half'+(zeActive?' active':'')+' " id="kl-zene-btn">'+i18n.zene+'</button>' +
+            '<button class="kl-split-half'+(nzActive?' active':'')+' " id="kl-nemzene-btn">'+i18n.nemzene+'</button>' +
+          '</div>' +
+
+          // Favourites toggle
+          '<button class="kl-fav-toggle'+(this._filterFavourites?' active':'')+' " id="kl-fav-toggle">' +
+            ICONS.heart(this._filterFavourites, 14) +
+            '<span class="kl-fav-label"> '+i18n.favourites+'</span>' +
             (favCount > 0 ? '<span class="kl-badge">'+favCount+'</span>' : '') +
           '</button>' +
         '</div>' +
 
         // Mobile filter icon
         '<div class="kl-mobile-filter-wrap" style="position:relative">' +
-          '<button class="kl-icon-btn'+(hasActiveFilters?" active":"  inactive")+'" id="kl-mobile-filter-btn" style="position:relative">' +
+          '<button class="kl-icon-btn'+(hasActiveFilters?' active':'  inactive')+' " id="kl-mobile-filter-btn" style="position:relative">' +
             ICONS.filter(16) + mobileBadge +
           '</button>' +
           mobilePanelHtml +
         '</div>' +
 
-        // Search (always visible)
+        // Search
         '<div class="kl-search-row">' +
           (this._searchOpen ? '<input class="kl-search-input" id="kl-search-input" type="text" placeholder="'+i18n.search+'" value="'+esc(this._searchQuery)+'">' : '') +
-          '<button class="kl-icon-btn'+(this._searchOpen||this._searchQuery?" active":" inactive")+'" id="kl-search-btn">' +
+          '<button class="kl-icon-btn'+(this._searchOpen||this._searchQuery?' active':' inactive')+' " id="kl-search-btn">' +
             ICONS.search(16) +
           '</button>' +
         '</div>' +
-      '</div>'; } // end hidden header block
+      '</div>';
 
       // ── Grid HTML ──
       var gridHtml = '';
@@ -795,6 +843,22 @@
           else self._selectedDays.add(id);
           self._showDayFilter = true; self._render();
         });
+      });
+
+      // ZENE / NEMZENE split pill
+      var zeneBtn = shadow.getElementById('kl-zene-btn');
+      if (zeneBtn) zeneBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        self._musicType = (self._musicType === 'zene') ? '' : 'zene';
+        self._pushTypeUrl(self._musicType);
+        self._render();
+      });
+      var nezeneBtn = shadow.getElementById('kl-nemzene-btn');
+      if (nezeneBtn) nezeneBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        self._musicType = (self._musicType === 'nemzene') ? '' : 'nemzene';
+        self._pushTypeUrl(self._musicType);
+        self._render();
       });
 
       // Desktop fav toggle
