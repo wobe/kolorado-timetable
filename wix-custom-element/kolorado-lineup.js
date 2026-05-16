@@ -334,12 +334,10 @@
     ".kl-header.scrolled{border-bottom:1px solid rgba(100,44,255,0.2);}",
 
     // Desktop filters (hidden on mobile)
-    ".kl-desktop-filters{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;}",
-    "@media(max-width:639px){.kl-desktop-filters{display:none!important;}}",
+    ".kl-desktop-filters{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:nowrap;}",
 
-    // Mobile filter icon (hidden on desktop)
-    ".kl-mobile-filter-wrap{position:relative;flex:1;}",
-    "@media(min-width:640px){.kl-mobile-filter-wrap{display:none!important;}}",
+    // Mobile filter wrap — hidden entirely (funnel button removed)
+    ".kl-mobile-filter-wrap{display:none!important;}",
 
     // Icon circle button (search + mobile filter)
     ".kl-icon-btn{width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}",
@@ -364,7 +362,7 @@
 
     // Fav toggle
     ".kl-fav-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9999px;border:none;background:rgba(100,44,255,0.12);color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s;}",
-    "@media(max-width:639px){.kl-fav-label{display:none;}}",
+    "@media(max-width:639px){.kl-fav-label{display:none;}.kl-badge{display:none;}.kl-fav-toggle{padding:6px 10px;}.kl-split-half{padding:5px 10px;}}",
     ".kl-fav-toggle.active{background:#e53e3e;color:#fff;}",
     ".kl-badge{background:#642CFF;color:#FEFFC0;border-radius:9999px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px;}",
     ".kl-fav-toggle.active .kl-badge{background:rgba(255,255,255,0.3);color:#fff;}",

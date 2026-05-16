@@ -465,6 +465,7 @@ export default function LineupGrid() {
         }}>
           <button
             onClick={() => handleMusicType("zene")}
+            className="lineup-split-half"
             style={{
               padding: "6px 14px", border: "none", cursor: "pointer",
               fontFamily: "'Pacaembu', sans-serif", fontSize: 13, transition: "all 0.15s",
@@ -475,6 +476,7 @@ export default function LineupGrid() {
           >ZENE</button>
           <button
             onClick={() => handleMusicType("nemzene")}
+            className="lineup-split-half"
             style={{
               padding: "6px 14px", border: "none", cursor: "pointer",
               fontFamily: "'Pacaembu', sans-serif", fontSize: 13, transition: "all 0.15s",
@@ -492,6 +494,7 @@ export default function LineupGrid() {
             ...pillBase,
             background: showFavOnly ? "#e53e3e" : "rgba(100,44,255,0.12)",
             color: showFavOnly ? "white" : "#642CFF",
+            padding: "6px 10px",
           }}
         >
           <HeartIcon filled={showFavOnly} color={showFavOnly ? "white" : "#642CFF"} />
@@ -616,11 +619,11 @@ export default function LineupGrid() {
         @media (min-width: 900px) { .lineup-grid { grid-template-columns: repeat(4, 1fr) !important; } }
         @media (min-width: 1280px) { .lineup-grid { grid-template-columns: repeat(5, 1fr) !important; } }
 
-        /* Mobile: Kedvencek — icon only, no label or count badge */
+        /* Mobile: Kedvencek — icon only (no label, no count); split pill compact */
         @media (max-width: 639px) {
           .lineup-fav-label { display: none !important; }
           .lineup-fav-count { display: none !important; }
-          .lineup-fav-btn { padding: 6px 10px !important; }
+          .lineup-split-half { padding: 5px 10px !important; }
         }
       `}</style>
     </div>
