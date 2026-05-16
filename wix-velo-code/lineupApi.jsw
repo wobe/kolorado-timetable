@@ -95,7 +95,6 @@ export async function getLineup() {
         nationality:     item.jobTitle        || "",
         url:             item.website         || "",
         programtipus:    item.programtpus     || "",  // CMS slug: programtpus (no 'i')
-        title1:          item.title1           || "",  // CMS field: title1 (subtitle)
       };
     });
 }

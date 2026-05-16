@@ -115,12 +115,12 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
           {artist.name.slice(0, 2)}
         </div>
       )}
-      {/* Name + title1 subtitle — top-left, per-line yellow bg */}
+      {/* Name — top-left, per-line yellow bg */}
       <div style={{ position: "absolute", top: 0, left: 0, padding: "8px 10px 4px" }}>
         <span
           style={{
             fontFamily: "'SerialBlur', sans-serif",
-            fontSize: 23.1, color: "#642CFF",
+            fontSize: 22, color: "#642CFF",
             textTransform: "uppercase", letterSpacing: "0.02em",
             lineHeight: 1.3,
             background: "#FEFFC0",
@@ -132,26 +132,6 @@ export default function ArtistPopup({ artist, isFav, onToggleFav, onClose, onPre
         >
           {artist.name}
         </span>
-        {artist.title1 && (
-          <>
-            <br />
-            <span
-              style={{
-                fontFamily: "'SerialBlur', sans-serif",
-                fontSize: 16, color: "#642CFF",
-                textTransform: "uppercase", letterSpacing: "0.02em",
-                lineHeight: 1.3,
-                background: "#FEFFC0",
-                display: "inline",
-                boxDecorationBreak: "clone",
-                WebkitBoxDecorationBreak: "clone",
-                padding: "2px 8px",
-              } as React.CSSProperties}
-            >
-              {artist.title1}
-            </span>
-          </>
-        )}
       </div>
       {/* Fav button — always bottom-right */}
       <button
