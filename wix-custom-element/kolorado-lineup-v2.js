@@ -72,7 +72,7 @@
     },
     en: {
       zene:          "MUSIC",
-      nemzene:       "NONMUSIC",
+      nemzene:       "NON-MUSIC",
       favourites:    "Favourites",
       search:        "Search...",
       noResults:     "No results",
