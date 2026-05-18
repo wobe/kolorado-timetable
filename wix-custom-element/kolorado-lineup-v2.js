@@ -120,6 +120,33 @@
     return null;
   }
 
+  // ── URL helpers ─────────────────────────────────────────────
+  function slugify(name) {
+    return (name || '')
+      .toLowerCase()
+      .replace(/[áàä]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
+      .replace(/[óöő]/g,'o').replace(/[úüű]/g,'u')
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  }
+
+  function buildUrl(musicType, artistSlug) {
+    var base = window.location.pathname;
+    var params = [];
+    if (musicType === 'nemzene') params.push('tipus=nemzene');
+    else if (musicType === '') params.push('tipus=all');
+    // musicType === 'zene' → no param (clean URL)
+    if (artistSlug) params.push('eloado=' + encodeURIComponent(artistSlug));
+    return base + (params.length ? '?' + params.join('&') : '');
+  }
+
+  function pushUrl(musicType, artistSlug) {
+    try { history.pushState(null, '', buildUrl(musicType, artistSlug)); } catch(e) {}
+  }
+
+  function replaceUrl(musicType, artistSlug) {
+    try { history.replaceState(null, '', buildUrl(musicType, artistSlug)); } catch(e) {}
+  }
+
   // ── Cookie helpers ───────────────────────────────────────────
   function readFavCookie() {
     try {
@@ -303,12 +330,13 @@
       this._touchStartX = 0;
       this._touchStartY = 0;
       this._navDir = 1; // 1 = forward, -1 = backward
-      // Read initial music type from URL
+      // Read initial state from URL
       try {
         var p = new URLSearchParams(window.location.search);
         var t = (p.get("tipus") || "").toLowerCase();
         this._musicType = t === "nemzene" ? "nemzene" : t === "all" ? "" : "zene";
-      } catch (e) {}
+        this._initialArtistSlug = p.get("eloado") || null;
+      } catch (e) { this._initialArtistSlug = null; }
     }
 
     connectedCallback() {
@@ -324,6 +352,14 @@
       }
       this._render();
       this._bindEvents();
+      // Restore popup from URL if ?eloado= is present (runs after first render)
+      if (this._initialArtistSlug) {
+        var self = this;
+        var slug = this._initialArtistSlug;
+        this._initialArtistSlug = null;
+        // Try immediately; if artists not loaded yet, wait for attributeChangedCallback
+        this._pendingSlug = slug;
+      }
     }
 
     static get observedAttributes() { return ["lineup-data"]; }
@@ -337,6 +373,13 @@
           this._artists = [];
         }
         this._loading = false;
+        // Restore popup from URL slug if pending
+        if (this._pendingSlug) {
+          var slug = this._pendingSlug;
+          this._pendingSlug = null;
+          var match = this._artists.find(function(a){ return slugify(a.name) === slug; });
+          if (match) this._popupArtist = match;
+        }
         this._render();
         this._bindEvents();
       }
@@ -572,10 +615,12 @@
       var nzBtn   = root.querySelector("#kl-nemzene-btn");
       if (zeneBtn) zeneBtn.addEventListener("click", function () {
         self._musicType = self._musicType === "zene" ? "" : "zene";
+        replaceUrl(self._musicType, null);
         self._render(); self._bindEvents();
       });
       if (nzBtn) nzBtn.addEventListener("click", function () {
         self._musicType = self._musicType === "nemzene" ? "" : "nemzene";
+        replaceUrl(self._musicType, null);
         self._render(); self._bindEvents();
       });
 
@@ -624,7 +669,11 @@
           var id = card.getAttribute("data-id");
           var artists = self._filtered();
           var a = artists.find(function (x) { return x.id === id; });
-          if (a) { self._popupArtist = a; self._render(); self._bindEvents(); }
+          if (a) {
+            self._popupArtist = a;
+            pushUrl(self._musicType, slugify(a.name));
+            self._render(); self._bindEvents();
+          }
         });
       });
 
@@ -654,12 +703,18 @@
       if (overlay) {
         // Close on overlay click
         overlay.addEventListener("click", function (e) {
-          if (e.target === overlay) { self._popupArtist = null; self._render(); self._bindEvents(); }
+          if (e.target === overlay) {
+            self._popupArtist = null;
+            replaceUrl(self._musicType, null);
+            self._render(); self._bindEvents();
+          }
         });
         // Close button
         var closeBtn = root.querySelector("#kl-popup-close");
         if (closeBtn) closeBtn.addEventListener("click", function () {
-          self._popupArtist = null; self._render(); self._bindEvents();
+          self._popupArtist = null;
+          replaceUrl(self._musicType, null);
+          self._render(); self._bindEvents();
         });
         // Fav in popup
         var popupFav = root.querySelector("#kl-popup-fav");
@@ -680,7 +735,7 @@
         this._keyHandler = function (e) {
           if (e.key === "ArrowLeft")  { e.preventDefault(); self._popupNav(-1); }
           if (e.key === "ArrowRight") { e.preventDefault(); self._popupNav(1); }
-          if (e.key === "Escape")     { self._popupArtist = null; self._render(); self._bindEvents(); }
+          if (e.key === "Escape")     { self._popupArtist = null; replaceUrl(self._musicType, null); self._render(); self._bindEvents(); }
         };
         document.addEventListener("keydown", this._keyHandler);
         // Touch swipe
