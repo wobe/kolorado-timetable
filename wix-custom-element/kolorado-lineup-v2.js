@@ -196,7 +196,7 @@
     ".kl-root{background:#FEFFC0;min-height:100vh;color:#642CFF;}",
 
     // ── Header ──
-    ".kl-header{position:sticky;top:0;z-index:40;background:#FEFFC0;border-bottom:1.5px solid rgba(100,44,255,0.1);padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;transition:border-color 0.2s;}",
+    ".kl-header{position:sticky;top:0;z-index:40;background:#FEFFC0;border-bottom:1.5px solid rgba(100,44,255,0.1);padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;transition:border-color 0.2s;position:relative;}",
     ".kl-header.scrolled{border-bottom:1.5px solid rgba(100,44,255,0.2);}",
 
     // ZENE/NEMZENE split pill
@@ -219,6 +219,8 @@
     ".kl-search-row{display:flex;align-items:center;margin-left:auto;flex-shrink:0;}",
     ".kl-search-pill{display:flex;align-items:center;gap:6px;height:36px;border-radius:9999px;border:1.5px solid rgba(100,44,255,0.25);background:transparent;overflow:hidden;width:36px;transition:width 0.2s ease,background 0.15s ease,border-color 0.15s ease,padding 0.2s ease;cursor:pointer;padding:0;justify-content:center;flex-shrink:0;}",
     ".kl-search-pill.open{width:200px;background:rgba(100,44,255,0.07);border-color:rgba(100,44,255,0.35);padding:0 10px;justify-content:flex-start;cursor:default;}",
+    // Mobile: open search expands full-width, overlays the other filters
+    "@media(max-width:639px){.kl-search-pill.open{position:absolute;left:16px;right:16px;width:auto;z-index:10;background:#FEFFC0;border-color:rgba(100,44,255,0.4);box-shadow:0 2px 12px rgba(100,44,255,0.15);}}",
     ".kl-search-icon{display:flex;align-items:center;flex-shrink:0;}",
     ".kl-search-input{flex:1;background:transparent;border:none;outline:none;color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;min-width:0;display:none;width:0;}",
     ".kl-search-pill.open .kl-search-input{display:block;width:100%;}",
