@@ -31,8 +31,8 @@
   "use strict";
 
   // ── Constants ───────────────────────────────────────────────
-  var SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/fonts/SerialBlur.ttf";
-  var PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/fonts/Pacaembu.ttf";
+  var SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/SerialBlurTRIAL-Bleed.ttf";
+  var PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
 
   var FESTIVAL_DAYS = [
     { id: "wed", label: "Szerda",    date: "2026-07-15" },
@@ -282,8 +282,7 @@
     ".kl-nav-btn.disabled{opacity:0.2;pointer-events:none;cursor:default;}",
     "@media(min-width:640px){.kl-nav-btn{display:flex;}}",
 
-    // Page switcher button
-    ".kl-page-btn{position:fixed;bottom:20px;right:20px;z-index:999;padding:8px 16px;border-radius:9999px;border:none;cursor:pointer;background:#642CFF;color:#FEFFC0;font-family:'Pacaembu',sans-serif;font-size:13px;box-shadow:0 2px 12px rgba(100,44,255,0.4);}",
+
   ].join("\n");
 
   // ── Web Component ────────────────────────────────────────────
@@ -351,8 +350,13 @@
       });
       return list.filter(function (a) {
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
-        if (self._musicType === "zene" && a.programtipus === "Nemzene") return false;
-        if (self._musicType === "nemzene" && a.programtipus !== "Nemzene") return false;
+        // programtipus is a Tags array; normalize to lowercase string for comparison
+        var pt = Array.isArray(a.programtipus)
+          ? a.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
+          : [(a.programtipus||'').toLowerCase().trim()];
+        var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
+        if (self._musicType === "zene" && isNemzene) return false;
+        if (self._musicType === "nemzene" && !isNemzene) return false;
         if (self._searchQuery.trim()) {
           var q = self._searchQuery.toLowerCase();
           if (
@@ -442,8 +446,7 @@
       // ── Toast ──
       var toastHtml = '<div class="kl-toast" id="kl-toast"></div>';
 
-      // ── Page switcher ──
-      var pageBtnHtml = '<button class="kl-page-btn" id="kl-page-btn">' + i18n.timetable + '</button>';
+
 
       // ── Assemble ──
       this.innerHTML =
@@ -453,7 +456,7 @@
           gridHtml +
           popupHtml +
           toastHtml +
-          pageBtnHtml +
+  
         '</div>';
     }
 
@@ -713,13 +716,7 @@
         }, { passive: true });
       }
 
-      // ── Page switcher ──
-      var pageBtn = root.querySelector("#kl-page-btn");
-      if (pageBtn) pageBtn.addEventListener("click", function () {
-        try {
-          window.parent.postMessage({ type: "kolorado-navigate", target: "timetable" }, "*");
-        } catch (e) {}
-      });
+      // Page switcher removed
     }
 
     disconnectedCallback() {
