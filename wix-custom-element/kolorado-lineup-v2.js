@@ -44,17 +44,45 @@
 
   var FAV_COOKIE = "kolorado_favourites";
 
-  var i18n = {
-    zene:          "ZENE",
-    nemzene:       "NEMZENE",
-    favourites:    "Kedvencek",
-    search:        "Keresés...",
-    noResults:     "Nincs találat",
-    tryOtherFilter:"Próbálj más szűrőt!",
-    detailsSoon:   "Részletek hamarosan...",
-    timetable:     "→ Menetrend",
-    favToast:      "A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.",
+  // Detect language: check <html lang>, URL param ?lang=, or navigator.language
+  function detectLang() {
+    try {
+      var p = new URLSearchParams(window.location.search);
+      var q = (p.get("lang") || "").toLowerCase();
+      if (q) return q.startsWith("hu") ? "hu" : "en";
+    } catch (e) {}
+    var htmlLang = (document.documentElement.lang || "").toLowerCase();
+    if (htmlLang) return htmlLang.startsWith("hu") ? "hu" : "en";
+    var nav = ((navigator.language || navigator.userLanguage) || "").toLowerCase();
+    return nav.startsWith("hu") ? "hu" : "en";
+  }
+  var LANG = detectLang();
+
+  var I18N = {
+    hu: {
+      zene:          "ZENE",
+      nemzene:       "NEMZENE",
+      favourites:    "Kedvencek",
+      search:        "Keresés...",
+      noResults:     "Nincs találat",
+      tryOtherFilter:"Próbálj más szűrőt!",
+      detailsSoon:   "Részletek hamarosan...",
+      timetable:     "→ Menetrend",
+      favToast:      "A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.",
+    },
+    en: {
+      zene:          "MUSIC",
+      nemzene:       "NONMUSIC",
+      favourites:    "Favourites",
+      search:        "Search...",
+      noResults:     "No results",
+      tryOtherFilter:"Try a different filter!",
+      detailsSoon:   "Details coming soon...",
+      timetable:     "→ Timetable",
+      favToast:      "Your favourites are stored in this browser. They'll be here when you return, but won't sync to other devices.",
+    },
   };
+  var i18n = I18N[LANG] || I18N.en;
 
   // ── Helpers ─────────────────────────────────────────────────
   function esc(s) {
