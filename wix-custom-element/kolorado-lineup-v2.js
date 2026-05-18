@@ -292,6 +292,7 @@
     ".kl-popup-photo-ph{width:100%;height:100%;background:#e8e9a0;display:flex;align-items:center;justify-content:center;font-family:'SerialBlur',sans-serif;font-size:48px;color:#642CFF;text-transform:uppercase;}",
     ".kl-popup-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
     ".kl-popup-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
+    ".kl-popup-subtitle{font-family:'SerialBlur',sans-serif;font-size:14px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.4;text-transform:uppercase;letter-spacing:0.03em;opacity:0.8;}",
     ".kl-popup-fav{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
     ".kl-popup-fav.off{background:rgba(254,255,192,0.95);}",
     ".kl-popup-fav.on{background:#e53e3e;}",
@@ -516,9 +517,13 @@
       var photoHtml = a.photo
         ? '<img class="kl-popup-photo" src="' + esc(a.photo) + '" alt="' + esc(a.name) + '" loading="lazy">'
         : '<div class="kl-popup-photo-ph"><span>' + esc((a.name || "").slice(0, 2)) + '</span></div>';
+      var subtitle = esc(a.title1 || "");
       var imagePanelHtml =
         photoHtml +
-        '<div class="kl-popup-name-wrap"><span class="kl-popup-name">' + esc(a.name) + '</span></div>' +
+        '<div class="kl-popup-name-wrap">' +
+          '<span class="kl-popup-name">' + esc(a.name) + '</span>' +
+          (subtitle ? '<br><span class="kl-popup-subtitle">' + subtitle + '</span>' : '') +
+        '</div>' +
         '<button class="kl-popup-fav ' + (isFav ? "on" : "off") + '" id="kl-popup-fav" data-id="' + esc(a.id) + '">' +
           (isFav ? ICONS.heartWhite(true, 18) : ICONS.heart(false, 18)) +
         '</button>';
