@@ -368,9 +368,41 @@
       }
     }
 
-    static get observedAttributes() { return ["lineup-data"]; }
+    static get observedAttributes() { return ["lineup-data", "page-url"]; }
 
     attributeChangedCallback(name, oldVal, newVal) {
+      // page-url is set by Velo page code with the full page URL (including query string)
+      // This is needed because the custom element runs in a cross-origin iframe and
+      // cannot access window.parent.location directly.
+      if (name === "page-url" && newVal) {
+        try {
+          var u = new URL(newVal);
+          var p = u.searchParams;
+          var t = (p.get("tipus") || "").toLowerCase();
+          this._musicType = t === "nemzene" ? "nemzene" : t === "all" ? "" : "zene";
+          var slug = p.get("eloado") || null;
+          if (slug) {
+            if (this._artists.length > 0) {
+              // Artists already loaded — open popup immediately
+              var match = this._artists.find(function(a){ return slugify(a.name) === slug; });
+              if (match) {
+                var pt = Array.isArray(match.programtipus)
+                  ? match.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
+                  : [(match.programtipus||'').toLowerCase().trim()];
+                var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
+                if (isNemzene && this._musicType === 'zene') this._musicType = 'nemzene';
+                else if (!isNemzene && this._musicType === 'nemzene') this._musicType = 'zene';
+                this._popupArtist = match;
+                this._render(); this._bindEvents();
+              }
+            } else {
+              // Artists not yet loaded — store for later
+              this._pendingSlug = slug;
+            }
+          }
+        } catch(e) {}
+        return;
+      }
       if (name === "lineup-data" && newVal) {
         try {
           var data = JSON.parse(newVal);
