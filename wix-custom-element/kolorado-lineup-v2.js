@@ -334,8 +334,11 @@
       this._touchStartY = 0;
       this._navDir = 1; // 1 = forward, -1 = backward
       // Read initial state from URL
+      // In Wix, the custom element runs in an iframe, so check both own location and parent
       try {
-        var p = new URLSearchParams(window.location.search);
+        var searchStr = window.location.search;
+        try { if (!searchStr && window.parent && window.parent.location.search) searchStr = window.parent.location.search; } catch(e2) {}
+        var p = new URLSearchParams(searchStr);
         var t = (p.get("tipus") || "").toLowerCase();
         this._musicType = t === "nemzene" ? "nemzene" : t === "all" ? "" : "zene";
         this._initialArtistSlug = p.get("eloado") || null;
@@ -376,12 +379,22 @@
           this._artists = [];
         }
         this._loading = false;
-        // Restore popup from URL slug if pending
+        // Restore popup from URL slug if pending — search ALL artists, not just filtered
         if (this._pendingSlug) {
           var slug = this._pendingSlug;
           this._pendingSlug = null;
           var match = this._artists.find(function(a){ return slugify(a.name) === slug; });
-          if (match) this._popupArtist = match;
+          if (match) {
+            // Temporarily widen the filter so the artist is always visible in the popup
+            // (e.g. a Nemzene artist opened while musicType=zene)
+            var pt = Array.isArray(match.programtipus)
+              ? match.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
+              : [(match.programtipus||'').toLowerCase().trim()];
+            var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
+            if (isNemzene && this._musicType === 'zene') this._musicType = 'nemzene';
+            else if (!isNemzene && this._musicType === 'nemzene') this._musicType = 'zene';
+            this._popupArtist = match;
+          }
         }
         this._render();
         this._bindEvents();
