@@ -59,6 +59,7 @@
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
     ".kap-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
     ".kap-card{position:relative;background:#FEFFC0;border-radius:0;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;}",
+    "@media(min-width:640px){.kap-card{min-height:320px;}}",
     ".kap-mobile{display:flex;flex-direction:column;overflow-y:auto;max-height:90vh;-webkit-overflow-scrolling:touch;}",
     ".kap-desktop{display:none;}",
     /* Desktop: popup height = content, image fills full height, right scrolls */
@@ -324,7 +325,12 @@
     var h = date.getHours();
     var d = new Date(date);
     if (h < DAY_START_HOUR) d.setDate(d.getDate() - 1);
-    var str = d.toISOString().split("T")[0];
+    // Use LOCAL date parts to avoid UTC offset shifting the date (e.g. UTC+2 01:00 local
+    // becomes previous day in toISOString(), causing post-midnight slots to appear on wrong day)
+    var y = d.getFullYear();
+    var mo = String(d.getMonth() + 1).padStart(2, "0");
+    var dy = String(d.getDate()).padStart(2, "0");
+    var str = y + "-" + mo + "-" + dy;
     var day = FESTIVAL_DAYS.find(function(fd) { return fd.date === str; });
     return day ? day.id : null;
   }
@@ -969,7 +975,16 @@
       return block;
     };
 
+    _getTodayFestivalDayId() {
+      // Returns the festival day id for the current real-world date/time, or null if outside festival.
+      var now = new Date();
+      return getFestivalDayId(now);
+    };
+
     _createNowLine(hh) {
+      // Only show the now-line when the active tab is today's festival day
+      var todayId = this._getTodayFestivalDayId();
+      if (!todayId || todayId !== this._activeDay) return null;
       var now = new Date();
       var fh = toFestivalHour(now);
       if (fh < DAY_START_HOUR || fh >= DAY_END_HOUR) return null;
