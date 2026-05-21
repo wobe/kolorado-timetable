@@ -32,6 +32,7 @@
 
   // ── Constants ───────────────────────────────────────────────
   var SERIAL_BLUR_URL = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/SerialBlurTRIAL-Bleed.ttf";
+  var PLACEHOLDER_IMG  = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/artist-placeholder.jpg";
   var PACAEMBU_URL    = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/Pacaembu-Medium.ttf";
 
   var FESTIVAL_DAYS = [
@@ -239,8 +240,8 @@
     ".kl-card-inner{position:absolute;inset:0;}",
     ".kl-photo{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.35s ease;}",
     ".kl-card:hover .kl-photo{transform:scale(1.04);}",
-    ".kl-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}",
-    ".kl-photo-placeholder span{font-family:'SerialBlur',sans-serif;font-size:28px;text-transform:uppercase;color:rgba(100,44,255,0.2);}",
+    ".kl-photo-placeholder{width:100%;height:100%;overflow:hidden;}",
+    ".kl-photo-placeholder img{width:100%;height:100%;object-fit:cover;display:block;}",
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
@@ -291,7 +292,8 @@
     "}",
     // Shared image panel
     ".kl-popup-photo{width:100%;height:100%;object-fit:cover;display:block;}",
-    ".kl-popup-photo-ph{width:100%;height:100%;background:#e8e9a0;display:flex;align-items:center;justify-content:center;font-family:'SerialBlur',sans-serif;font-size:48px;color:#642CFF;text-transform:uppercase;}",
+    ".kl-popup-photo-ph{width:100%;height:100%;overflow:hidden;}",
+    ".kl-popup-photo-ph img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".kl-popup-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
     ".kl-popup-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
     ".kl-popup-subtitle{font-family:'SerialBlur',sans-serif;font-size:14px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.4;text-transform:uppercase;letter-spacing:0.03em;opacity:0.8;}",
@@ -515,7 +517,7 @@
           var initials = (a.name || "").split(" ").slice(0, 2).map(function (w) { return w[0] || ""; }).join("").toUpperCase();
           var photoHtml = a.photo
             ? '<img class="kl-photo" src="' + esc(a.photo) + '" alt="' + esc(a.name) + '" loading="lazy">'
-            : '<div class="kl-photo-placeholder"><span>' + esc(initials) + '</span></div>';
+            : '<div class="kl-photo-placeholder"><img src="' + PLACEHOLDER_IMG + '" alt="" loading="lazy"></div>';
           gridHtml +=
             '<div class="kl-card" data-id="' + esc(a.id) + '">' +
               '<div class="kl-card-inner">' +
@@ -563,7 +565,7 @@
       // Image panel HTML (shared between mobile and desktop)
       var photoHtml = a.photo
         ? '<img class="kl-popup-photo" src="' + esc(a.photo) + '" alt="' + esc(a.name) + '" loading="lazy">'
-        : '<div class="kl-popup-photo-ph"><span>' + esc((a.name || "").slice(0, 2)) + '</span></div>';
+        : '<div class="kl-popup-photo-ph"><img src="' + PLACEHOLDER_IMG + '" alt="" loading="lazy"></div>';
       var subtitle = esc(a.title1 || "");
       var imagePanelHtml =
         photoHtml +
