@@ -1,5 +1,5 @@
 // ============================================================
-// Backend/lineupApi.jsw  — v7
+// Backend/lineupApi.jsw  — v8
 // Kolorádó Festival Timetable — Wix Velo Backend Module
 //
 // Place this file at: Backend > lineupApi.jsw in the Velo editor.
@@ -10,32 +10,40 @@
 // Verified field IDs (from CMS > Fields panel):
 //   title           → Artist name
 //   photo           → Artist photo  (wix:image:// URI → converted to https://)
-//   id              → Kezdő idő     (Date/Time — NOTE: item.id is the date field, item._id is the system doc ID)
-//   id1             → Vége idő      (Date/Time)
-//   sznpad          → Színpad       (Tags / Array)
-//   genre1          → Genre         (Text)
+//   id              → Kezdő idő     (Date/Time — main slot start; NOTE: item.id is the date field, item._id is the system doc ID)
+//   id1             → Vége idő      (Date/Time — main slot end)
+//   secondStart     → 2nd slot start (Date/Time)
+//   secondEnd       → 2nd slot end   (Date/Time)
+//   thirdStart      → 3rd slot start (Date/Time)
+//   thirdEnd        → 3rd slot end   (Date/Time)
+//   sznpad          → Színpad        (Tags / Array)
+//   genre1          → Genre          (Text)
 //   longDescription → Long Description (Text)
 //   newField        → Soundcloud link  (URL)
 //   youtubeLink2    → Youtube link     (URL)
 //   audioplayer     → PLAYER           (Audio / URL)
 //   jobTitle        → Nationality / Live (Text)
 //   website         → Website          (URL)
+//   title1          → Subtitle         (Text)
+//   programtpus     → Program type     (Tags / Array — note: no 'i' in slug)
 // ============================================================
 
 import wixData from 'wix-data';
 
 // Convert wix:image://v1/<hash>/<filename>#... to a real wixstatic.com URL.
-// Direct /media/<hash>/<filename> returns 403; must use /v1/fill/ resize path.
 function wixImageToUrl(uri) {
   if (!uri) return "";
   if (uri.startsWith("http")) return uri; // already a plain URL
-  // Format: wix:image://v1/<hash>/<filename>#originWidth=...&originHeight=...
   const match = uri.match(/wix:image:\/\/v1\/([^/]+)\/([^#]+)/);
   if (!match) return "";
-  const hash = match[1];
-  const filename = match[2];
-  // Use fill resize — 800x800 square crop, quality 85
+  const [, hash, filename] = match;
   return `https://static.wixstatic.com/media/${hash}/v1/fill/w_800,h_800,al_c,q_85/${filename}`;
+}
+
+// Safely convert a Date object or ISO string to ISO string, or null if missing.
+function toIso(val) {
+  if (!val) return null;
+  return val instanceof Date ? val.toISOString() : val;
 }
 
 export async function getLineup() {
@@ -44,57 +52,54 @@ export async function getLineup() {
     .limit(1000)
     .find();
 
-  return results.items
-    .map((item, index) => {
+  return results.items.map((item, index) => {
 
-      // ── Stage ──────────────────────────────────────────────
-      // sznpad may be a plain string, a JSON-encoded array, or an actual array
-      let stage = "";
-      const rawStage = item.sznpad;
-      if (Array.isArray(rawStage)) {
-        stage = rawStage[0] || "";
-      } else if (typeof rawStage === "string") {
-        try {
-          const parsed = JSON.parse(rawStage);
-          stage = Array.isArray(parsed) ? (parsed[0] || "") : rawStage;
-        } catch {
-          stage = rawStage;
-        }
+    // ── Stage ──────────────────────────────────────────────
+    // sznpad may be a plain string, a JSON-encoded array, or an actual array
+    let stage = "";
+    const rawStage = item.sznpad;
+    if (Array.isArray(rawStage)) {
+      stage = rawStage[0] || "";
+    } else if (typeof rawStage === "string") {
+      try {
+        const parsed = JSON.parse(rawStage);
+        stage = Array.isArray(parsed) ? (parsed[0] || "") : rawStage;
+      } catch {
+        stage = rawStage;
       }
+    }
 
-      // ── Times ──────────────────────────────────────────────
-      // item.id  = Kezdő idő (start time Date field — NOT the system _id)
-      // item.id1 = Vége idő  (end time Date field)
-      const startTime = item.id;
-      const endTime   = item.id1;
+    // ── Return shape ───────────────────────────────────────
+    // Field names here MUST match what kolorado-lineup-v2.js and kolorado-timetable.js expect.
+    return {
+      // System ID (used as unique key in the lineup grid)
+      _id:             item._id || `artist-${index}`,
+      name:            item.title        || "",
+      photo:           wixImageToUrl(item.photo),
+      stage,
 
-      // ── Photo ──────────────────────────────────────────────
-      // getImageUrl() converts wix:image://v1/... to a real https://static.wixstatic.com/... URL.
-      // It is only available in backend (jsw) files.
-      // If the field already holds a plain https:// URL (e.g. from an older migration), use it as-is.
-      const photo = wixImageToUrl(item.photo);
+      // Main slot — CMS field IDs are literally "id" and "id1"
+      id:              toIso(item.id),
+      id1:             toIso(item.id1),
 
-      // ── Audio player ───────────────────────────────────────
-      // audioplayer is a Wix Audio field — pass through as-is.
-      const audioPlayer = item.audioplayer || "";
+      // Second slot (optional)
+      secondStart:     toIso(item.secondStart),
+      secondEnd:       toIso(item.secondEnd),
 
-      // ── Return shape ───────────────────────────────────────
-      // Field names here MUST match what kolorado-lineup.js and kolorado-timetable.js expect.
-      return {
-        id:              item._id || `artist-${index}`,
-        name:            item.title || "",
-        photo,                                                    // full https:// URL
-        stage,
-        startTime:       startTime instanceof Date ? startTime.toISOString() : (startTime || null),
-        endTime:         endTime   instanceof Date ? endTime.toISOString()   : (endTime   || null),
-        genre:           item.genre1          || "",
-        longDescription: item.longDescription || "",
-        soundcloudLink:  item.newField        || "",
-        youtubeLink:     item.youtubeLink2    || "",
-        audioPlayer,
-        nationality:     item.jobTitle        || "",
-        url:             item.website         || "",
-        programtipus:    item.programtpus     || "",  // CMS slug: programtpus (no 'i')
-      };
-    });
+      // Third slot (optional)
+      thirdStart:      toIso(item.thirdStart),
+      thirdEnd:        toIso(item.thirdEnd),
+
+      // Metadata
+      genre:           item.genre1          || "",
+      longDescription: item.longDescription || "",
+      soundcloudLink:  item.newField        || "",
+      youtubeLink:     item.youtubeLink2    || "",
+      audioPlayer:     item.audioplayer     || "",
+      nationality:     item.jobTitle        || "",
+      url:             item.website         || "",
+      title1:          item.title1          || "",   // subtitle shown under artist name
+      programtipus:    item.programtpus     || "",   // CMS slug has no 'i': programtpus
+    };
+  });
 }
