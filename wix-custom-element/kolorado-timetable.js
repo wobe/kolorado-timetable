@@ -459,12 +459,19 @@
     ":host{display:block;width:100%;font-family:'Pacaembu',sans-serif;}",
     ".kt-root{background:#0E4B4D;min-height:100vh;color:#c8dedd;}",
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
-    ".kt-days{display:flex;gap:6px;margin-bottom:8px;justify-content:center;}",
+    ".kt-days{display:flex;gap:6px;justify-content:center;}",
     ".kt-day-btn{flex:1;max-width:180px;padding:10px 24px;border-radius:9999px;border:none;cursor:pointer;font-family:'SerialBlur',sans-serif;font-size:15px;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;background:transparent;color:rgba(220,234,117,0.8);}",
     ".kt-day-btn.active{background:#dcea75;color:#062322;}",
     ".kt-day-btn .full{display:inline;}.kt-day-btn .short{display:none;}",
     "@media(max-width:600px){.kt-day-btn{font-size:13px;padding:8px 8px;}.kt-day-btn .full{display:none;}.kt-day-btn .short{display:inline;}}",
+    ".kt-header-row{display:flex;align-items:center;gap:8px;padding:0;}",
+    ".kt-header-left{display:flex;align-items:center;gap:8px;flex-shrink:0;}",
+    ".kt-header-center{flex:1;display:flex;justify-content:center;}",
+    ".kt-header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}",
     ".kt-toolbar{display:flex;align-items:center;gap:8px;}",
+    "@media(min-width:901px){.kt-desktop-row{display:flex;}.kt-mobile-days-row{display:none!important;}.kt-mobile-toolbar{display:none!important;}}",
+    "@media(max-width:900px){.kt-desktop-row{display:none!important;}.kt-mobile-days-row{display:block;margin-bottom:8px;}.kt-mobile-toolbar{display:flex;}}",
+    ".kt-list-mode .kt-stage-row{display:none!important;}",
     ".kt-fav-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:12px;cursor:pointer;position:relative;transition:all 0.2s;}",
     ".kt-fav-btn.active{border-color:rgba(232,107,90,0.4);color:#e86b5a;background:rgba(232,107,90,0.1);}",
     ".kt-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e86b5a;color:#fff;font-size:9px;font-weight:bold;display:flex;align-items:center;justify-content:center;}",
@@ -527,6 +534,7 @@
     ".kt-stage-cols{display:flex;flex:1;position:relative;}",
     ".kt-stage-col{flex:1;min-width:140px;}",
     ".kt-stage-row{display:flex;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;border-top:1px solid rgba(26,107,102,0.15);margin-top:8px;}",
+    "@media(max-width:900px){.kt-stage-row{display:none!important;}}",
     ".kt-stage-row::-webkit-scrollbar{display:none;}",
     ".kt-stage-row-spacer{flex-shrink:0;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);}",
     ".kt-stage-row-cell{flex:1;min-width:140px;height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border-right:1px solid rgba(26,107,102,0.08);}",
@@ -705,7 +713,7 @@
       root.appendChild(style);
       if (this._loading) { root.appendChild(this._renderSkeleton()); return; }
       var wrap = document.createElement("div");
-      wrap.className = "kt-root";
+      wrap.className = "kt-root" + (this._viewMode === "list" ? " kt-list-mode" : "");
       wrap.appendChild(this._renderHeader());
       if (this._showKedvencek) wrap.appendChild(this._renderKedvencekPanel());
       if (this._showSearch && this._searchQuery) wrap.appendChild(this._renderSearchPanel());
@@ -788,7 +796,11 @@
       var self = this;
       var header = document.createElement("header");
       header.className = "kt-header";
-      // Days row
+
+      // ── Desktop single-row: [Kedvencek] [days] [search|filter|view] ──
+      // ── Mobile stacked: days row + toolbar row (CSS handles switching) ──
+
+      // Build day tabs (shared between both layouts)
       var daysRow = document.createElement("div");
       daysRow.className = "kt-days";
       FESTIVAL_DAYS.forEach(function(day) {
@@ -798,40 +810,35 @@
         btn.addEventListener("click", function(){ self._activeDay = day.id; self._render(); });
         daysRow.appendChild(btn);
       });
-      header.appendChild(daysRow);
-      // Toolbar
-      var toolbar = document.createElement("div");
-      toolbar.className = "kt-toolbar";
-      // Kedvencek btn
+
+      // Kedvencek button (shared)
       var favCount = this._favourites.size;
       var favBtn = document.createElement("button");
       favBtn.className = "kt-fav-btn" + (this._showKedvencek ? " active" : "");
       favBtn.innerHTML = (this._showKedvencek ? ICONS.x(13) : ICONS.heart("none",13)) + " " + i18n.favourites + (favCount > 0 ? '<span class="kt-badge">'+favCount+'</span>' : "");
       favBtn.addEventListener("click", function(){ self._showKedvencek = !self._showKedvencek; if(self._showKedvencek) self._showSearch=false; self._render(); });
-      toolbar.appendChild(favBtn);
-      var spacer = document.createElement("div"); spacer.className = "kt-spacer";
-      toolbar.appendChild(spacer);
-      // Search
+
+      // Search widget (shared)
+      var searchWidget;
       if (this._showSearch) {
-        var sw = document.createElement("div"); sw.className = "kt-search-expanded";
-        sw.innerHTML = ICONS.search(13);
+        searchWidget = document.createElement("div"); searchWidget.className = "kt-search-expanded";
+        searchWidget.innerHTML = ICONS.search(13);
         var inp = document.createElement("input"); inp.placeholder = i18n.search; inp.value = this._searchQuery;
         inp.addEventListener("input", function(e){ self._searchQuery = e.target.value; self._render(); });
         inp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
-        sw.appendChild(inp);
+        searchWidget.appendChild(inp);
         var closeX = document.createElement("button");
         closeX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
         closeX.innerHTML = ICONS.x(12);
         closeX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
-        sw.appendChild(closeX);
-        toolbar.appendChild(sw);
+        searchWidget.appendChild(closeX);
         setTimeout(function(){ var i = self._shadow.querySelector(".kt-search-expanded input"); if(i) i.focus(); }, 30);
       } else {
-        var sb = document.createElement("button"); sb.className = "kt-icon-btn"; sb.innerHTML = ICONS.search(15); sb.title = i18n.searchTitle;
-        sb.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
-        toolbar.appendChild(sb);
+        searchWidget = document.createElement("button"); searchWidget.className = "kt-icon-btn"; searchWidget.innerHTML = ICONS.search(15); searchWidget.title = i18n.searchTitle;
+        searchWidget.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
       }
-      // Filter
+
+      // Filter widget (shared)
       var hasFilters = this._filterFavourites || this._activeStages.size < this._stages.length;
       var fw = document.createElement("div"); fw.className = "kt-filter-wrap";
       var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = i18n.filtersTitle;
@@ -858,16 +865,79 @@
         });
         fw.appendChild(dd);
       }
-      toolbar.appendChild(fw);
-      // View toggle
+
+      // View toggle (shared)
       var vt = document.createElement("div"); vt.className = "kt-view-toggle";
       var gb = document.createElement("button"); gb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); gb.innerHTML = ICONS.grid(14); gb.title = i18n.calendar;
       gb.addEventListener("click", function(){ self._viewMode="grid"; self._render(); });
       var lb = document.createElement("button"); lb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); lb.innerHTML = ICONS.list(14); lb.title = i18n.list;
       lb.addEventListener("click", function(){ self._viewMode="list"; self._render(); });
       vt.appendChild(gb); vt.appendChild(lb);
-      toolbar.appendChild(vt);
-      header.appendChild(toolbar);
+
+      // ── Desktop row (hidden on mobile via CSS) ──────────────────────
+      var desktopRow = document.createElement("div");
+      desktopRow.className = "kt-header-row kt-desktop-row";
+      var leftCol = document.createElement("div"); leftCol.className = "kt-header-left";
+      leftCol.appendChild(favBtn.cloneNode(true));
+      leftCol.querySelector(".kt-fav-btn").addEventListener("click", function(){ self._showKedvencek = !self._showKedvencek; if(self._showKedvencek) self._showSearch=false; self._render(); });
+      var centerCol = document.createElement("div"); centerCol.className = "kt-header-center";
+      centerCol.appendChild(daysRow.cloneNode(true));
+      centerCol.querySelectorAll(".kt-day-btn").forEach(function(btn, i){
+        btn.addEventListener("click", function(){ self._activeDay = FESTIVAL_DAYS[i].id; self._render(); });
+      });
+      var rightCol = document.createElement("div"); rightCol.className = "kt-header-right";
+      rightCol.appendChild(searchWidget);
+      rightCol.appendChild(fw);
+      rightCol.appendChild(vt);
+      desktopRow.appendChild(leftCol);
+      desktopRow.appendChild(centerCol);
+      desktopRow.appendChild(rightCol);
+      header.appendChild(desktopRow);
+
+      // ── Mobile rows (hidden on desktop via CSS) ─────────────────────
+      var mobileDaysRow = document.createElement("div");
+      mobileDaysRow.className = "kt-mobile-days-row";
+      mobileDaysRow.appendChild(daysRow);
+      header.appendChild(mobileDaysRow);
+
+      var mobileToolbar = document.createElement("div");
+      mobileToolbar.className = "kt-toolbar kt-mobile-toolbar";
+      mobileToolbar.appendChild(favBtn);
+      var spacer = document.createElement("div"); spacer.className = "kt-spacer";
+      mobileToolbar.appendChild(spacer);
+      // Clone search and filter for mobile toolbar
+      var mobileSearchWidget;
+      if (this._showSearch) {
+        mobileSearchWidget = document.createElement("div"); mobileSearchWidget.className = "kt-search-expanded";
+        mobileSearchWidget.innerHTML = ICONS.search(13);
+        var minp = document.createElement("input"); minp.placeholder = i18n.search; minp.value = this._searchQuery;
+        minp.addEventListener("input", function(e){ self._searchQuery = e.target.value; self._render(); });
+        minp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
+        mobileSearchWidget.appendChild(minp);
+        var mcloseX = document.createElement("button");
+        mcloseX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
+        mcloseX.innerHTML = ICONS.x(12);
+        mcloseX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
+        mobileSearchWidget.appendChild(mcloseX);
+      } else {
+        mobileSearchWidget = document.createElement("button"); mobileSearchWidget.className = "kt-icon-btn"; mobileSearchWidget.innerHTML = ICONS.search(15);
+        mobileSearchWidget.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
+      }
+      mobileToolbar.appendChild(mobileSearchWidget);
+      var mfw = document.createElement("div"); mfw.className = "kt-filter-wrap";
+      var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(15);
+      mfb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
+      mfw.appendChild(mfb);
+      if (self._showFilter) { mfw.appendChild(dd.cloneNode(true)); }
+      mobileToolbar.appendChild(mfw);
+      var mvt = document.createElement("div"); mvt.className = "kt-view-toggle";
+      var mgb = document.createElement("button"); mgb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); mgb.innerHTML = ICONS.grid(14);
+      mgb.addEventListener("click", function(){ self._viewMode="grid"; self._render(); });
+      var mlb = document.createElement("button"); mlb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); mlb.innerHTML = ICONS.list(14);
+      mlb.addEventListener("click", function(){ self._viewMode="list"; self._render(); });
+      mvt.appendChild(mgb); mvt.appendChild(mlb);
+      mobileToolbar.appendChild(mvt);
+      header.appendChild(mobileToolbar);
       // Stage names row — built from visible stages for the active day
       // Scroll is synced to .kt-grid-scroll after render
       var stageRow = document.createElement("div");
