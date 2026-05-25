@@ -526,9 +526,14 @@
     ".kt-time-label span{font-size:9px;color:rgba(122,158,155,0.6);transform:translateY(-50%);font-family:'Pacaembu',sans-serif;}",
     ".kt-stage-cols{display:flex;flex:1;position:relative;}",
     ".kt-stage-col{flex:1;min-width:140px;}",
-    ".kt-stage-header{position:sticky;top:var(--kt-header-h,0px);z-index:20;padding:0 8px;height:40px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(26,107,102,0.15);background:rgba(14,75,77,0.97);backdrop-filter:blur(6px);}",
-    ".kt-time-axis-header{position:sticky;top:var(--kt-header-h,0px);z-index:30;background:#0E4B4D;border-bottom:1px solid rgba(26,107,102,0.15);height:40px;}",
-    ".kt-stage-header span{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:center;}",
+    ".kt-stage-row{display:flex;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;border-top:1px solid rgba(26,107,102,0.15);margin-top:8px;}",
+    ".kt-stage-row::-webkit-scrollbar{display:none;}",
+    ".kt-stage-row-spacer{flex-shrink:0;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);}",
+    ".kt-stage-row-cell{flex:1;min-width:140px;height:36px;display:flex;align-items:center;justify-content:center;padding:0 8px;border-right:1px solid rgba(26,107,102,0.08);}",
+    ".kt-stage-row-cell:last-child{border-right:none;}",
+    ".kt-stage-row-cell span{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:center;}",
+    ".kt-stage-header{display:none;}",
+    ".kt-time-axis-header{display:none;}",
     ".kt-stage-body{position:relative;}",
     ".kt-hour-line{position:absolute;left:0;right:0;border-top:1px solid rgba(26,107,102,0.07);}",
     ".kt-block{position:absolute;left:2px;right:2px;overflow:hidden;cursor:pointer;border-radius:0;transition:outline 0.2s;}",
@@ -707,13 +712,25 @@
       if (this._viewMode === "list") wrap.appendChild(this._renderListView());
       else wrap.appendChild(this._renderGridView());
       root.appendChild(wrap);
-      // Measure header height and set CSS variable for sticky stage headers
+      // Sync stage-row scroll with grid-scroll, and match spacer width to time axis
       var self = this;
       requestAnimationFrame(function() {
-        var hdr = root.querySelector(".kt-header");
-        if (hdr) {
-          var h = hdr.getBoundingClientRect().height;
-          wrap.style.setProperty("--kt-header-h", h + "px");
+        var stageRow  = root.querySelector("#kt-stage-row");
+        var gridScroll = root.querySelector(".kt-grid-scroll");
+        var spacer    = root.querySelector("#kt-stage-row-spacer");
+        var timeAxis  = root.querySelector(".kt-time-axis");
+        if (spacer && timeAxis) {
+          spacer.style.width = timeAxis.getBoundingClientRect().width + "px";
+        }
+        if (stageRow && gridScroll) {
+          // Sync grid → stage-row
+          gridScroll.addEventListener("scroll", function() {
+            stageRow.scrollLeft = gridScroll.scrollLeft;
+          });
+          // Sync stage-row → grid (in case user tries to drag it)
+          stageRow.addEventListener("scroll", function() {
+            gridScroll.scrollLeft = stageRow.scrollLeft;
+          });
         }
       });
       // Render artist popup if open
@@ -851,6 +868,28 @@
       vt.appendChild(gb); vt.appendChild(lb);
       toolbar.appendChild(vt);
       header.appendChild(toolbar);
+      // Stage names row — built from visible stages for the active day
+      // Scroll is synced to .kt-grid-scroll after render
+      var stageRow = document.createElement("div");
+      stageRow.className = "kt-stage-row";
+      stageRow.id = "kt-stage-row";
+      // Time-axis spacer (matches the time axis width in the grid)
+      var spacerCell = document.createElement("div");
+      spacerCell.className = "kt-stage-row-spacer";
+      spacerCell.id = "kt-stage-row-spacer";
+      stageRow.appendChild(spacerCell);
+      // Stage cells (built from this._stages; filtered to visible ones after data loads)
+      var visibleStagesForHeader = this._getVisibleStages(this._getVisibleArtists());
+      visibleStagesForHeader.forEach(function(stage) {
+        var cell = document.createElement("div");
+        cell.className = "kt-stage-row-cell";
+        var span = document.createElement("span");
+        span.style.color = stage.color;
+        span.textContent = stage.name;
+        cell.appendChild(span);
+        stageRow.appendChild(cell);
+      });
+      header.appendChild(stageRow);
       return header;
     };
 
