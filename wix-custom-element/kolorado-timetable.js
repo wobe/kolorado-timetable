@@ -523,7 +523,7 @@
     ".kt-list-row .fav-btn{background:none;border:none;cursor:pointer;padding:8px;color:#7a9e9b;transition:color 0.15s;flex-shrink:0;}",
     ".kt-list-row .fav-btn.on{color:#e86b5a;}",
     ".kt-grid-wrap{padding:0 16px 32px;}",
-    ".kt-grid-scroll{overflow-x:auto;overflow-y:auto;border:1px solid rgba(26,107,102,0.15);height:calc(100vh - 140px);}",
+    ".kt-grid-scroll{overflow-x:auto;overflow-y:visible;border:1px solid rgba(26,107,102,0.15);}",
     ".kt-grid-inner{display:flex;}",
     ".kt-time-axis{position:sticky;left:0;z-index:20;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);flex-shrink:0;}",
     ".kt-time-axis-header{position:sticky;top:0;z-index:30;background:#0E4B4D;border-bottom:1px solid rgba(26,107,102,0.15);height:40px;}",
@@ -722,17 +722,19 @@
           root.addEventListener("click", handler);
         }, 0);
       }
-      // Auto-scroll grid
+      // Auto-scroll grid — scroll the page to the first artist of the day
       if (this._viewMode === "grid") {
         var self = this;
         setTimeout(function() {
-          var scroll = root.querySelector(".kt-grid-scroll");
-          if (!scroll) return;
+          var gridWrap = root.querySelector(".kt-grid-wrap");
+          if (!gridWrap) return;
           var dayArtists = self._artists.filter(function(a){ return getFestivalDayId(a.startTime) === self._activeDay; });
           if (!dayArtists.length) return;
           var first = dayArtists.reduce(function(a,b){ return a.startTime < b.startTime ? a : b; });
           var hh = window.innerWidth < 768 ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
-          scroll.scrollTop = Math.max(0, (toFestivalHour(first.startTime) - DAY_START_HOUR) * hh - 24);
+          var offsetInGrid = Math.max(0, (toFestivalHour(first.startTime) - DAY_START_HOUR) * hh - 24);
+          var gridTop = gridWrap.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: gridTop + offsetInGrid, behavior: "smooth" });
         }, 50);
       }
     };
@@ -1074,12 +1076,13 @@
       this._viewMode = "grid";
       this._render();
       setTimeout(function(){
-        var scroll = self._shadow.querySelector(".kt-grid-scroll");
-        if (!scroll) return;
-        var hh = window.innerWidth < 768 ? MOBILE_HOUR_HEIGHT_PX : HOUR_HEIGHT_PX;
-        scroll.scrollTo({ top: Math.max(0, (toFestivalHour(artist.startTime)-DAY_START_HOUR)*hh-80), behavior:"smooth" });
         var block = self._shadow.querySelector('[data-id="'+artist.id+'"]');
-        if (block) { block.style.outline="2px solid #dcea75"; setTimeout(function(){block.style.outline="";},1200); }
+        if (block) {
+          var rect = block.getBoundingClientRect();
+          window.scrollTo({ top: rect.top + window.scrollY - 80, behavior: "smooth" });
+          block.style.outline="2px solid #dcea75";
+          setTimeout(function(){block.style.outline="";},1200);
+        }
       }, 80);
     };
 
