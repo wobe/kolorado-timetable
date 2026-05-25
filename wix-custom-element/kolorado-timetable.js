@@ -391,6 +391,25 @@
     document.cookie = FAV_COOKIE_NAME + "=" + encodeURIComponent(JSON.stringify(Array.from(ids))) + "; path=/; max-age=" + FAV_COOKIE_MAX_AGE + "; SameSite=Lax";
   }
 
+  // ── Shared localStorage fav sync (works across tabs of same origin) ──────
+  var FAV_LS_KEY = "kolorado_favourites";
+  // BroadcastChannel for same-tab cross-iframe sync (modern browsers)
+  var _favBC = null;
+  try { _favBC = new BroadcastChannel("kolorado_fav_sync"); } catch(e) {}
+  function readFavLocalStorage() {
+    try {
+      var raw = localStorage.getItem(FAV_LS_KEY);
+      if (!raw) return null;
+      var ids = JSON.parse(raw);
+      return Array.isArray(ids) ? new Set(ids) : null;
+    } catch(e) { return null; }
+  }
+  function writeFavLocalStorage(favSet) {
+    var arr = Array.from(favSet);
+    try { localStorage.setItem(FAV_LS_KEY, JSON.stringify(arr)); } catch(e) {}
+    try { if (_favBC) _favBC.postMessage({ type: "kolorado-fav-update", ids: arr }); } catch(e) {}
+  }
+
   // ── First-favourite toast ────────────────────────────────────────────────
   var FAV_TOAST_KEY = "kolorado_fav_toast_seen";
   function showFirstFavToast() {
@@ -600,7 +619,7 @@
       this._stages = buildStages(MOCK_ARTISTS);
       this._activeDay = getDefaultDay("thu"); // Default: Thursday; during festival: today
       this._activeStages = new Set(this._stages.map(function(s){return s.id;}));
-      this._favourites = readFavCookie();
+      this._favourites = readFavLocalStorage() || readFavCookie();
       this._viewMode = window.innerWidth < 768 ? "list" : "grid";
       this._showKedvencek = false;
       this._showSearch = false;
@@ -612,6 +631,7 @@
       this._loading = true;
       this._nowInterval = null;
       this._popupArtist = null;
+      this._lastActiveDay = null; // tracks last day for which auto-scroll ran
     }
 
     connectedCallback() {
@@ -653,6 +673,27 @@
         var mobile = window.innerWidth < 768;
         if (mobile && self._viewMode === "grid") { self._viewMode = "list"; self._render(); }
       });
+      // Cross-tab fav sync via localStorage storage event
+      window.addEventListener("storage", function(e) {
+        if (e.key === FAV_LS_KEY && e.newValue) {
+          try {
+            var ids = JSON.parse(e.newValue);
+            if (Array.isArray(ids)) {
+              self._favourites = new Set(ids);
+              self._render();
+            }
+          } catch(err) {}
+        }
+      });
+      // Same-tab BroadcastChannel sync (for when both elements are on the same page)
+      if (_favBC) {
+        _favBC.onmessage = function(e) {
+          if (e.data && e.data.type === "kolorado-fav-update" && Array.isArray(e.data.ids)) {
+            self._favourites = new Set(e.data.ids);
+            self._render();
+          }
+        };
+      }
       setTimeout(function(){ self._loading = false; self._render(); }, 400);
     };
 
@@ -799,8 +840,9 @@
           root.addEventListener("click", handler);
         }, 0);
       }
-      // Auto-scroll grid — scroll the page to the first artist of the day
-      if (this._viewMode === "grid") {
+      // Auto-scroll grid — only when the active day changes (not on every re-render)
+      if (this._viewMode === "grid" && this._activeDay !== this._lastActiveDay) {
+        this._lastActiveDay = this._activeDay;
         var self = this;
         setTimeout(function() {
           var gridWrap = root.querySelector(".kt-grid-wrap");
@@ -1220,13 +1262,26 @@
     };
 
     _toggleFav(id) {
-      if (this._favourites.has(id)) {
-        this._favourites.delete(id);
-      } else {
-        this._favourites.add(id);
+      // Determine base ID (strip -s2 / -s3 slot suffixes)
+      var baseId = id.replace(/-s[23]$/, "");
+      // Collect all slot IDs for this artist (base + any -s2/-s3 variants)
+      var allSlotIds = this._artists
+        .filter(function(a){ return a.id === baseId || a.id === baseId+"-s2" || a.id === baseId+"-s3"; })
+        .map(function(a){ return a.id; });
+      if (!allSlotIds.length) allSlotIds = [id]; // fallback: just the clicked id
+      // Toggle: if base id is currently faved, remove all; otherwise add all
+      var adding = !this._favourites.has(baseId) && !this._favourites.has(id);
+      if (adding) {
+        allSlotIds.forEach(function(sid){ this._favourites.add(sid); }, this);
+        // Also add the bare base ID so lineup-v2 (which uses bare IDs) sees it
+        this._favourites.add(baseId);
         showFirstFavToast();
+      } else {
+        allSlotIds.forEach(function(sid){ this._favourites.delete(sid); }, this);
+        this._favourites.delete(baseId);
       }
       writeFavCookie(this._favourites);
+      writeFavLocalStorage(this._favourites);
       this._render();
     };
 

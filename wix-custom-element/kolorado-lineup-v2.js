@@ -166,6 +166,24 @@
     } catch (e) {}
   }
 
+  // ── Shared localStorage fav sync ──────────────────────────────
+  var FAV_LS_KEY = "kolorado_favourites";
+  var _favBC = null;
+  try { _favBC = new BroadcastChannel("kolorado_fav_sync"); } catch(e) {}
+  function readFavLocalStorage() {
+    try {
+      var raw = localStorage.getItem(FAV_LS_KEY);
+      if (!raw) return null;
+      var ids = JSON.parse(raw);
+      return Array.isArray(ids) ? new Set(ids) : null;
+    } catch(e) { return null; }
+  }
+  function writeFavLocalStorage(favSet) {
+    var arr = Array.from(favSet);
+    try { localStorage.setItem(FAV_LS_KEY, JSON.stringify(arr)); } catch(e) {}
+    try { if (_favBC) _favBC.postMessage({ type: "kolorado-fav-update", ids: arr }); } catch(e) {}
+  }
+
   // ── SVG icons ────────────────────────────────────────────────
   var ICONS = {
     heart: function (filled, size, color) {
@@ -323,7 +341,7 @@
     constructor() {
       super();
       this._artists = [];
-      this._favourites = readFavCookie();
+      this._favourites = readFavLocalStorage() || readFavCookie();
       this._filterFavourites = false;
       this._musicType = "zene"; // "zene" | "nemzene" | "" (all)
       this._searchOpen = false;
@@ -361,6 +379,28 @@
       }
       this._render();
       this._bindEvents();
+      // Cross-tab fav sync via localStorage storage event
+      var self = this;
+      window.addEventListener("storage", function(e) {
+        if (e.key === FAV_LS_KEY && e.newValue) {
+          try {
+            var ids = JSON.parse(e.newValue);
+            if (Array.isArray(ids)) {
+              self._favourites = new Set(ids);
+              self._render(); self._bindEvents();
+            }
+          } catch(err) {}
+        }
+      });
+      // Same-tab BroadcastChannel sync (for when both elements are on the same page)
+      if (_favBC) {
+        _favBC.onmessage = function(e) {
+          if (e.data && e.data.type === "kolorado-fav-update" && Array.isArray(e.data.ids)) {
+            self._favourites = new Set(e.data.ids);
+            self._render(); self._bindEvents();
+          }
+        };
+      }
       // Restore popup from URL if ?eloado= is present (runs after first render)
       if (this._initialArtistSlug) {
         var self = this;
@@ -749,6 +789,7 @@
             self._favourites.delete(id);
           }
           writeFavCookie(self._favourites);
+          writeFavLocalStorage(self._favourites);
           self._render(); self._bindEvents();
         });
       });
@@ -779,6 +820,7 @@
           if (!id) return;
           if (self._favourites.has(id)) { self._favourites.delete(id); } else { self._favourites.add(id); }
           writeFavCookie(self._favourites);
+          writeFavLocalStorage(self._favourites);
           self._render(); self._bindEvents();
         });
         // Nav arrows
