@@ -248,11 +248,6 @@
     "#e86b5a", "#5ae8a8", "#e8c85a", "#e85aab",
     "#7be8d4", "#e87b5a", "#b8e85a", "#5a7be8",
   ];
-  // Known stage order for consistent column ordering
-  const STAGE_ORDER = [
-    "Nagyszínpad", "Bálterem", "Tószínpad", "Hangár",
-    "Platános", "Nyugi Listening Bar", "Listening Bar", "Ring", "Healing",
-  ];
   function slugId(name) {
     return name.toLowerCase()
       .replace(/[áàä]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
@@ -267,17 +262,16 @@
       var stageName = Array.isArray(a.stage) ? a.stage[0] : (a.stage || "");
       if (stageName && !seen[stageName]) { seen[stageName] = true; names.push(stageName); }
     });
-    // Sort by known order first, then alphabetically for unknowns
-    names.sort(function(a, b) {
-      var ai = STAGE_ORDER.indexOf(a), bi = STAGE_ORDER.indexOf(b);
-      if (ai === -1 && bi === -1) return a.localeCompare(b, 'hu');
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-      return ai - bi;
-    });
+    // Sort alphabetically using Hungarian locale
+    names.sort(function(a, b) { return a.localeCompare(b, 'hu'); });
     return names.map(function(name, i) {
       return { id: slugId(name), name: name, color: STAGE_COLORS[i % STAGE_COLORS.length] };
     });
+  }
+  // Returns today's festival day id if we're in the festival window, otherwise the fallback
+  function getDefaultDay(fallbackId) {
+    var todayId = getFestivalDayId(new Date());
+    return todayId || fallbackId;
   }
 
   // ── Fallback mock data ──────────────────────────────────────
@@ -574,7 +568,7 @@
       super();
       this._artists = MOCK_ARTISTS;
       this._stages = buildStages(MOCK_ARTISTS);
-      this._activeDay = FESTIVAL_DAYS[0].id;
+      this._activeDay = getDefaultDay("thu"); // Default: Thursday; during festival: today
       this._activeStages = new Set(this._stages.map(function(s){return s.id;}));
       this._favourites = readFavCookie();
       this._viewMode = window.innerWidth < 768 ? "list" : "grid";
