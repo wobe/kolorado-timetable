@@ -641,15 +641,16 @@
       if (name === "lineup-data" && val) {
         try {
           var raw = JSON.parse(val);
-          this._artists = raw.map(function(item) {
+          // Expand each CMS item into up to 3 timetable blocks (main + second + third slot)
+          var expanded = [];
+          raw.forEach(function(item) {
             var rawStage = item.stage || item.sznpad || "Nagyszínpad";
             var stageName = Array.isArray(rawStage) ? rawStage[0] : rawStage;
-            return {
-              id:              item._id || item.id || String(Math.random()),
-              name:            item.name || item.title || i18n.unknown,
+            var baseId   = item._id || item.id || String(Math.random());
+            var baseName = item.name || item.title || i18n.unknown;
+            var shared = {
+              name:            baseName,
               stage:           stageName,
-              startTime:       new Date(item.startTime),
-              endTime:         new Date(item.endTime),
               genre:           item.genre || item.genre1 || "",
               url:             item.website || item.url || null,
               photo:           item.photo || "",
@@ -657,7 +658,23 @@
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
             };
-          }).filter(function(a){ return !isNaN(a.startTime) && !isNaN(a.endTime); });
+            // Slot definitions: [startKey, endKey, idSuffix]
+            var slots = [
+              [item.startTime,   item.endTime,   ""],
+              [item.secondStart, item.secondEnd, "-s2"],
+              [item.thirdStart,  item.thirdEnd,  "-s3"],
+            ];
+            slots.forEach(function(slot) {
+              var s = new Date(slot[0]), e = new Date(slot[1]);
+              if (!slot[0] || isNaN(s) || !slot[1] || isNaN(e)) return;
+              expanded.push(Object.assign({}, shared, {
+                id:        baseId + slot[2],
+                startTime: s,
+                endTime:   e,
+              }));
+            });
+          });
+          this._artists = expanded;
           // Rebuild stages dynamically from CMS data
           this._stages = buildStages(this._artists);
           this._activeStages = new Set(this._stages.map(function(s){return s.id;}));
