@@ -505,7 +505,7 @@
     ".kt-header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}",
     ".kt-toolbar{display:flex;align-items:center;gap:8px;}",
     "@media(min-width:701px){.kt-desktop-row{display:flex;}.kt-mobile-days-row{display:none!important;}.kt-mobile-toolbar{display:none!important;}}",
-    "@media(max-width:700px){.kt-desktop-row{display:none!important;}.kt-mobile-days-row{display:block;margin-bottom:8px;}.kt-mobile-toolbar{display:flex;}}",
+    "@media(max-width:700px){.kt-desktop-row{display:none!important;}.kt-mobile-days-row{display:block;margin-bottom:8px;}.kt-mobile-toolbar{display:flex;}.kt-view-toggle{display:none!important;}}",
     ".kt-list-mode .kt-stage-row{display:none!important;}",
     ".kt-fav-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:12px;cursor:pointer;position:relative;transition:all 0.2s;}",
     ".kt-fav-btn.active{border-color:rgba(232,107,90,0.4);color:#e86b5a;background:rgba(232,107,90,0.1);}",
@@ -1003,13 +1003,7 @@
       mfw.appendChild(mfb);
       if (self._showFilter) { mfw.appendChild(dd.cloneNode(true)); }
       mobileToolbar.appendChild(mfw);
-      var mvt = document.createElement("div"); mvt.className = "kt-view-toggle";
-      var mgb = document.createElement("button"); mgb.className = "kt-view-btn"+(this._viewMode==="grid"?" active":""); mgb.innerHTML = ICONS.grid(14);
-      mgb.addEventListener("click", function(){ self._viewMode="grid"; self._render(); });
-      var mlb = document.createElement("button"); mlb.className = "kt-view-btn"+(this._viewMode==="list"?" active":""); mlb.innerHTML = ICONS.list(14);
-      mlb.addEventListener("click", function(){ self._viewMode="list"; self._render(); });
-      mvt.appendChild(mgb); mvt.appendChild(mlb);
-      mobileToolbar.appendChild(mvt);
+      // View toggle hidden on mobile — list-only on small screens
       header.appendChild(mobileToolbar);
       // Stage names row — built from visible stages for the active day
       // Scroll is synced to .kt-grid-scroll after render
@@ -1289,7 +1283,8 @@
       var self = this;
       var dayId = getFestivalDayId(artist.startTime);
       if (dayId) this._activeDay = dayId;
-      this._viewMode = "grid";
+      // On mobile stay in list mode; on desktop switch to grid
+      if (window.innerWidth >= 701) this._viewMode = "grid";
       this._render();
       setTimeout(function(){
         var block = self._shadow.querySelector('[data-id="'+artist.id+'"]');
