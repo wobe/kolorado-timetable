@@ -494,6 +494,8 @@
     ":host{display:block;width:100%;font-family:'Pacaembu',sans-serif;}",
     ".kt-root{background:#0E4B4D;min-height:100vh;color:#c8dedd;}",
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
+    ".kt-header-inner{position:relative;padding:0;}",
+    ".kt-panel-float{position:absolute;top:100%;left:-16px;right:-16px;z-index:50;background:rgba(6,35,34,0.98);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,0.45);}",
     ".kt-days{display:flex;gap:6px;justify-content:center;}",
     ".kt-day-btn{flex:1;max-width:180px;padding:10px 24px;border-radius:9999px;border:none;cursor:pointer;font-family:'SerialBlur',sans-serif;font-size:15px;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;background:transparent;color:rgba(220,234,117,0.8);}",
     ".kt-day-btn.active{background:#dcea75;color:#062322;}",
@@ -772,7 +774,6 @@
       var wrap = document.createElement("div");
       wrap.className = "kt-root" + (this._viewMode === "list" ? " kt-list-mode" : "");
       wrap.appendChild(this._renderHeader());
-      if (this._showKedvencek) wrap.appendChild(this._renderKedvencekPanel());
       if (this._showSearch && this._searchQuery) wrap.appendChild(this._renderSearchPanel());
       if (this._viewMode === "list") wrap.appendChild(this._renderListView());
       else wrap.appendChild(this._renderGridView());
@@ -869,6 +870,9 @@
       var self = this;
       var header = document.createElement("header");
       header.className = "kt-header";
+      // Inner wrapper provides position:relative context for the floating Kedvencek panel
+      var inner = document.createElement("div");
+      inner.className = "kt-header-inner";
 
       // ── Desktop single-row: [Kedvencek] [days] [search|filter|view] ──
       // ── Mobile stacked: days row + toolbar row (CSS handles switching) ──
@@ -965,13 +969,13 @@
       desktopRow.appendChild(leftCol);
       desktopRow.appendChild(centerCol);
       desktopRow.appendChild(rightCol);
-      header.appendChild(desktopRow);
+      inner.appendChild(desktopRow);
 
-      // ── Mobile rows (hidden on desktop via CSS) ─────────────────────
+      // ── Mobile rows (hidden on desktop via CSS) ─────────────────
       var mobileDaysRow = document.createElement("div");
       mobileDaysRow.className = "kt-mobile-days-row";
       mobileDaysRow.appendChild(daysRow);
-      header.appendChild(mobileDaysRow);
+      inner.appendChild(mobileDaysRow);
 
       var mobileToolbar = document.createElement("div");
       mobileToolbar.className = "kt-toolbar kt-mobile-toolbar";
@@ -1004,7 +1008,7 @@
       if (self._showFilter) { mfw.appendChild(dd.cloneNode(true)); }
       mobileToolbar.appendChild(mfw);
       // View toggle hidden on mobile — list-only on small screens
-      header.appendChild(mobileToolbar);
+      inner.appendChild(mobileToolbar);
       // Stage names row — built from visible stages for the active day
       // Scroll is synced to .kt-grid-scroll after render
       var stageRow = document.createElement("div");
@@ -1026,6 +1030,13 @@
         cell.appendChild(span);
         stageRow.appendChild(cell);
       });
+      // Kedvencek floating panel — floats from the inner wrapper, above stage row + timetable
+      if (self._showKedvencek) {
+        var kedvPanel = self._renderKedvencekPanel();
+        kedvPanel.classList.add("kt-panel-float");
+        inner.appendChild(kedvPanel);
+      }
+      header.appendChild(inner);
       header.appendChild(stageRow);
       return header;
     };
