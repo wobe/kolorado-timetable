@@ -55,51 +55,56 @@
     var s=size||18;
     return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'+(filled?"#642CFF":"none")+'" stroke="#642CFF" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
   }
+  var KAP_PLACEHOLDER_IMG = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/artist-placeholder.jpg";
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
-    ".kap-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
-    ".kap-card{position:relative;background:#FEFFC0;border-radius:0;overflow:hidden;animation:kapFadeIn 0.2s ease;max-height:90vh;width:100%;max-width:420px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;}",
-    "@media(min-width:640px){.kap-card{min-height:320px;}}",
-    ".kap-mobile{display:flex;flex-direction:column;overflow-y:auto;max-height:90vh;-webkit-overflow-scrolling:touch;}",
+    ".kap-overlay{position:fixed;inset:0;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
+    ".kap-card{position:relative;width:100%;max-width:480px;background:#FEFFC0;box-shadow:0 24px 60px rgba(0,0,0,0.3);animation:kapFadeIn 0.18s ease;}",
+    ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
+    ".kap-mobile{display:flex;flex-direction:column;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}",
+    ".kap-img-wrap{position:relative;width:100%;padding-top:75%;flex-shrink:0;overflow:hidden;}",
+    ".kap-img-inner{position:absolute;inset:0;}",
     ".kap-desktop{display:none;}",
-    /* Desktop: popup height = content, image fills full height, right scrolls */
     "@media(min-width:640px){",
+    "  .kap-card{max-width:720px;}",
     "  .kap-mobile{display:none;}",
-    "  .kap-desktop{display:flex;flex-direction:row;align-items:stretch;}",
-    "  .kap-card{max-width:860px;max-height:90vh;}",
+    "  .kap-desktop{display:flex;align-items:stretch;}",
     "  .kap-left{flex-shrink:0;width:clamp(240px,38%,420px);position:relative;align-self:stretch;}",
     "  .kap-left-inner{position:absolute;inset:0;}",
     "  .kap-right{flex:1;overflow-y:auto;max-height:90vh;display:flex;flex-direction:column;}",
     "}",
-    /* Mobile */
-    ".kap-img-wrap{position:relative;width:100%;padding-top:75%;overflow:hidden;flex-shrink:0;}",
-    ".kap-img-inner{position:absolute;inset:0;}",
     ".kap-photo{width:100%;height:100%;object-fit:cover;display:block;}",
-    ".kap-photo-ph{width:100%;height:100%;background:#642CFF22;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700;color:#642CFF;}",
+    ".kap-photo-ph{width:100%;height:100%;overflow:hidden;}",
+    ".kap-photo-ph img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
-    ".kap-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
-    ".kap-fav{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;}",
+    ".kap-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
+    ".kap-subtitle{font-family:'SerialBlur',sans-serif;font-size:14px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.4;text-transform:uppercase;letter-spacing:0.03em;opacity:0.8;}",
+    ".kap-fav{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
+    ".kap-fav.off{background:rgba(254,255,192,0.95);}",
     ".kap-fav.on{background:#e53e3e;}",
-    ".kap-left-inner .kap-photo{width:100%;height:100%;object-fit:cover;}",
-    ".kap-left-inner .kap-photo-ph{width:100%;height:100%;}",
-    ".kap-left-inner .kap-name-wrap{position:absolute;top:0;left:0;padding:8px 10px 4px;right:52px;}",
-    ".kap-left-inner .kap-fav{position:absolute;bottom:10px;right:10px;}",
-    ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
     ".kap-meta{font-family:'Pacaembu',sans-serif;font-size:15px;color:#0E4B4D;line-height:1.4;}",
-    ".kap-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;}",
-    ".kap-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;}",
-    ".kap-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);}",
+    ".kap-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;margin:0;}",
+    ".kap-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;margin:0;}",
+    ".kap-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);margin:0;}",
     ".kap-player{margin-top:4px;}",
     ".kap-player iframe{display:block;width:100%;}",
-    ".kap-player>div{overflow:hidden;}",
+    ".kap-yt-wrap{position:relative;width:100%;padding-bottom:56.25%;}",
+    ".kap-yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;}",
+    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:24px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;}",
+    ".kap-nav-btn.disabled{opacity:0.2;pointer-events:none;cursor:default;}",
+    "@media(min-width:640px){.kap-nav-btn{display:flex;}}",
   ].join("\n");
   function _kapImagePanel(a, isFav) {
     var photoHtml = a.photo
       ? '<img class="kap-photo" src="'+_kapEsc(a.photo)+'" alt="'+_kapEsc(a.name)+'" loading="lazy">'
-      : '<div class="kap-photo-ph"><span>'+_kapEsc((a.name||"").slice(0,2))+'</span></div>';
+      : '<div class="kap-photo-ph"><img src="'+KAP_PLACEHOLDER_IMG+'" alt="" loading="lazy"></div>';
+    var subtitle = _kapEsc(a.title1 || "");
     return photoHtml +
-      '<div class="kap-name-wrap"><span class="kap-name">'+_kapEsc(a.name)+'</span></div>' +
+      '<div class="kap-name-wrap">' +
+        '<span class="kap-name">'+_kapEsc(a.name)+'</span>' +
+        (subtitle ? '<br><span class="kap-subtitle">'+subtitle+'</span>' : '') +
+      '</div>' +
       '<button class="kap-fav '+(isFav?"on":"off")+'" id="kap-fav" data-id="'+_kapEsc(a.id)+'">' +
         _kapHeartSvg(isFav, 18) +
       '</button>';
@@ -111,36 +116,47 @@
     var metaLine  = metaParts.join(", ");
     var playerHtml = "";
     if (a.soundcloudLink) {
-      playerHtml = '<div class="kap-player"><iframe height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
+      playerHtml = '<div class="kap-player"><iframe width="100%" height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
     } else if (a.youtubeLink) {
-      var ytSrc = a.youtubeLink.replace("watch?v=", "embed/");
-      // YouTube: 16:9 aspect ratio wrapper
-      playerHtml = '<div class="kap-player"><div style="position:relative;width:100%;padding-bottom:56.25%;"><iframe style="position:absolute;inset:0;width:100%;height:100%;display:block;" src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
+      var ytUrl = a.youtubeLink;
+      var mEmbed = ytUrl.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+      var mWatch = ytUrl.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+      var mShort = ytUrl.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+      var ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]);
+      var ytSrc = ytId ? "https://www.youtube.com/embed/" + ytId : ytUrl;
+      playerHtml = '<div class="kap-player"><div class="kap-yt-wrap"><iframe src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
     }
     return '<div class="kap-body">' +
       (metaLine ? '<div class="kap-meta">'+_kapEsc(metaLine)+'</div>' : '') +
-      (a.genre ? '<div class="kap-genre">'+_kapEsc(a.genre)+'</div>' : '') +
-      (a.longDescription ? '<div class="kap-desc">'+_kapEsc(a.longDescription)+'</div>' : '<div class="kap-placeholder">Részletek hamarosan...</div>') +
+      (a.genre ? '<p class="kap-genre">'+_kapEsc(a.genre)+'</p>' : '') +
+      (a.longDescription ? '<p class="kap-desc">'+_kapEsc(a.longDescription)+'</p>' : '<p class="kap-placeholder">Részletek hamarosan…</p>') +
       playerHtml +
     '</div>';
   }
-  function _kapRender(a, isFav) {
+  function _kapRender(a, isFav, hasPrev, hasNext) {
     var imgPanel  = _kapImagePanel(a, isFav);
     var infoPanel = _kapInfoPanel(a);
     return '<div class="kap-overlay" id="kap-overlay">' +
+      '<button class="kap-nav-btn' + (!hasPrev ? " disabled" : "") + '" id="kap-nav-prev">&#8249;</button>' +
       '<div class="kap-card">' +
-        '<button class="kap-close" id="kap-close">×</button>' +
+        '<button class="kap-close" id="kap-close">&#215;</button>' +
         '<div class="kap-mobile"><div class="kap-img-wrap"><div class="kap-img-inner">' + imgPanel + '</div></div>' + infoPanel + '</div>' +
         '<div class="kap-desktop"><div class="kap-left"><div class="kap-left-inner">' + imgPanel + '</div></div><div class="kap-right">' + infoPanel + '</div></div>' +
-      '</div></div>';
+      '</div>' +
+      '<button class="kap-nav-btn' + (!hasNext ? " disabled" : "") + '" id="kap-nav-next">&#8250;</button>' +
+    '</div>';
   }
   function _kapWire(shadow, a, isFav, callbacks) {
-    var overlay = shadow.getElementById("kap-overlay");
+    var overlay  = shadow.getElementById("kap-overlay");
     var closeBtn = shadow.getElementById("kap-close");
     var favBtn   = shadow.getElementById("kap-fav");
+    var prevBtn  = shadow.getElementById("kap-nav-prev");
+    var nextBtn  = shadow.getElementById("kap-nav-next");
     if (closeBtn) closeBtn.addEventListener("click", function() { if (callbacks.onClose) callbacks.onClose(); });
-    if (overlay) overlay.addEventListener("click", function(e) { if (e.target === overlay && callbacks.onClose) callbacks.onClose(); });
-    if (favBtn) favBtn.addEventListener("click", function(e) { e.stopPropagation(); var id=favBtn.getAttribute("data-id"); if(callbacks.onToggleFav) callbacks.onToggleFav(id); });
+    if (overlay)  overlay.addEventListener("click", function(e) { if (e.target === overlay && callbacks.onClose) callbacks.onClose(); });
+    if (favBtn)   favBtn.addEventListener("click", function(e) { e.stopPropagation(); var id=favBtn.getAttribute("data-id"); if(callbacks.onToggleFav) callbacks.onToggleFav(id); });
+    if (prevBtn)  prevBtn.addEventListener("click", function(e) { e.stopPropagation(); if (callbacks.onPrev) callbacks.onPrev(); });
+    if (nextBtn)  nextBtn.addEventListener("click", function(e) { e.stopPropagation(); if (callbacks.onNext) callbacks.onNext(); });
   }
   // Compatibility shim — existing code calls KoloradoArtistPopup.render/wire/CSS
   var KoloradoArtistPopup = { CSS: KAP_CSS, render: _kapRender, wire: _kapWire,
@@ -745,8 +761,17 @@
       if (this._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
         var self = this;
         var isFav = this._favourites.has(this._popupArtist.id);
+        // Build same-day nav list: artists on the active day, sorted by startTime
+        var dayNavList = this._artists.filter(function(a) {
+          return getFestivalDayId(a.startTime) === self._activeDay;
+        }).sort(function(a, b) {
+          return (a.startTime < b.startTime ? -1 : a.startTime > b.startTime ? 1 : 0);
+        });
+        var navIdx = dayNavList.findIndex(function(a) { return a.id === self._popupArtist.id; });
+        var hasPrev = navIdx > 0;
+        var hasNext = navIdx >= 0 && navIdx < dayNavList.length - 1;
         var popupDiv = document.createElement("div");
-        popupDiv.innerHTML = KoloradoArtistPopup.render(this._popupArtist, isFav);
+        popupDiv.innerHTML = KoloradoArtistPopup.render(this._popupArtist, isFav, hasPrev, hasNext);
         root.appendChild(popupDiv.firstChild);
         KoloradoArtistPopup.wire(root, this._popupArtist, isFav, {
           onClose: function() { self._closeArtistPopup(); },
@@ -754,6 +779,12 @@
             self._toggleFav(id);
             self._popupArtist = self._artists.find(function(a){ return a.id === id; }) || self._popupArtist;
             self._render();
+          },
+          onPrev: function() {
+            if (navIdx > 0) { self._popupArtist = dayNavList[navIdx - 1]; self._render(); }
+          },
+          onNext: function() {
+            if (navIdx >= 0 && navIdx < dayNavList.length - 1) { self._popupArtist = dayNavList[navIdx + 1]; self._render(); }
           },
         });
       }
