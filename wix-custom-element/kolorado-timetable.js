@@ -658,11 +658,12 @@
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
             };
-            // Slot definitions: [startKey, endKey, idSuffix]
+            // Slot definitions: [start, end, idSuffix]
+            // Main slot uses Wix field IDs "id" and "id1" (can't be renamed)
             var slots = [
-              [item.startTime,   item.endTime,   ""],
-              [item.secondStart, item.secondEnd, "-s2"],
-              [item.thirdStart,  item.thirdEnd,  "-s3"],
+              [item.id,          item.id1,        ""],
+              [item.secondStart, item.secondEnd,  "-s2"],
+              [item.thirdStart,  item.thirdEnd,   "-s3"],
             ];
             slots.forEach(function(slot) {
               var s = new Date(slot[0]), e = new Date(slot[1]);
