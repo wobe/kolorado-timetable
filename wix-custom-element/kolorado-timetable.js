@@ -520,13 +520,14 @@
     ".kt-grid-scroll{overflow-x:auto;overflow-y:visible;border:1px solid rgba(26,107,102,0.15);}",
     ".kt-grid-inner{display:flex;}",
     ".kt-time-axis{position:sticky;left:0;z-index:20;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);flex-shrink:0;}",
-    ".kt-time-axis-header{position:sticky;top:0;z-index:30;background:#0E4B4D;border-bottom:1px solid rgba(26,107,102,0.15);height:40px;}",
+
     ".kt-time-axis-body{position:relative;}",
     ".kt-time-label{position:absolute;left:0;right:0;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;}",
     ".kt-time-label span{font-size:9px;color:rgba(122,158,155,0.6);transform:translateY(-50%);font-family:'Pacaembu',sans-serif;}",
     ".kt-stage-cols{display:flex;flex:1;position:relative;}",
     ".kt-stage-col{flex:1;min-width:140px;}",
-    ".kt-stage-header{position:sticky;top:0;z-index:20;padding:0 8px;height:40px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(26,107,102,0.15);background:rgba(14,75,77,0.95);backdrop-filter:blur(4px);}",
+    ".kt-stage-header{position:sticky;top:var(--kt-header-h,0px);z-index:20;padding:0 8px;height:40px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(26,107,102,0.15);background:rgba(14,75,77,0.97);backdrop-filter:blur(6px);}",
+    ".kt-time-axis-header{position:sticky;top:var(--kt-header-h,0px);z-index:30;background:#0E4B4D;border-bottom:1px solid rgba(26,107,102,0.15);height:40px;}",
     ".kt-stage-header span{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;text-align:center;}",
     ".kt-stage-body{position:relative;}",
     ".kt-hour-line{position:absolute;left:0;right:0;border-top:1px solid rgba(26,107,102,0.07);}",
@@ -707,6 +708,15 @@
       if (this._viewMode === "list") wrap.appendChild(this._renderListView());
       else wrap.appendChild(this._renderGridView());
       root.appendChild(wrap);
+      // Measure header height and set CSS variable for sticky stage headers
+      var self = this;
+      requestAnimationFrame(function() {
+        var hdr = root.querySelector(".kt-header");
+        if (hdr) {
+          var h = hdr.getBoundingClientRect().height;
+          wrap.style.setProperty("--kt-header-h", h + "px");
+        }
+      });
       // Render artist popup if open
       if (this._popupArtist && typeof KoloradoArtistPopup !== "undefined") {
         var self = this;
