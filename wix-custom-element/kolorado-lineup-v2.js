@@ -16,9 +16,10 @@
 //   Navigation: swipe (touch), ‹ › arrows (desktop), keyboard ← → Esc
 //
 // CMS field mapping (from lineupApi.jsw):
-//   id, name, photo, stage, startTime, endTime,
+//   _id, name, photo, stage, mainStart, mainEnd,
+//   secondStart, secondEnd, thirdStart, thirdEnd,
 //   genre, longDescription, soundcloudLink, youtubeLink,
-//   programtipus, nationality, url
+//   title1, programtipus, nationality, url
 //
 // Usage in Wix:
 //   1. Host this file (CDN / Wix Public Files)

@@ -10,8 +10,8 @@
 // Verified field IDs (from CMS > Fields panel):
 //   title           → Artist name
 //   photo           → Artist photo  (wix:image:// URI → converted to https://)
-//   id              → Kezdő idő     (Date/Time — main slot start; NOTE: item.id is the date field, item._id is the system doc ID)
-//   id1             → Vége idő      (Date/Time — main slot end)
+//   mainStart       → Kezdő idő     (Date/Time — main slot start)
+//   mainEnd         → Vége idő      (Date/Time — main slot end)
 //   secondStart     → 2nd slot start (Date/Time)
 //   secondEnd       → 2nd slot end   (Date/Time)
 //   thirdStart      → 3rd slot start (Date/Time)
@@ -73,14 +73,16 @@ export async function getLineup() {
     // Field names here MUST match what kolorado-lineup-v2.js and kolorado-timetable.js expect.
     return {
       // System ID (used as unique key in the lineup grid)
+      // Returned as both _id and id so custom elements can use either
       _id:             item._id || `artist-${index}`,
+      id:              item._id || `artist-${index}`,
       name:            item.title        || "",
       photo:           wixImageToUrl(item.photo),
       stage,
 
-      // Main slot — CMS field IDs are literally "id" and "id1"
-      id:              toIso(item.id),
-      id1:             toIso(item.id1),
+      // Main slot
+      mainStart:       toIso(item.mainStart),
+      mainEnd:         toIso(item.mainEnd),
 
       // Second slot (optional)
       secondStart:     toIso(item.secondStart),

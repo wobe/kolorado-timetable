@@ -654,9 +654,8 @@
               youtubeLink:     item.youtubeLink || item.youtube || "",
             };
             // Slot definitions: [start, end, idSuffix]
-            // Main slot uses Wix field IDs "id" and "id1" (can't be renamed)
             var slots = [
-              [item.id,          item.id1,        ""],
+              [item.mainStart,   item.mainEnd,    ""],
               [item.secondStart, item.secondEnd,  "-s2"],
               [item.thirdStart,  item.thirdEnd,   "-s3"],
             ];
