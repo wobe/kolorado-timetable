@@ -242,16 +242,43 @@
     { id: "sat", label: i18n.days.sat, shortLabel: i18n.shortDays.sat, date: "2026-07-18" },
   ];
 
-  const STAGES = [
-    { id: "nagyszinpad",  name: "Nagyszínpad",  color: "#dcea75" },
-    { id: "balterem",     name: "Bálterem",     color: "#5ab8e8" },
-    { id: "toszinpad",    name: "Tószínpad",    color: "#e8a838" },
-    { id: "hangar",       name: "Hangár",       color: "#a87be8" },
-    { id: "platanos",     name: "Platános",     color: "#e86b5a" },
-    { id: "listeningbar", name: "Listening Bar",color: "#5ae8a8" },
-    { id: "healing",      name: "Healing",      color: "#e8c85a" },
-    { id: "ring",         name: "Ring",         color: "#e85aab" },
+  // Stage color palette — cycles for any number of stages
+  const STAGE_COLORS = [
+    "#dcea75", "#5ab8e8", "#e8a838", "#a87be8",
+    "#e86b5a", "#5ae8a8", "#e8c85a", "#e85aab",
+    "#7be8d4", "#e87b5a", "#b8e85a", "#5a7be8",
   ];
+  // Known stage order for consistent column ordering
+  const STAGE_ORDER = [
+    "Nagyszínpad", "Bálterem", "Tószínpad", "Hangár",
+    "Platános", "Nyugi Listening Bar", "Listening Bar", "Ring", "Healing",
+  ];
+  function slugId(name) {
+    return name.toLowerCase()
+      .replace(/[áàä]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i')
+      .replace(/[óöő]/g,'o').replace(/[úüű]/g,'u')
+      .replace(/[^a-z0-9]+/g,'');
+  }
+  function buildStages(artists) {
+    // Collect unique stage names from artist data
+    var seen = {};
+    var names = [];
+    artists.forEach(function(a) {
+      var stageName = Array.isArray(a.stage) ? a.stage[0] : (a.stage || "");
+      if (stageName && !seen[stageName]) { seen[stageName] = true; names.push(stageName); }
+    });
+    // Sort by known order first, then alphabetically for unknowns
+    names.sort(function(a, b) {
+      var ai = STAGE_ORDER.indexOf(a), bi = STAGE_ORDER.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b, 'hu');
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+    return names.map(function(name, i) {
+      return { id: slugId(name), name: name, color: STAGE_COLORS[i % STAGE_COLORS.length] };
+    });
+  }
 
   // ── Fallback mock data ──────────────────────────────────────
   function makeDate(dayDate, hour, minute) {
@@ -546,8 +573,9 @@
     constructor() {
       super();
       this._artists = MOCK_ARTISTS;
+      this._stages = buildStages(MOCK_ARTISTS);
       this._activeDay = FESTIVAL_DAYS[0].id;
-      this._activeStages = new Set(STAGES.map(function(s){return s.id;}));
+      this._activeStages = new Set(this._stages.map(function(s){return s.id;}));
       this._favourites = readFavCookie();
       this._viewMode = window.innerWidth < 768 ? "list" : "grid";
       this._showKedvencek = false;
@@ -614,10 +642,12 @@
         try {
           var raw = JSON.parse(val);
           this._artists = raw.map(function(item) {
+            var rawStage = item.stage || item.sznpad || "Nagyszínpad";
+            var stageName = Array.isArray(rawStage) ? rawStage[0] : rawStage;
             return {
               id:              item._id || item.id || String(Math.random()),
               name:            item.name || item.title || i18n.unknown,
-              stage:           item.stage || item.sznpad || "Nagyszínpad",
+              stage:           stageName,
               startTime:       new Date(item.startTime),
               endTime:         new Date(item.endTime),
               genre:           item.genre || item.genre1 || "",
@@ -628,6 +658,9 @@
               youtubeLink:     item.youtubeLink || item.youtube || "",
             };
           }).filter(function(a){ return !isNaN(a.startTime) && !isNaN(a.endTime); });
+          // Rebuild stages dynamically from CMS data
+          this._stages = buildStages(this._artists);
+          this._activeStages = new Set(this._stages.map(function(s){return s.id;}));
           this._loading = false;
           this._render();
         } catch(e) { console.error("kolorado-timetable: invalid lineup-data", e); }
@@ -759,7 +792,7 @@
         toolbar.appendChild(sb);
       }
       // Filter
-      var hasFilters = this._filterFavourites || this._activeStages.size < STAGES.length;
+      var hasFilters = this._filterFavourites || this._activeStages.size < this._stages.length;
       var fw = document.createElement("div"); fw.className = "kt-filter-wrap";
       var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = i18n.filtersTitle;
       fb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
@@ -772,7 +805,7 @@
         favItem.addEventListener("click", function(){ self._filterFavourites = !self._filterFavourites; self._showFilter=false; self._render(); });
         dd.appendChild(favItem);
         var sep = document.createElement("hr"); sep.className = "kt-filter-sep"; dd.appendChild(sep);
-        STAGES.forEach(function(stage) {
+        self._stages.forEach(function(stage) {
           var isActive = self._activeStages.has(stage.id);
           var item = document.createElement("button"); item.className = "kt-filter-item";
           item.innerHTML = '<span class="dot" style="background:'+(isActive?stage.color:"rgba(122,158,155,0.3)")+'"></span><span style="color:'+(isActive?stage.color:"#7a9e9b")+'">'+stage.name+'</span>'+(isActive?'<span style="margin-left:auto;font-size:10px;opacity:0.6">✓</span>':"");
@@ -816,7 +849,7 @@
           var dl = document.createElement("div"); dl.className = "kt-day-label"; dl.textContent = byDay[day.id].label;
           list.appendChild(dl);
           byDay[day.id].artists.forEach(function(artist){
-            var stage = STAGES.find(function(s){return s.name===artist.stage;});
+            var stage = self._stages.find(function(s){return s.name===artist.stage;});
             var color = stage ? stage.color : "#dcea75";
             var row = document.createElement("div"); row.className = "kt-panel-row";
             row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+'</div></div><div class="actions"><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:'+color+'">'+ICONS.external(13)+'</button><button class="fav-on" data-id="'+artist.id+'" style="color:#e86b5a">'+ICONS.heart("#e86b5a",13)+'</button></div>';
@@ -857,7 +890,7 @@
       if (!results.length) { panel.innerHTML = '<div class="kt-empty">'+i18n.noResults+this._searchQuery+i18n.noResultsClose+'</div>'; return panel; }
       var list = document.createElement("div"); list.className = "kt-panel-list";
       results.forEach(function(artist){
-        var stage = STAGES.find(function(s){return s.name===artist.stage;});
+        var stage = self._stages.find(function(s){return s.name===artist.stage;});
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
         var row = document.createElement("div"); row.className = "kt-panel-row";        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+(artist.genre?' · '+artist.genre:'')+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+' " data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:#7a9e9b">'+ICONS.external(13)+'</button></div>';
@@ -877,11 +910,11 @@
       if (!visible.length) {
         var empty = document.createElement("div"); empty.className = "kt-empty";
         empty.innerHTML = (this._filterFavourites?i18n.noFavProgram:i18n.noProgram)+'<br><button>'+i18n.showAll+'</button>';
-        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
+        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(self._stages.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
         wrap.appendChild(empty); return wrap;
       }
       visible.forEach(function(artist){
-        var stage = STAGES.find(function(s){return s.name===artist.stage;});
+        var stage = self._stages.find(function(s){return s.name===artist.stage;});
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
         var row = document.createElement("div"); row.className = "kt-list-row";
@@ -905,7 +938,7 @@
       if (!visibleArtists.length) {
         var empty = document.createElement("div"); empty.className = "kt-empty";
         empty.innerHTML = (this._filterFavourites?i18n.noFavProgram:i18n.noProgram)+'<br><button>'+i18n.showAll+'</button>';
-        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(STAGES.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
+        empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(self._stages.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
         wrap.appendChild(empty); return wrap;
       }
       var scroll = document.createElement("div"); scroll.className = "kt-grid-scroll";
@@ -1008,7 +1041,7 @@
       var self = this;
       return this._artists.filter(function(a){
         if (getFestivalDayId(a.startTime) !== self._activeDay) return false;
-        var stage = STAGES.find(function(s){return s.name===a.stage;});
+        var stage = self._stages.find(function(s){return s.name===a.stage;});
         if (!stage || !self._activeStages.has(stage.id)) return false;
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
         return true;
@@ -1017,7 +1050,7 @@
 
     _getVisibleStages(visibleArtists) {
       var self = this;
-      var allActive = STAGES.filter(function(s){return self._activeStages.has(s.id);});
+      var allActive = this._stages.filter(function(s){return self._activeStages.has(s.id);});
       if (!this._filterFavourites) return allActive;
       var stagesWithArtists = new Set(visibleArtists.map(function(a){return a.stage;}));
       return allActive.filter(function(s){return stagesWithArtists.has(s.name);});
