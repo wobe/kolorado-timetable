@@ -278,8 +278,18 @@
       var stageName = Array.isArray(a.stage) ? a.stage[0] : (a.stage || "");
       if (stageName && !seen[stageName]) { seen[stageName] = true; names.push(stageName); }
     });
-    // Sort alphabetically using Hungarian locale
-    names.sort(function(a, b) { return a.localeCompare(b, 'hu'); });
+    // Sort: priority stages first (case-insensitive match), then rest alphabetically
+    var STAGE_PRIORITY = [
+      "nagyszínpad", "platános", "hangár", "tószínpad", "bálterem", "nyugi listening bar", "ring"
+    ];
+    names.sort(function(a, b) {
+      var ai = STAGE_PRIORITY.indexOf(a.toLowerCase());
+      var bi = STAGE_PRIORITY.indexOf(b.toLowerCase());
+      if (ai !== -1 && bi !== -1) return ai - bi;          // both priority: use defined order
+      if (ai !== -1) return -1;                             // only a is priority: a first
+      if (bi !== -1) return 1;                              // only b is priority: b first
+      return a.localeCompare(b, 'hu');                      // neither: alphabetical
+    });
     return names.map(function(name, i) {
       return { id: slugId(name), name: name, color: STAGE_COLORS[i % STAGE_COLORS.length] };
     });
