@@ -519,7 +519,9 @@
     ".kt-root{background:#062423;min-height:100vh;color:#c8dedd;}",
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
     ".kt-header-inner{position:relative;padding:0;}",
-    ".kt-panel-float{position:absolute;top:calc(100% + 6px);left:-16px;right:-16px;z-index:50;background:rgba(14,47,46,0.99);border-radius:0 0 18px 18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.6);overflow:hidden;}",
+    "@keyframes kt-panel-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}",
+    ".kt-panel-float{position:absolute;top:calc(100% + 6px);left:-16px;right:-16px;z-index:50;background:rgba(14,47,46,0.99);border-radius:0 0 18px 18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.6);overflow:hidden;animation:kt-panel-drop 0.18s ease;}",
+    ".kt-panel-backdrop{position:fixed;inset:0;z-index:49;}",
     "@media(min-width:701px){.kt-panel-float{max-width:500px;}}",
     ".kt-days{display:flex;gap:6px;justify-content:center;}",
     ".kt-day-btn{flex:1;max-width:180px;padding:10px 24px;border-radius:9999px;border:none;cursor:pointer;font-family:'SerialBlur',sans-serif;font-size:15px;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;background:transparent;color:rgba(220,234,117,0.8);}",
@@ -535,10 +537,12 @@
     "@media(max-width:700px){.kt-desktop-row{display:none!important;}.kt-mobile-days-row{display:block;margin-bottom:8px;}.kt-mobile-toolbar{display:flex;}.kt-view-toggle{display:none!important;}}",
     ".kt-list-mode .kt-stage-row{display:none!important;}",
     ".kt-fav-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:11px;cursor:pointer;position:relative;transition:all 0.2s;}",
+    "@media(min-width:701px){.kt-fav-btn{gap:6px;padding:7px 14px;font-size:12px;}}",
     ".kt-fav-btn.active{border-color:rgba(232,107,90,0.4);color:#e86b5a;background:rgba(232,107,90,0.1);}",
     ".kt-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e86b5a;color:#fff;font-size:9px;font-weight:bold;display:flex;align-items:center;justify-content:center;}",
     ".kt-spacer{flex:1;}",
     ".kt-icon-btn{width:26px;height:26px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}",
+    "@media(min-width:701px){.kt-icon-btn{width:30px;height:30px;}}",
     ".kt-icon-btn.active{border-color:rgba(220,234,117,0.4);color:#dcea75;background:rgba(220,234,117,0.06);}",
     ".kt-search-expanded{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:rgba(26,107,102,0.15);}",
     ".kt-search-expanded input{background:transparent;border:none;outline:none;color:#c8dedd;font-family:'Pacaembu',sans-serif;font-size:16px;width:140px;}",
@@ -560,6 +564,8 @@
     ".kt-panel-row .name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
     ".kt-fav-panel-float .kt-panel-row .bar{background:#e86b5a!important;}",
     ".kt-fav-panel-float .kt-panel-row .name{color:#e86b5a!important;}",
+    ".kt-fav-panel-float .kt-panel-row .actions button{color:#e86b5a!important;}",
+    ".kt-fav-panel-float .kt-panel-row .actions a{color:#e86b5a!important;}",
     ".kt-panel-row .meta{font-size:11px;color:rgba(122,158,155,0.8);margin-top:1px;}",
     ".kt-panel-row .actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}",
     ".kt-panel-row .actions button{background:none;border:none;cursor:pointer;padding:6px;color:#7a9e9b;transition:color 0.15s;display:flex;align-items:center;}",
@@ -1038,6 +1044,18 @@
         cell.appendChild(span);
         stageRow.appendChild(cell);
       });
+      // Tap-outside backdrop — closes whichever panel is open
+      if (self._showKedvencek || self._showSearch) {
+        var backdrop = document.createElement("div");
+        backdrop.className = "kt-panel-backdrop";
+        backdrop.addEventListener("click", function() {
+          self._showKedvencek = false;
+          self._showSearch = false;
+          self._searchQuery = "";
+          self._render();
+        });
+        inner.appendChild(backdrop);
+      }
       // Kedvencek floating panel — floats from the inner wrapper, above stage row + timetable
       if (self._showKedvencek) {
         var kedvPanel = self._renderKedvencekPanel();
