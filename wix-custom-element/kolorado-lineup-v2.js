@@ -331,7 +331,7 @@
     // Info body
     ".kl-popup-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
     ".kl-popup-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;margin:0;}",
-    ".kl-popup-meta{font-family:'Pacaembu',sans-serif;font-size:12px;color:rgba(100,44,255,0.55);margin:0;line-height:1.5;}",
+    ".kl-popup-meta{font-family:'Pacaembu',sans-serif;font-size:14px;font-weight:700;color:#642CFF;margin:0;line-height:1.6;letter-spacing:0.02em;}",
     ".kl-popup-timetable-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#642CFF;color:#DCEA75;font-family:'Pacaembu',sans-serif;font-size:12px;border:none;cursor:pointer;text-decoration:none;border-radius:0;letter-spacing:0.04em;transition:opacity 0.15s;margin-top:2px;}",
     ".kl-popup-timetable-btn:hover{opacity:0.85;}",
     ".kl-popup-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;margin:0;}",
