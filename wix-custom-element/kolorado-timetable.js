@@ -502,7 +502,7 @@
     "@font-face { font-family:'Pacaembu'; src:url('"+PACAEMBU_URL+"') format('truetype'); font-weight:normal; font-style:normal; font-display:swap; }",
     "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}",
     ":host{display:block;width:100%;font-family:'Pacaembu',sans-serif;}",
-    ".kt-root{background:#0E4B4D;min-height:100vh;color:#c8dedd;}",
+    ".kt-root{background:#062423;min-height:100vh;color:#c8dedd;}",
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
     ".kt-header-inner{position:relative;padding:0;}",
     ".kt-panel-float{position:absolute;top:100%;left:-16px;right:-16px;z-index:50;background:rgba(6,35,34,0.98);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,0.45);}",
@@ -573,7 +573,7 @@
     ".kt-grid-wrap{padding:0 16px 32px;}",
     ".kt-grid-scroll{overflow-x:auto;overflow-y:visible;border:1px solid rgba(26,107,102,0.15);}",
     ".kt-grid-inner{display:flex;}",
-    ".kt-time-axis{position:sticky;left:0;z-index:20;background:#0E4B4D;border-right:1px solid rgba(26,107,102,0.15);flex-shrink:0;}",
+    ".kt-time-axis{position:sticky;left:0;z-index:20;background:#062423;border-right:1px solid rgba(26,107,102,0.15);flex-shrink:0;}",
 
     ".kt-time-axis-body{position:relative;}",
     ".kt-time-label{position:absolute;left:0;right:0;display:flex;align-items:flex-start;justify-content:flex-end;padding-right:4px;}",
@@ -599,9 +599,9 @@
     ".kt-block-time{font-size:10px;white-space:nowrap;flex-shrink:0;font-family:'Pacaembu',sans-serif;margin-top:auto;}",
     ".kt-block:hover{box-shadow:0 0 0 1px currentColor,0 0 10px 1px currentColor;z-index:5;}",
     ".kt-block-fav-btn{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);background:rgba(6,35,34,0.55);color:inherit;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;transition:all 0.15s;flex-shrink:0;}",
-    ".kt-block-fav-btn.on{background:rgba(232,107,90,0.85);border-color:rgba(232,107,90,0.6);}",
+    ".kt-block-fav-btn.on{background:#e86b5a;border-color:#e86b5a;color:#DCEA75;}",
     ".kt-block:hover .kt-block-fav-btn,.kt-block.tapped .kt-block-fav-btn{display:flex;}",
-    ".kt-block-fav-btn:hover{background:rgba(232,107,90,0.7);}",
+    ".kt-block-fav-btn:hover{background:rgba(232,107,90,0.8);}",
     ".kt-fav-pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:9999px;border:none;cursor:pointer;font-family:'Pacaembu',sans-serif;font-size:11px;font-weight:600;transition:all 0.15s;}",
     ".kt-fav-pill.off{background:#fff;color:#062322;}",
     ".kt-fav-pill.on{background:#e86b5a;color:#fff;}",
@@ -610,7 +610,7 @@
     ".kt-now-bar::after{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:#dcea75;}",
     ".kt-now-dot{position:absolute;left:-4px;top:-5px;width:10px;height:10px;border-radius:50%;background:#dcea75;box-shadow:0 0 8px #dcea75;}",
     ".kt-now-label{position:absolute;left:12px;top:-9px;font-size:9px;font-weight:bold;padding:1px 5px;background:#dcea75;color:#062322;font-family:'Pacaembu',sans-serif;}",
-    ".kt-skeleton{background:#0E4B4D;min-height:100vh;}",
+    ".kt-skeleton{background:#062423;min-height:100vh;}",
     ".kt-skel-header{padding:12px 16px 8px;background:rgba(6,35,34,0.96);}",
     ".kt-skel-row{display:flex;gap:6px;margin-bottom:8px;}",
     ".kt-skel-pill{height:36px;flex:1;border-radius:9999px;background:rgba(26,107,102,0.3);animation:kt-pulse 1.5s ease-in-out infinite;}",
@@ -1177,7 +1177,7 @@
       var inner = document.createElement("div"); inner.className = "kt-grid-inner";
       inner.style.minWidth = isMobile ? (visibleStages.length*140+48)+"px" : "auto";
       // Time axis
-      var ta = document.createElement("div"); ta.className = "kt-time-axis"; ta.style.width = isMobile?"44px":"64px";
+      var ta = document.createElement("div"); ta.className = "kt-time-axis"; ta.style.width = isMobile?"36px":"48px";
       var tah = document.createElement("div"); tah.className = "kt-time-axis-header"; ta.appendChild(tah);
       var tab = document.createElement("div"); tab.className = "kt-time-axis-body"; tab.style.height = totalH+"px";
       timeLabels.forEach(function(t){
@@ -1251,7 +1251,7 @@
       if (!isTO) {
         var fb = document.createElement("button");
         fb.className = "kt-block-fav-btn" + (isFav ? " on" : "");
-        fb.innerHTML = ICONS.heart(isFav ? "#e86b5a" : "none", 11);
+        fb.innerHTML = ICONS.heart(isFav ? "#DCEA75" : "none", 11);
         fb.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
         content.appendChild(fb);
       }
