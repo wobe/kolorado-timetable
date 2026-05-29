@@ -499,11 +499,11 @@
           ? a.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
           : [(a.programtipus||'').toLowerCase().trim()];
         var isNemzene  = pt.some(function(v){ return v === 'nemzene'; });
-        var isElektro  = pt.some(function(v){ return v === 'elektronikus' || v === 'electronic' || v === 'elektro'; });
-        var isElo      = !isNemzene && !isElektro; // live = zene that is not electronic
-        if (self._musicType === "zene"    && isNemzene) return false;  // mobile zene = all music
-        if (self._musicType === "elo"     && (isNemzene || isElektro)) return false;
-        if (self._musicType === "elektro" && (isNemzene || !isElektro)) return false;
+        var isElektro  = pt.some(function(v){ return v === 'elektronikus zene'; });
+        var isElo      = pt.some(function(v){ return v === 'élőzene'; });
+        if (self._musicType === "zene"    && isNemzene) return false;  // mobile zene = all music (élő + elektro)
+        if (self._musicType === "elo"     && !isElo) return false;
+        if (self._musicType === "elektro" && !isElektro) return false;
         if (self._musicType === "nemzene" && !isNemzene) return false;
         if (self._searchQuery.trim()) {
           var q = self._searchQuery.toLowerCase();
