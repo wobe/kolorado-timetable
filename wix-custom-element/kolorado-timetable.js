@@ -734,6 +734,7 @@
               longDescription: item.longDescription || item.bio || "",
               soundcloudLink:  item.soundcloudLink || item.soundcloud || "",
               youtubeLink:     item.youtubeLink || item.youtube || "",
+              timetableonly:   item.timetableonly || false,
             };
             // Slot definitions: [start, end, idSuffix]
             var slots = [
@@ -1054,7 +1055,7 @@
     _renderKedvencekPanel() {
       var self = this;
       var panel = document.createElement("div"); panel.className = "kt-panel";
-      var favArtists = this._artists.filter(function(a){ return self._favourites.has(a.id); }).sort(function(a,b){ return a.startTime-b.startTime; });
+      var favArtists = this._artists.filter(function(a){ return !a.timetableonly && self._favourites.has(a.id); }).sort(function(a,b){ return a.startTime-b.startTime; });
       if (!favArtists.length) {
         panel.innerHTML = '<div class="kt-empty">'+i18n.noFavourites+'</div>';
       } else {
@@ -1137,10 +1138,11 @@
         var stage = self._stages.find(function(s){return s.name===artist.stage;});
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
+        var isTO = !!artist.timetableonly;
         var row = document.createElement("div"); row.className = "kt-list-row";
-        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+'</div><div class="stage-label" style="color:'+color+'55">'+artist.stage+'</div></div><button class="fav-btn'+(isFav?" on":"")+'" data-id="'+artist.id+'">'+ICONS.heart(isFav?"#e86b5a":"none",18)+'</button>';
-        row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
-        row.addEventListener("click", function(){ self._openArtistPopup(artist); });
+        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+'</div><div class="stage-label" style="color:'+color+'55">'+artist.stage+'</div></div>'+(isTO ? '' : '<button class="fav-btn'+(isFav?" on":"")+' " data-id="'+artist.id+'">'+ICONS.heart(isFav?"#e86b5a":"none",18)+'</button>');
+        if (!isTO) row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        if (!isTO) row.addEventListener("click", function(){ self._openArtistPopup(artist); });
         wrap.appendChild(row);
       });
       return wrap;
@@ -1201,6 +1203,7 @@
       var height = Math.max((endH - startH) * hh - 2, 24);
       var isShort = height < 52, isTiny = height < 36;
       var isFav = this._favourites.has(artist.id);
+      var isTO = !!artist.timetableonly;
       var isTapped = this._tappedBlockId === artist.id;
       var block = document.createElement("div");
       block.className = "kt-block" + (isTapped ? " tapped" : "");
@@ -1217,14 +1220,17 @@
       // Overlay
       var ov = document.createElement("div"); ov.className = "kt-block-overlay"; ov.style.background = stage.color+"dd";
       var nb = document.createElement("button"); nb.className = "kt-block-overlay-name"; nb.textContent = artist.name;
-      nb.addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
+      if (!isTO) nb.addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
       ov.appendChild(nb);
       if (!isTiny) { var ot=document.createElement("div"); ot.className="kt-block-overlay-time"; ot.textContent=formatTime(artist.startTime)+" – "+formatTime(artist.endTime); ov.appendChild(ot); }
-      var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
-      fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?i18n.favPillOn:i18n.favPillOff);
-      fp.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
-      ov.appendChild(fp); block.appendChild(ov);
-      block.addEventListener("click", function(e){ e.stopPropagation(); self._tappedBlockId=(self._tappedBlockId===artist.id)?null:artist.id; self._render(); });
+      if (!isTO) {
+        var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
+        fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?i18n.favPillOn:i18n.favPillOff);
+        fp.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        ov.appendChild(fp);
+      }
+      block.appendChild(ov);
+      if (!isTO) block.addEventListener("click", function(e){ e.stopPropagation(); self._tappedBlockId=(self._tappedBlockId===artist.id)?null:artist.id; self._render(); });
       return block;
     };
 

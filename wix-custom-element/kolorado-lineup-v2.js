@@ -483,6 +483,7 @@
         return (a.name || "").localeCompare(b.name || "", "hu", { sensitivity: "base" });
       });
       return list.filter(function (a) {
+        if (a.timetableonly) return false;               // timetable-only: never show in lineup
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
         // programtipus is a Tags array; normalize to lowercase string for comparison
         var pt = Array.isArray(a.programtipus)
