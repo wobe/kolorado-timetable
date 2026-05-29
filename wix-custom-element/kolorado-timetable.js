@@ -519,7 +519,7 @@
     ".kt-root{background:#062423;min-height:100vh;color:#c8dedd;}",
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
     ".kt-header-inner{position:relative;padding:0;}",
-    ".kt-panel-float{position:absolute;top:100%;left:-16px;right:-16px;z-index:50;background:rgba(6,35,34,0.98);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,0.45);}",
+    ".kt-panel-float{position:absolute;top:calc(100% + 6px);left:-16px;right:-16px;z-index:50;background:rgba(14,47,46,0.99);border-radius:0 0 18px 18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.6);overflow:hidden;}",
     ".kt-days{display:flex;gap:6px;justify-content:center;}",
     ".kt-day-btn{flex:1;max-width:180px;padding:10px 24px;border-radius:9999px;border:none;cursor:pointer;font-family:'SerialBlur',sans-serif;font-size:15px;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;background:transparent;color:rgba(220,234,117,0.8);}",
     ".kt-day-btn.active{background:#dcea75;color:#062322;}",
@@ -529,31 +529,35 @@
     ".kt-header-left{display:flex;align-items:center;gap:8px;flex-shrink:0;}",
     ".kt-header-center{flex:1;display:flex;justify-content:center;}",
     ".kt-header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}",
-    ".kt-toolbar{display:flex;align-items:center;gap:8px;}",
+    ".kt-toolbar{display:flex;align-items:center;gap:5px;}",
     "@media(min-width:701px){.kt-desktop-row{display:flex;}.kt-mobile-days-row{display:none!important;}.kt-mobile-toolbar{display:none!important;}}",
     "@media(max-width:700px){.kt-desktop-row{display:none!important;}.kt-mobile-days-row{display:block;margin-bottom:8px;}.kt-mobile-toolbar{display:flex;}.kt-view-toggle{display:none!important;}}",
     ".kt-list-mode .kt-stage-row{display:none!important;}",
-    ".kt-fav-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:12px;cursor:pointer;position:relative;transition:all 0.2s;}",
+    ".kt-fav-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;font-family:'Pacaembu',sans-serif;font-size:11px;cursor:pointer;position:relative;transition:all 0.2s;}",
     ".kt-fav-btn.active{border-color:rgba(232,107,90,0.4);color:#e86b5a;background:rgba(232,107,90,0.1);}",
     ".kt-badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e86b5a;color:#fff;font-size:9px;font-weight:bold;display:flex;align-items:center;justify-content:center;}",
     ".kt-spacer{flex:1;}",
-    ".kt-icon-btn{width:30px;height:30px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}",
+    ".kt-icon-btn{width:26px;height:26px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}",
     ".kt-icon-btn.active{border-color:rgba(220,234,117,0.4);color:#dcea75;background:rgba(220,234,117,0.06);}",
-    ".kt-search-expanded{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:rgba(26,107,102,0.15);}",
+    ".kt-search-expanded{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:9999px;border:1px solid rgba(26,107,102,0.4);background:rgba(26,107,102,0.15);}",
     ".kt-search-expanded input{background:transparent;border:none;outline:none;color:#c8dedd;font-family:'Pacaembu',sans-serif;font-size:16px;width:140px;}",
-    ".kt-search-expanded.full-width{flex:1;}",
-    "@media(max-width:700px){.kt-search-expanded.full-width{width:100%;}.kt-search-expanded.full-width input{flex:1;width:auto;min-width:0;}}",
+    ".kt-search-expanded.full-width{flex:1;margin:0 1px;}",
+    "@media(max-width:700px){.kt-search-expanded.full-width{width:100%;margin:0;}.kt-search-expanded.full-width input{flex:1;width:auto;min-width:0;}}",
     ".kt-search-expanded input::placeholder{color:rgba(122,158,155,0.7);}",
     ".kt-view-toggle{display:flex;border:1px solid rgba(26,107,102,0.4);border-radius:9999px;overflow:hidden;flex-shrink:0;}",
     ".kt-view-btn{width:36px;height:36px;border:none;background:transparent;color:#7a9e9b;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}",
     ".kt-view-btn.active{background:rgba(220,234,117,0.13);color:#dcea75;}",
-    ".kt-panel{background:rgba(20,70,66,0.98);border-bottom:1px solid rgba(26,107,102,0.2);padding:12px 16px;}",
+    ".kt-panel{background:transparent;padding:12px 16px;}",
     ".kt-panel-list{max-height:260px;overflow-y:auto;margin-bottom:8px;}",
+    ".kt-panel-float.kt-fav-panel-float{left:0;right:-16px;border-radius:0 0 18px 18px;border-top:2px solid rgba(232,107,90,0.5);}",
+    ".kt-panel-float.kt-search-panel-float{left:-16px;right:0;border-radius:0 0 18px 18px;border-top:2px solid rgba(220,234,117,0.35);}",
     ".kt-panel-row{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background 0.15s;}",
     ".kt-panel-row:hover{background:rgba(26,107,102,0.15);}",
-    ".kt-panel-row .bar{width:4px;height:32px;flex-shrink:0;}",
+    ".kt-panel-row .bar{width:3px;height:32px;flex-shrink:0;border-radius:2px;}",
     ".kt-panel-row .info{flex:1;min-width:0;}",
     ".kt-panel-row .name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+    ".kt-fav-panel-float .kt-panel-row .bar{background:#e86b5a!important;}",
+    ".kt-fav-panel-float .kt-panel-row .name{color:#e86b5a!important;}",
     ".kt-panel-row .meta{font-size:11px;color:rgba(122,158,155,0.8);margin-top:1px;}",
     ".kt-panel-row .actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}",
     ".kt-panel-row .actions button{background:none;border:none;cursor:pointer;padding:6px;color:#7a9e9b;transition:color 0.15s;display:flex;align-items:center;}",
@@ -926,34 +930,9 @@
       favBtn.innerHTML = (this._showKedvencek ? ICONS.x(13) : ICONS.heart("none",13)) + " " + i18n.favourites + (favCount > 0 ? '<span class="kt-badge">'+favCount+'</span>' : "");
       favBtn.addEventListener("click", function(){ self._showKedvencek = !self._showKedvencek; if(self._showKedvencek) self._showSearch=false; self._render(); });
 
-      // Search widget (shared)
-      var searchWidget;
-      if (this._showSearch) {
-        searchWidget = document.createElement("div"); searchWidget.className = "kt-search-expanded";
-        searchWidget.innerHTML = ICONS.search(13);
-        var inp = document.createElement("input"); inp.placeholder = i18n.search; inp.value = this._searchQuery;
-        inp.addEventListener("input", function(e){
-          self._searchQuery = e.target.value;
-          var existingPanel = inner.querySelector(".kt-panel-float.kt-search-panel-float");
-          if (existingPanel) { existingPanel.remove(); }
-          if (self._searchQuery) {
-            var sp = self._renderSearchPanel();
-            sp.classList.add("kt-panel-float","kt-search-panel-float");
-            inner.appendChild(sp);
-          }
-        });
-        inp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
-        searchWidget.appendChild(inp);
-        var closeX = document.createElement("button");
-        closeX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
-        closeX.innerHTML = ICONS.x(12);
-        closeX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
-        searchWidget.appendChild(closeX);
-        setTimeout(function(){ var i = self._shadow.querySelector(".kt-search-expanded input"); if(i) i.focus(); }, 30);
-      } else {
-        searchWidget = document.createElement("button"); searchWidget.className = "kt-icon-btn"; searchWidget.innerHTML = ICONS.search(15); searchWidget.title = i18n.searchTitle;
-        searchWidget.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
-      }
+      // Search widget (desktop) — icon button always in toolbar, popup floats below
+      var searchWidget = document.createElement("button"); searchWidget.className = "kt-icon-btn" + (this._showSearch ? " active" : ""); searchWidget.innerHTML = ICONS.search(15); searchWidget.title = i18n.searchTitle;
+      searchWidget.addEventListener("click", function(){ self._showSearch=!self._showSearch; self._showKedvencek=false; self._render(); });
 
       // Filter widget (shared)
       var hasFilters = this._filterFavourites || this._activeStages.size < this._stages.length;
@@ -1024,45 +1003,16 @@
       mobileToolbar.appendChild(spacer);
       // Clone search and filter for mobile toolbar
       var mobileSearchWidget;
-      if (this._showSearch) {
-        // Full-width search: hide fav btn and filter, search spans full toolbar
-        mobileToolbar.removeChild(favBtn);
-        mobileSearchWidget = document.createElement("div"); mobileSearchWidget.className = "kt-search-expanded full-width";
-        mobileSearchWidget.innerHTML = ICONS.search(13);
-        var minp = document.createElement("input"); minp.placeholder = i18n.search; minp.value = this._searchQuery;
-        minp.setAttribute("autocomplete","off"); minp.setAttribute("autocorrect","off"); minp.setAttribute("autocapitalize","off");
-        minp.addEventListener("input", function(e){
-          self._searchQuery = e.target.value;
-          // Patch only the search panel — avoid full re-render which kills keyboard on mobile
-          var existingPanel = inner.querySelector(".kt-panel-float.kt-search-panel-float");
-          if (existingPanel) { existingPanel.remove(); }
-          if (self._searchQuery) {
-            var sp = self._renderSearchPanel();
-            sp.classList.add("kt-panel-float","kt-search-panel-float");
-            inner.appendChild(sp);
-          }
-        });
-        minp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
-        mobileSearchWidget.appendChild(minp);
-        var mcloseX = document.createElement("button");
-        mcloseX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
-        mcloseX.innerHTML = ICONS.x(12);
-        mcloseX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
-        mobileSearchWidget.appendChild(mcloseX);
-        mobileToolbar.appendChild(mobileSearchWidget);
-        // Auto-focus after render
-        requestAnimationFrame(function(){ var inp = mobileSearchWidget.querySelector("input"); if(inp) inp.focus(); });
-      } else {
-        mobileSearchWidget = document.createElement("button"); mobileSearchWidget.className = "kt-icon-btn"; mobileSearchWidget.innerHTML = ICONS.search(13);
-        mobileSearchWidget.addEventListener("click", function(){ self._showSearch=true; self._showKedvencek=false; self._render(); });
-        mobileToolbar.appendChild(mobileSearchWidget);
-        var mfw = document.createElement("div"); mfw.className = "kt-filter-wrap";
-        var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(13);
-        mfb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
-        mfw.appendChild(mfb);
-        if (self._showFilter) { mfw.appendChild(dd.cloneNode(true)); }
-        mobileToolbar.appendChild(mfw);
-      }
+      // Search icon button — always in toolbar (active state when search open)
+      mobileSearchWidget = document.createElement("button"); mobileSearchWidget.className = "kt-icon-btn" + (this._showSearch ? " active" : ""); mobileSearchWidget.innerHTML = ICONS.search(13);
+      mobileSearchWidget.addEventListener("click", function(){ self._showSearch=!self._showSearch; self._showKedvencek=false; self._render(); });
+      mobileToolbar.appendChild(mobileSearchWidget);
+      var mfw = document.createElement("div"); mfw.className = "kt-filter-wrap";
+      var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(13);
+      mfb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
+      mfw.appendChild(mfb);
+      if (self._showFilter && typeof dd !== 'undefined') { mfw.appendChild(dd.cloneNode(true)); }
+      mobileToolbar.appendChild(mfw);
       // View toggle hidden on mobile — list-only on small screens
       inner.appendChild(mobileToolbar);
       // Stage names row — built from visible stages for the active day
@@ -1089,14 +1039,49 @@
       // Kedvencek floating panel — floats from the inner wrapper, above stage row + timetable
       if (self._showKedvencek) {
         var kedvPanel = self._renderKedvencekPanel();
-        kedvPanel.classList.add("kt-panel-float");
+        kedvPanel.classList.add("kt-panel-float","kt-fav-panel-float");
         inner.appendChild(kedvPanel);
       }
-      // Search results floating panel — same treatment as Kedvencek
-      if (self._showSearch && self._searchQuery) {
-        var searchPanel = self._renderSearchPanel();
-        searchPanel.classList.add("kt-panel-float","kt-search-panel-float");
-        inner.appendChild(searchPanel);
+      // Search floating popup — contains search bar at top + results below
+      if (self._showSearch) {
+        var searchPopup = document.createElement("div");
+        searchPopup.classList.add("kt-panel-float","kt-search-panel-float");
+        // Search bar row inside popup
+        var searchBarRow = document.createElement("div");
+        searchBarRow.style.cssText = "display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid rgba(26,107,102,0.15);";
+        var searchIcon = document.createElement("span"); searchIcon.innerHTML = ICONS.search(13); searchIcon.style.cssText = "color:#7a9e9b;flex-shrink:0;display:flex;";
+        var sinp = document.createElement("input"); sinp.placeholder = i18n.search; sinp.value = self._searchQuery;
+        sinp.setAttribute("autocomplete","off"); sinp.setAttribute("autocorrect","off"); sinp.setAttribute("autocapitalize","off");
+        sinp.style.cssText = "flex:1;background:transparent;border:none;outline:none;color:#c8dedd;font-family:'Pacaembu',sans-serif;font-size:16px;min-width:0;";
+        sinp.addEventListener("input", function(e){
+          self._searchQuery = e.target.value;
+          // Patch only the results area inside the popup
+          var existingResults = searchPopup.querySelector(".kt-search-results-inner");
+          if (existingResults) existingResults.remove();
+          if (self._searchQuery) {
+            var sp = self._renderSearchPanel();
+            sp.classList.add("kt-search-results-inner");
+            searchPopup.appendChild(sp);
+          }
+        });
+        sinp.addEventListener("keydown", function(e){ if(e.key==="Escape"){ self._showSearch=false; self._searchQuery=""; self._render(); }});
+        var scloseX = document.createElement("button");
+        scloseX.style.cssText = "background:none;border:none;cursor:pointer;color:#7a9e9b;padding:4px;display:flex;align-items:center;flex-shrink:0;";
+        scloseX.innerHTML = ICONS.x(12);
+        scloseX.addEventListener("click", function(){ self._showSearch=false; self._searchQuery=""; self._render(); });
+        searchBarRow.appendChild(searchIcon);
+        searchBarRow.appendChild(sinp);
+        searchBarRow.appendChild(scloseX);
+        searchPopup.appendChild(searchBarRow);
+        // Results area
+        if (self._searchQuery) {
+          var sp2 = self._renderSearchPanel();
+          sp2.classList.add("kt-search-results-inner");
+          searchPopup.appendChild(sp2);
+        }
+        inner.appendChild(searchPopup);
+        // Auto-focus the input
+        requestAnimationFrame(function(){ var inp = searchPopup.querySelector("input"); if(inp) inp.focus(); });
       }
       header.appendChild(inner);
       header.appendChild(stageRow);
