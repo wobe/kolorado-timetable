@@ -562,7 +562,7 @@
     "@media(min-width:701px){.kt-fav-panel-float{max-height:calc(100vh - 80px);overflow:hidden;}}",
     ".kt-panel-float.kt-fav-panel-float{left:0;right:auto;min-width:280px;border:1.5px solid rgba(232,107,90,0.55);}",
     ".kt-panel-float.kt-search-panel-float{left:auto;right:0;min-width:280px;border:1.5px solid rgba(220,234,117,0.5);}",
-    "@media(max-width:700px){.kt-panel-float.kt-fav-panel-float{left:2px;right:2px;min-width:0;}.kt-panel-float.kt-search-panel-float{left:2px;right:2px;min-width:0;}}",
+    "@media(max-width:700px){.kt-panel-float.kt-fav-panel-float{left:4px;right:4px;min-width:0;}.kt-panel-float.kt-search-panel-float{left:4px;right:4px;min-width:0;}}",
     ".kt-panel-row{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background 0.15s;}",
     ".kt-panel-row:hover{background:rgba(26,107,102,0.15);}",
     ".kt-panel-row .bar{width:3px;height:32px;flex-shrink:0;border-radius:2px;}",
@@ -1019,18 +1019,7 @@
       var mobileSearchWidget;
       // Search icon button — always in toolbar (active state when search open)
       mobileSearchWidget = document.createElement("button"); mobileSearchWidget.className = "kt-icon-btn" + (this._showSearch ? " active" : ""); mobileSearchWidget.innerHTML = ICONS.search(13);
-      mobileSearchWidget.addEventListener("click", function(){
-        if (self._showSearch) {
-          // Already open — close it
-          self._showSearch = false; self._searchQuery = ""; self._render();
-        } else {
-          // Opening — set state, render, then focus synchronously in the same gesture tick
-          self._showSearch = true; self._showKedvencek = false; self._render();
-          // Synchronous focus within the gesture chain — critical for iOS keyboard
-          var inp = self._shadow.querySelector(".kt-search-panel-float input");
-          if (inp) { inp.focus(); }
-        }
-      });
+      mobileSearchWidget.addEventListener("click", function(){ self._showSearch=!self._showSearch; self._showKedvencek=false; self._render(); });
       mobileToolbar.appendChild(mobileSearchWidget);
       var mfw = document.createElement("div"); mfw.className = "kt-filter-wrap";
       var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(13);
@@ -1117,10 +1106,13 @@
           searchPopup.appendChild(sp2);
         }
         inner.appendChild(searchPopup);
-        // Desktop autofocus (mobile keyboard is triggered synchronously in the click handler)
-        if (window.innerWidth >= 701) {
-          requestAnimationFrame(function(){ var inp = searchPopup.querySelector("input"); if(inp) inp.focus(); });
-        }
+        // Auto-focus the input — double rAF needed on mobile (iOS/Android) to trigger keyboard
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            var inp = searchPopup.querySelector("input");
+            if(inp){ inp.focus(); inp.click(); }
+          });
+        });
       }
       header.appendChild(inner);
       header.appendChild(stageRow);
