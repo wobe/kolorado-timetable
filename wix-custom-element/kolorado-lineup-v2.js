@@ -63,6 +63,8 @@
   var I18N = {
     hu: {
       zene:          "ZENE",
+      elo:           "ÉLŐ ZENE",
+      elektro:       "ELEKTRONIKUS",
       nemzene:       "NEMZENE",
       favourites:    "Kedvencek",
       search:        "Keresés...",
@@ -74,6 +76,8 @@
     },
     en: {
       zene:          "MUSIC",
+      elo:           "LIVE",
+      elektro:       "ELECTRONIC",
       nemzene:       "NON-MUSIC",
       favourites:    "Favourites",
       search:        "Search...",
@@ -219,10 +223,9 @@
     ".kl-header{position:sticky;top:0;z-index:40;background:#FEFFC0;border-bottom:1.5px solid rgba(100,44,255,0.1);padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;transition:border-color 0.2s;position:relative;}",
     ".kl-header.scrolled{border-bottom:1.5px solid rgba(100,44,255,0.2);}",
 
-    // ZENE/NEMZENE split pill
-    ".kl-split-pill{display:inline-flex;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
-    ".kl-split-half{padding:6px 14px;border:none;background:transparent;color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}",
-    ".kl-split-half:first-child{border-right:1px solid rgba(100,44,255,0.2);}",
+    // ZENE/NEMZENE split pill (shared button styles)
+    ".kl-split-half{padding:6px 14px;border:none;background:transparent;color:#642CFF;font-family:'Pacaembu',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s;white-space:nowrap;border-right:1px solid rgba(100,44,255,0.2);}",
+    ".kl-split-half:last-child{border-right:none;}",
     ".kl-split-half.active{background:#642CFF;color:#FEFFC0;}",
     ".kl-split-half:hover:not(.active){background:rgba(100,44,255,0.08);}",
 
@@ -263,8 +266,14 @@
     ".kl-photo-placeholder img{width:100%;height:100%;object-fit:cover;display:block;}",
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
-    ".kl-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
-    "@media(min-width:768px){.kl-name{font-size:14px;}}",
+    ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
+    "@media(min-width:768px){.kl-name{font-size:16px;}}",
+    ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:3px;margin-top:3px;line-height:1.4;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
+    ".kl-split-pill-mobile{display:inline-flex;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
+    "@media(min-width:640px){.kl-split-pill-mobile{display:none;}}",
+    ".kl-split-pill-desktop{display:none;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
+    "@media(min-width:640px){.kl-split-pill-desktop{display:inline-flex;}}",
     // Fav circle — bottom-right
     ".kl-fav-circle{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(254,255,192,0.95);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;z-index:4;box-shadow:0 2px 10px rgba(0,0,0,0.25);}",
     ".kl-fav-circle.on{background:#e53e3e;}",
@@ -361,7 +370,7 @@
         try { if (!searchStr && window.parent && window.parent.location.search) searchStr = window.parent.location.search; } catch(e2) {}
         var p = new URLSearchParams(searchStr);
         var t = (p.get("tipus") || "").toLowerCase();
-        this._musicType = t === "nemzene" ? "nemzene" : t === "all" ? "" : "zene";
+        this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "all" ? "" : "zene";
         this._initialArtistSlug = p.get("eloado") || null;
       } catch (e) { this._initialArtistSlug = null; }
     }
@@ -422,7 +431,7 @@
           var u = new URL(newVal);
           var p = u.searchParams;
           var t = (p.get("tipus") || "").toLowerCase();
-          this._musicType = t === "nemzene" ? "nemzene" : t === "all" ? "" : "zene";
+          this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "all" ? "" : "zene";
           var slug = p.get("eloado") || null;
           if (slug) {
             if (this._artists.length > 0) {
@@ -433,7 +442,7 @@
                   ? match.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
                   : [(match.programtipus||'').toLowerCase().trim()];
                 var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
-                if (isNemzene && this._musicType === 'zene') this._musicType = 'nemzene';
+                if (isNemzene && this._musicType !== 'nemzene') this._musicType = 'nemzene';
                 else if (!isNemzene && this._musicType === 'nemzene') this._musicType = 'zene';
                 this._popupArtist = match;
                 this._render(); this._bindEvents();
@@ -466,7 +475,7 @@
               ? match.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
               : [(match.programtipus||'').toLowerCase().trim()];
             var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
-            if (isNemzene && this._musicType === 'zene') this._musicType = 'nemzene';
+            if (isNemzene && this._musicType !== 'nemzene') this._musicType = 'nemzene';
             else if (!isNemzene && this._musicType === 'nemzene') this._musicType = 'zene';
             this._popupArtist = match;
           }
@@ -489,8 +498,12 @@
         var pt = Array.isArray(a.programtipus)
           ? a.programtipus.map(function(v){ return (v||'').toLowerCase().trim(); })
           : [(a.programtipus||'').toLowerCase().trim()];
-        var isNemzene = pt.some(function(v){ return v === 'nemzene'; });
-        if (self._musicType === "zene" && isNemzene) return false;
+        var isNemzene  = pt.some(function(v){ return v === 'nemzene'; });
+        var isElektro  = pt.some(function(v){ return v === 'elektronikus' || v === 'electronic' || v === 'elektro'; });
+        var isElo      = !isNemzene && !isElektro; // live = zene that is not electronic
+        if (self._musicType === "zene"    && isNemzene) return false;  // mobile zene = all music
+        if (self._musicType === "elo"     && (isNemzene || isElektro)) return false;
+        if (self._musicType === "elektro" && (isNemzene || !isElektro)) return false;
         if (self._musicType === "nemzene" && !isNemzene) return false;
         if (self._searchQuery.trim()) {
           var q = self._searchQuery.toLowerCase();
@@ -514,10 +527,16 @@
       // ── Header ──
       var headerHtml =
         '<div class="kl-header" id="kl-header">' +
-          // ZENE / NEMZENE split pill
-          '<div class="kl-split-pill">' +
-            '<button class="kl-split-half' + (zeActive ? " active" : "") + '" id="kl-zene-btn">' + i18n.zene + '</button>' +
-            '<button class="kl-split-half' + (nzActive ? " active" : "") + '" id="kl-nemzene-btn">' + i18n.nemzene + '</button>' +
+          // Mobile: 2-way pill (zene / nemzene)
+          '<div class="kl-split-pill-mobile">' +
+            '<button class="kl-split-half' + (zeActive ? " active" : "") + '" id="kl-zene-btn-m">' + i18n.zene + '</button>' +
+            '<button class="kl-split-half' + (nzActive ? " active" : "") + '" id="kl-nemzene-btn-m">' + i18n.nemzene + '</button>' +
+          '</div>' +
+          // Desktop: 3-way pill (élő / elektronikus / nemzene)
+          '<div class="kl-split-pill-desktop">' +
+            '<button class="kl-split-half' + (this._musicType === "elo" ? " active" : "") + '" id="kl-elo-btn">' + i18n.elo + '</button>' +
+            '<button class="kl-split-half' + (this._musicType === "elektro" ? " active" : "") + '" id="kl-elektro-btn">' + i18n.elektro + '</button>' +
+            '<button class="kl-split-half' + (nzActive ? " active" : "") + '" id="kl-nemzene-btn-d">' + i18n.nemzene + '</button>' +
           '</div>' +
           // Kedvencek toggle
           '<button class="kl-fav-toggle' + (this._filterFavourites ? " active" : "") + '" id="kl-fav-toggle">' +
@@ -565,7 +584,7 @@
               '<div class="kl-card-inner">' +
                 photoHtml +
                 '<div class="kl-hover-overlay"></div>' +
-                '<div class="kl-name-wrap"><span class="kl-name">' + esc(a.name) + '</span></div>' +
+                '<div class="kl-name-wrap"><span class="kl-name">' + esc(a.name) + '</span>' + (a.genre ? '<br><span class="kl-genre-chip">' + esc(a.genre) + '</span>' : '') + '</div>' +
                 '<button class="kl-fav-circle' + (isFav ? " on" : "") + '" data-fav="' + esc(a.id) + '">' +
                   (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +
                 '</button>' +
@@ -706,15 +725,34 @@
       var self = this;
       var root = this;
 
-      // ── ZENE / NEMZENE ──
-      var zeneBtn = root.querySelector("#kl-zene-btn");
-      var nzBtn   = root.querySelector("#kl-nemzene-btn");
-      if (zeneBtn) zeneBtn.addEventListener("click", function () {
+      // ── ZENE / NEMZENE (mobile 2-way) ──
+      var zeneBtnM = root.querySelector("#kl-zene-btn-m");
+      var nzBtnM   = root.querySelector("#kl-nemzene-btn-m");
+      if (zeneBtnM) zeneBtnM.addEventListener("click", function () {
         self._musicType = self._musicType === "zene" ? "" : "zene";
         replaceUrl(self._musicType, null);
         self._render(); self._bindEvents();
       });
-      if (nzBtn) nzBtn.addEventListener("click", function () {
+      if (nzBtnM) nzBtnM.addEventListener("click", function () {
+        self._musicType = self._musicType === "nemzene" ? "" : "nemzene";
+        replaceUrl(self._musicType, null);
+        self._render(); self._bindEvents();
+      });
+      // ── Desktop 3-way ──
+      var eloBtn    = root.querySelector("#kl-elo-btn");
+      var elektroBtn= root.querySelector("#kl-elektro-btn");
+      var nzBtnD    = root.querySelector("#kl-nemzene-btn-d");
+      if (eloBtn) eloBtn.addEventListener("click", function () {
+        self._musicType = self._musicType === "elo" ? "" : "elo";
+        replaceUrl(self._musicType, null);
+        self._render(); self._bindEvents();
+      });
+      if (elektroBtn) elektroBtn.addEventListener("click", function () {
+        self._musicType = self._musicType === "elektro" ? "" : "elektro";
+        replaceUrl(self._musicType, null);
+        self._render(); self._bindEvents();
+      });
+      if (nzBtnD) nzBtnD.addEventListener("click", function () {
         self._musicType = self._musicType === "nemzene" ? "" : "nemzene";
         replaceUrl(self._musicType, null);
         self._render(); self._bindEvents();
