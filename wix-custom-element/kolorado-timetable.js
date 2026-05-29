@@ -1210,13 +1210,13 @@
 
       var block = document.createElement("div");
       block.className = "kt-block" + (isTapped ? " tapped" : "");
-      // Darker background: 40 hex (~25% opacity) instead of 18 (~9%)
+      // Background: 26 hex (~15% opacity)
       block.style.cssText = (
         "top:"+top+"px;"+
         "height:"+height+"px;"+
-        "background:"+stage.color+"40;"+
+        "background:"+stage.color+"26;"+
         "color:"+stage.color+";"+
-        "outline:"+(isFav?"1px solid "+stage.color+"88":"none")+";"
+        "outline:"+(isFav?"2px solid #e86b5a":"none")+";"
       );
       block.setAttribute("data-id", artist.id);
 
