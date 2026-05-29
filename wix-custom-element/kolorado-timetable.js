@@ -200,7 +200,7 @@
       noFavourites:    "M\u00e9g nincs kedvenc. Kattints a \u2665 gombra egy el\u0151ad\u00f3n\u00e1l.",
       favDisclaimer:   "A kedvenceidet a b\u00f6ng\u00e9sz\u0151d t\u00e1rolja.",
       addToCalendar:   "Napt\u00e1rba",
-      iosCalError:     "Náptárba mentés iOS Chrome-ban nem működik. Használj Safari-t!",
+      iosCalError:     "A naptárba mentés iOS Chrome böngészőben nem működik. Használj Safarit. A megosztás gombbal át tudod vinni oda is a kedvenceidet.",
       share:           "Megoszt\u00e1s",
       search:          "Keres\u00e9s\u2026",
       searchTitle:     "Keres\u00e9s",
@@ -229,7 +229,7 @@
       noFavourites:    "No favourites yet. Tap the \u2665 button on an artist.",
       favDisclaimer:   "Your favourites are stored in your browser.",
       addToCalendar:   "Add to calendar",
-      iosCalError:     "Calendar export doesn't work in Chrome on iOS. Please use Safari.",
+      iosCalError:     "Calendar export doesn't work in Chrome on iOS. Use Safari instead. You can also transfer your favourites there using the Share button.",
       share:           "Share",
       search:          "Search\u2026",
       searchTitle:     "Search",
@@ -445,18 +445,18 @@
     t.style.cssText = [
       "position:fixed","bottom:24px","left:50%","transform:translateX(-50%)",
       "z-index:9999","max-width:calc(100vw - 32px)","width:360px",
-      "background:#1a1a2e","color:#FEFFC0","padding:12px 16px",
+      "background:#dcea75","color:#062322","padding:12px 16px",
       "display:flex","align-items:flex-start","gap:10px",
       "box-shadow:0 4px 24px rgba(0,0,0,0.35)",
       "font-family:'Pacaembu',sans-serif","font-size:13px","line-height:1.5",
-      "pointer-events:auto","cursor:default",
+      "pointer-events:auto","cursor:default","border-radius:9999px",
     ].join(";");
     t.innerHTML =
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="#e53e3e" stroke="#e53e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="#062322" stroke="#062322" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
         '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'+
       '</svg>'+
       '<span style="flex:1">'+i18n.favToast+'</span>'+
-      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(254,255,192,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="'+i18n.close+'">'+
+      '<button onclick="this.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:rgba(6,35,34,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px" aria-label="'+i18n.close+'">'+
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
       '</button>';
     document.body.appendChild(t);
