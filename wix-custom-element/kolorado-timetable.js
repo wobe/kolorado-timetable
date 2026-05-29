@@ -194,7 +194,7 @@
   // ── Translations ──────────────────────────────────────────────────────────
   var T = {
     hu: {
-      favToast:        "A kedvenceid a b\u00f6ng\u00e9sz\u0151dben t\u00e1rol\u00f3dnak. Itt megtal\u00e1lod k\u00e9s\u0151bb is, azonban m\u00e1s eszk\u00f6zeidre nem szinkroniz\u00e1l\u00f3dnak.",
+      favToast:        "A kedvenceidet a b\u00f6ng\u00e9sz\u0151d t\u00e1rolja.",
       close:           "Bez\u00e1r\u00e1s",
       favourites:      "Kedvencek",
       noFavourites:    "M\u00e9g nincs kedvenc. Kattints a \u2665 gombra egy el\u0151ad\u00f3n\u00e1l.",
@@ -222,7 +222,7 @@
       shortDays: { wed: "Sze", thu: "Cs\u00fct", fri: "P\u00e9n", sat: "Szo" },
     },
     en: {
-      favToast:        "Your favourites are stored in your browser. You can find them here later, but they won't sync across your devices.",
+      favToast:        "Your favourites are stored in your browser.",
       close:           "Close",
       favourites:      "Favourites",
       noFavourites:    "No favourites yet. Tap the \u2665 button on an artist.",
