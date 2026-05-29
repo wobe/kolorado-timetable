@@ -94,7 +94,7 @@
     ".kap-player iframe{display:block;width:100%;}",
     ".kap-yt-wrap{position:relative;width:100%;padding-bottom:56.25%;}",
     ".kap-yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;}",
-    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:20px;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;padding:0;}",
+    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:13px;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;padding:0;}",
     ".kap-nav-btn.disabled{opacity:0.2;pointer-events:none;cursor:default;}",
     "@media(min-width:640px){.kap-nav-btn{display:flex;}}",
   ].join("\n");
