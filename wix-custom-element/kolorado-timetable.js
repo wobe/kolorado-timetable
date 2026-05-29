@@ -785,7 +785,6 @@
       var wrap = document.createElement("div");
       wrap.className = "kt-root" + (this._viewMode === "list" ? " kt-list-mode" : "");
       wrap.appendChild(this._renderHeader());
-      if (this._showSearch && this._searchQuery) wrap.appendChild(this._renderSearchPanel());
       if (this._viewMode === "list") wrap.appendChild(this._renderListView());
       else wrap.appendChild(this._renderGridView());
       root.appendChild(wrap);
@@ -1047,6 +1046,12 @@
         kedvPanel.classList.add("kt-panel-float");
         inner.appendChild(kedvPanel);
       }
+      // Search results floating panel — same treatment as Kedvencek
+      if (self._showSearch && self._searchQuery) {
+        var searchPanel = self._renderSearchPanel();
+        searchPanel.classList.add("kt-panel-float");
+        inner.appendChild(searchPanel);
+      }
       header.appendChild(inner);
       header.appendChild(stageRow);
       return header;
@@ -1114,7 +1119,11 @@
         var stage = self._stages.find(function(s){return s.name===artist.stage;});
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
-        var row = document.createElement("div"); row.className = "kt-panel-row";        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+' · '+artist.stage+(artist.genre?' · '+artist.genre:'')+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+' " data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:#7a9e9b">'+ICONS.external(13)+'</button></div>';
+        var dayId = getFestivalDayId(artist.startTime);
+        var dayObj = dayId ? FESTIVAL_DAYS.find(function(d){ return d.id === dayId; }) : null;
+        var dayShort = dayObj ? dayObj.shortLabel : "";
+        var metaStr = [dayShort, formatTime(artist.startTime)+'–'+formatTime(artist.endTime), artist.stage].filter(Boolean).join(' · ');
+        var row = document.createElement("div"); row.className = "kt-panel-row";        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="meta">'+metaStr+'</div></div><div class="actions"><button class="'+(isFav?"fav-on":"")+' " data-id="'+artist.id+'" style="color:'+(isFav?"#e86b5a":"#7a9e9b")+'">'+ICONS.heart(isFav?"#e86b5a":"none",13)+'</button><button class="kt-popup-btn" data-popup-id="'+artist.id+'" title="Előadó részletei" style="color:#7a9e9b">'+ICONS.external(13)+'</button></div>';
         row.querySelector("button[data-id]").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
         row.querySelector(".kt-popup-btn").addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
         row.querySelector(".info").addEventListener("click", function(){ self._jumpToArtist(artist); self._showSearch=false; self._searchQuery=""; self._render(); });
