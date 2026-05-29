@@ -854,9 +854,6 @@
           }
           writeFavCookie(self._favourites);
           writeFavLocalStorage(self._favourites);
-          // Analytics: notify parent page (Velo) of fav change for GA4 tracking
-          var _favArtist = self._artists ? self._artists.find(function(a){ return a.id === id; }) : null;
-          try { window.parent.postMessage({ type: "kolorado-fav-event", action: isNew ? "add" : "remove", artistId: id, artistName: _favArtist ? (_favArtist.name || id) : id }, "*"); } catch(e) {}
           self._render(); self._bindEvents();
         });
       });
@@ -886,13 +883,9 @@
             e.stopPropagation();
             var id = btn.getAttribute("data-id");
             if (!id) return;
-            var _popupAdding = !self._favourites.has(id);
-            if (_popupAdding) { self._favourites.add(id); } else { self._favourites.delete(id); }
+            if (self._favourites.has(id)) { self._favourites.delete(id); } else { self._favourites.add(id); }
             writeFavCookie(self._favourites);
             writeFavLocalStorage(self._favourites);
-            // Analytics: notify parent page (Velo) of fav change for GA4 tracking
-            var _popupArtistObj = self._artists ? self._artists.find(function(a){ return a.id === id; }) : null;
-            try { window.parent.postMessage({ type: "kolorado-fav-event", action: _popupAdding ? "add" : "remove", artistId: id, artistName: _popupArtistObj ? (_popupArtistObj.name || id) : id }, "*"); } catch(e) {}
             self._render(); self._bindEvents();
           });
         });

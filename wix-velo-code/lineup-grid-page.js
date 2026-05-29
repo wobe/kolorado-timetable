@@ -13,26 +13,12 @@
 
 import { getLineup } from "backend/lineupApi";
 import wixLocation from "wix-location";
-import wixWindow from "wix-window";
 
 $w.onReady(async function () {
   const lineupEl = $w("#koloradoLineup");
 
   // Pass the current page URL so the element can read ?tipus= and ?eloado= params
   lineupEl.setAttribute("page-url", wixLocation.url);
-
-  // Analytics — fav add/remove events forwarded to GA4 via Wix trackEvent
-  $w("#koloradoLineup").on("message", (event) => {
-    const d = event.data;
-    if (!d || d.type !== "kolorado-fav-event") return;
-    try {
-      wixWindow.trackEvent("CustomEvent", {
-        label:    d.action === "add" ? "Favourite Added" : "Favourite Removed",
-        category: "Favourites",
-        value:    d.artistName || d.artistId,
-      });
-    } catch (e) { console.warn("trackEvent failed", e); }
-  });
 
   // Pass the timetable page URL so the popup "show in timetable" button works.
   // Update this path to match your actual Wix timetable page URL.
