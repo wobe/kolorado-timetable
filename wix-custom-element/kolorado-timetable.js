@@ -591,17 +591,17 @@
     ".kt-time-axis-header{display:none;}",
     ".kt-stage-body{position:relative;}",
     ".kt-hour-line{position:absolute;left:0;right:0;border-top:1px solid rgba(26,107,102,0.07);}",
-    ".kt-block{position:absolute;left:2px;right:2px;overflow:hidden;cursor:pointer;border-radius:0;transition:outline 0.2s;}",
-    ".kt-block-content{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:4px 6px;}",
-    ".kt-block-content.row{flex-direction:row;align-items:center;gap:6px;}",
-    ".kt-block-name{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}",
-    ".kt-block-genre{font-size:10px;color:rgba(200,222,221,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Pacaembu',sans-serif;}",
-    ".kt-block-time{font-size:10px;white-space:nowrap;flex-shrink:0;font-family:'Pacaembu',sans-serif;}",
-    ".kt-block-overlay{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px;opacity:0;transition:opacity 0.15s;pointer-events:none;}",
-    ".kt-block:hover .kt-block-overlay,.kt-block.tapped .kt-block-overlay{opacity:1;pointer-events:auto;}",
-    ".kt-block-overlay-name{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:#062322;font-weight:bold;text-align:center;cursor:pointer;background:none;border:none;line-height:1.2;}",
-    ".kt-block-overlay-name:hover{text-decoration:underline;}",
-    ".kt-block-overlay-time{font-size:11px;color:rgba(6,35,34,0.8);font-family:'Pacaembu',sans-serif;text-align:center;}",
+    ".kt-block{position:absolute;left:2px;right:2px;overflow:visible;cursor:pointer;border-radius:2px;transition:box-shadow 0.18s,outline 0.18s;}",
+    ".kt-block-content{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:5px 7px;position:relative;overflow:hidden;}",
+    ".kt-block-content.row{flex-direction:row;align-items:flex-start;gap:6px;}",
+    ".kt-block-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;line-height:1.25;word-break:break-word;overflow-wrap:break-word;white-space:normal;}",
+    ".kt-block-genre{font-size:10px;color:rgba(200,222,221,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Pacaembu',sans-serif;margin-top:2px;}",
+    ".kt-block-time{font-size:10px;white-space:nowrap;flex-shrink:0;font-family:'Pacaembu',sans-serif;margin-top:auto;}",
+    ".kt-block:hover{box-shadow:0 0 0 1px currentColor,0 0 10px 1px currentColor;z-index:5;}",
+    ".kt-block-fav-btn{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);background:rgba(6,35,34,0.55);color:inherit;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;transition:all 0.15s;flex-shrink:0;}",
+    ".kt-block-fav-btn.on{background:rgba(232,107,90,0.85);border-color:rgba(232,107,90,0.6);}",
+    ".kt-block:hover .kt-block-fav-btn,.kt-block.tapped .kt-block-fav-btn{display:flex;}",
+    ".kt-block-fav-btn:hover{background:rgba(232,107,90,0.7);}",
     ".kt-fav-pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:9999px;border:none;cursor:pointer;font-family:'Pacaembu',sans-serif;font-size:11px;font-weight:600;transition:all 0.15s;}",
     ".kt-fav-pill.off{background:#fff;color:#062322;}",
     ".kt-fav-pill.on{background:#e86b5a;color:#fff;}",
@@ -1198,39 +1198,60 @@
     _createArtistBlock(artist, stage, hh) {
       var self = this;
       var startH = toFestivalHour(artist.startTime);
-      var endH = toFestivalHour(artist.endTime);
-      var top = (startH - DAY_START_HOUR) * hh;
-      var height = Math.max((endH - startH) * hh - 2, 24);
-      var isShort = height < 52, isTiny = height < 36;
-      var isFav = this._favourites.has(artist.id);
-      var isTO = !!artist.timetableonly;
+      var endH   = toFestivalHour(artist.endTime);
+      var durationH = endH - startH;
+      var top    = (startH - DAY_START_HOUR) * hh;
+      var height = Math.max(durationH * hh - 2, 24);
+      // 45 min threshold (in hours = 0.75). Below that: name only.
+      var isShort = durationH < 0.75;
+      var isFav   = this._favourites.has(artist.id);
+      var isTO    = !!artist.timetableonly;
       var isTapped = this._tappedBlockId === artist.id;
+
       var block = document.createElement("div");
       block.className = "kt-block" + (isTapped ? " tapped" : "");
-      block.style.cssText = "top:"+top+"px;height:"+height+"px;background:"+stage.color+"18;outline:"+(isFav?"1px solid "+stage.color+"88":"none")+";";
+      // Darker background: 40 hex (~25% opacity) instead of 18 (~9%)
+      block.style.cssText = (
+        "top:"+top+"px;"+
+        "height:"+height+"px;"+
+        "background:"+stage.color+"40;"+
+        "color:"+stage.color+";"+
+        "outline:"+(isFav?"1px solid "+stage.color+"88":"none")+";"
+      );
       block.setAttribute("data-id", artist.id);
-      // Content
-      var content = document.createElement("div"); content.className = "kt-block-content"+(isShort?" row":"");
-      var nameEl = document.createElement("div"); nameEl.className = "kt-block-name"; nameEl.style.cssText = "color:"+stage.color+";font-size:"+(isShort?"11px":"12px"); nameEl.textContent = artist.name;
-      var inner = document.createElement("div"); inner.style.cssText = "min-width:0;flex:1;"; inner.appendChild(nameEl);
-      if (!isShort && artist.genre) { var ge=document.createElement("div"); ge.className="kt-block-genre"; ge.textContent=artist.genre; inner.appendChild(ge); }
-      content.appendChild(inner);
-      if (!isTiny) { var te=document.createElement("div"); te.className="kt-block-time"; te.style.color=stage.color+"99"; te.textContent=formatTime(artist.startTime)+"–"+formatTime(artist.endTime); content.appendChild(te); }
-      block.appendChild(content);
-      // Overlay
-      var ov = document.createElement("div"); ov.className = "kt-block-overlay"; ov.style.background = stage.color+"dd";
-      var nb = document.createElement("button"); nb.className = "kt-block-overlay-name"; nb.textContent = artist.name;
-      if (!isTO) nb.addEventListener("click", function(e){ e.stopPropagation(); self._openArtistPopup(artist); });
-      ov.appendChild(nb);
-      if (!isTiny) { var ot=document.createElement("div"); ot.className="kt-block-overlay-time"; ot.textContent=formatTime(artist.startTime)+" – "+formatTime(artist.endTime); ov.appendChild(ot); }
-      if (!isTO) {
-        var fp = document.createElement("button"); fp.className = "kt-fav-pill "+(isFav?"on":"off");
-        fp.innerHTML = ICONS.heart(isFav?"#fff":"none",12)+" "+(isFav?i18n.favPillOn:i18n.favPillOff);
-        fp.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
-        ov.appendChild(fp);
+
+      // Content — always column layout; name wraps instead of truncating
+      var content = document.createElement("div"); content.className = "kt-block-content";
+      var nameEl  = document.createElement("div"); nameEl.className = "kt-block-name";
+      nameEl.style.color = stage.color;
+      nameEl.textContent = artist.name;
+      content.appendChild(nameEl);
+      if (!isShort && artist.genre) {
+        var ge = document.createElement("div"); ge.className = "kt-block-genre";
+        ge.textContent = artist.genre; content.appendChild(ge);
       }
-      block.appendChild(ov);
-      if (!isTO) block.addEventListener("click", function(e){ e.stopPropagation(); self._tappedBlockId=(self._tappedBlockId===artist.id)?null:artist.id; self._render(); });
+      if (!isShort) {
+        var te = document.createElement("div"); te.className = "kt-block-time";
+        te.style.color = stage.color+"99";
+        te.textContent = formatTime(artist.startTime)+"–"+formatTime(artist.endTime);
+        content.appendChild(te);
+      }
+      block.appendChild(content);
+
+      // Round fav button (shown on hover / tapped, top-right corner)
+      if (!isTO) {
+        var fb = document.createElement("button");
+        fb.className = "kt-block-fav-btn" + (isFav ? " on" : "");
+        fb.innerHTML = ICONS.heart(isFav ? "#e86b5a" : "none", 11);
+        fb.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+        content.appendChild(fb);
+      }
+
+      // Click: open popup (or tap-to-reveal on touch)
+      if (!isTO) block.addEventListener("click", function(e){
+        e.stopPropagation();
+        self._openArtistPopup(artist);
+      });
       return block;
     };
 
