@@ -352,7 +352,7 @@
       this._artists = [];
       this._favourites = readFavLocalStorage() || readFavCookie();
       this._filterFavourites = false;
-      this._musicType = "zene"; // "zene" | "nemzene" | "" (all)
+      this._musicType = ""; // "" (all) | "zene" | "elo" | "elektro" | "nemzene"
       this._searchOpen = false;
       this._searchQuery = "";
       this._popupArtist = null;
@@ -370,7 +370,7 @@
         try { if (!searchStr && window.parent && window.parent.location.search) searchStr = window.parent.location.search; } catch(e2) {}
         var p = new URLSearchParams(searchStr);
         var t = (p.get("tipus") || "").toLowerCase();
-        this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "all" ? "" : "zene";
+        this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "zene" ? "zene" : "";
         this._initialArtistSlug = p.get("eloado") || null;
       } catch (e) { this._initialArtistSlug = null; }
     }
@@ -431,7 +431,7 @@
           var u = new URL(newVal);
           var p = u.searchParams;
           var t = (p.get("tipus") || "").toLowerCase();
-          this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "all" ? "" : "zene";
+          this._musicType = t === "nemzene" ? "nemzene" : t === "elo" ? "elo" : t === "elektro" ? "elektro" : t === "zene" ? "zene" : "";
           var slug = p.get("eloado") || null;
           if (slug) {
             if (this._artists.length > 0) {
