@@ -556,7 +556,7 @@
     ".kt-panel-list{max-height:260px;overflow-y:auto;margin-bottom:8px;}",
     ".kt-panel-float.kt-fav-panel-float{left:0;right:auto;min-width:280px;border:1.5px solid rgba(232,107,90,0.55);}",
     ".kt-panel-float.kt-search-panel-float{left:auto;right:0;min-width:280px;border:1.5px solid rgba(220,234,117,0.5);}",
-    "@media(max-width:700px){.kt-panel-float.kt-fav-panel-float{left:0;right:8px;}.kt-panel-float.kt-search-panel-float{left:8px;right:0;}}",
+    "@media(max-width:700px){.kt-panel-float.kt-fav-panel-float{left:4px;right:4px;min-width:0;}.kt-panel-float.kt-search-panel-float{left:4px;right:4px;min-width:0;}}",
     ".kt-panel-row{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background 0.15s;}",
     ".kt-panel-row:hover{background:rgba(26,107,102,0.15);}",
     ".kt-panel-row .bar{width:3px;height:32px;flex-shrink:0;border-radius:2px;}",
