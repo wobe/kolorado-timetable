@@ -54,13 +54,13 @@
   function _kapHeartSvg(filled, size) {
     var s=size||18;
     var fillColor  = filled ? "#DCEA75" : "none";
-    var strokeColor = filled ? "#DCEA75" : "#642CFF";
+    var strokeColor = filled ? "#DCEA75" : "#0E4B4D";
     return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'+fillColor+'" stroke="'+strokeColor+'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
   }
   var KAP_PLACEHOLDER_IMG = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/artist-placeholder.jpg";
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
-    ".kap-overlay{position:fixed;inset:0;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
+    ".kap-overlay{position:fixed;inset:0;background:rgba(6,35,34,0.70);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
     ".kap-card{position:relative;width:100%;max-width:480px;min-height:350px;background:#FEFFC0;box-shadow:0 24px 60px rgba(0,0,0,0.3);animation:kapFadeIn 0.18s ease;}",
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
     ".kap-mobile{display:flex;flex-direction:column;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}",
@@ -82,11 +82,11 @@
     ".kap-name{font-family:'SerialBlur',sans-serif;font-size:22px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.3;text-transform:uppercase;letter-spacing:0.02em;}",
     ".kap-subtitle{font-family:'SerialBlur',sans-serif;font-size:14px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.4;text-transform:uppercase;letter-spacing:0.03em;opacity:0.8;}",
     ".kap-fav-popup{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
-    ".kap-fav-popup.off{background:rgba(254,255,192,0.95);}",
+    ".kap-fav-popup.off{background:#DCEA75;}",
     ".kap-fav-popup.on{background:#e86b5a;}",
     ".kap-fav-popup.on svg{fill:#DCEA75 !important;color:#DCEA75 !important;}",
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
-    ".kap-meta{font-family:'Pacaembu',sans-serif;font-size:15px;color:#0E4B4D;line-height:1.4;}",
+    ".kap-meta{font-family:'Pacaembu',sans-serif;font-size:15px;font-weight:700;color:#0E4B4D;line-height:1.4;letter-spacing:0.01em;}",
     ".kap-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;margin:0;}",
     ".kap-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;margin:0;}",
     ".kap-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);margin:0;}",
