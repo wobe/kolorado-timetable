@@ -689,15 +689,9 @@
       var metaHtml = slots.length
         ? '<p class="kl-popup-meta">' + slots.map(esc).join('<br>') + '</p>'
         : '';
-      var timetableSlug = slugify(a.name);
-      var timetableHref = (self._timetableUrl || '/menetrend') + '?eloado=' + encodeURIComponent(timetableSlug);
-      var timetableBtnHtml = a.mainStart
-        ? '<a class="kl-popup-timetable-btn" href="' + esc(timetableHref) + '">&#9654; ' + i18n.timetable + '</a>'
-        : '';
       var infoBodyHtml =
         '<div class="kl-popup-body">' +
           metaHtml +
-          timetableBtnHtml +
           (genre ? '<p class="kl-popup-genre">' + genre + '</p>' : '') +
           (desc
             ? '<p class="kl-popup-desc">' + desc + '</p>'
