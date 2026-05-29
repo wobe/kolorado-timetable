@@ -200,6 +200,7 @@
       noFavourites:    "M\u00e9g nincs kedvenc. Kattints a \u2665 gombra egy el\u0151ad\u00f3n\u00e1l.",
       favDisclaimer:   "A kedvenceidet a b\u00f6ng\u00e9sz\u0151d t\u00e1rolja.",
       addToCalendar:   "Napt\u00e1rba",
+      iosCalError:     "Náptárba mentés iOS Chrome-ban nem működik. Használj Safari-t!",
       share:           "Megoszt\u00e1s",
       search:          "Keres\u00e9s\u2026",
       searchTitle:     "Keres\u00e9s",
@@ -228,6 +229,7 @@
       noFavourites:    "No favourites yet. Tap the \u2665 button on an artist.",
       favDisclaimer:   "Your favourites are stored in your browser.",
       addToCalendar:   "Add to calendar",
+      iosCalError:     "Calendar export doesn't work in Chrome on iOS. Please use Safari.",
       share:           "Share",
       search:          "Search\u2026",
       searchTitle:     "Search",
@@ -1149,9 +1151,15 @@
       footer.appendChild(disc);
       if (favArtists.length) {
         var actions = document.createElement("div"); actions.className = "kt-panel-actions";
-        var calBtn = document.createElement("button"); calBtn.className = "kt-action-btn";
+        var isIosChrome = /CriOS/.test(navigator.userAgent);
+        var calBtn = document.createElement("button"); calBtn.className = "kt-action-btn" + (isIosChrome ? " disabled" : "");
         calBtn.innerHTML = ICONS.calendar(12) + " " + i18n.addToCalendar;
-        calBtn.addEventListener("click", function(){ downloadAllICS(favArtists); });
+        if (isIosChrome) {
+          calBtn.style.cssText = "opacity:0.35;cursor:not-allowed;pointer-events:auto;";
+          calBtn.addEventListener("click", function(e){ e.preventDefault(); self._showToast(i18n.iosCalError); });
+        } else {
+          calBtn.addEventListener("click", function(){ downloadAllICS(favArtists); });
+        }
         var shareBtn = document.createElement("button"); shareBtn.className = "kt-action-btn";
         shareBtn.innerHTML = ICONS.share(12) + " " + i18n.share;
         shareBtn.addEventListener("click", function(){ self._shareFavourites(); });
