@@ -268,7 +268,7 @@
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
     "@media(min-width:768px){.kl-name{font-size:16px;}}",
-    ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:3px;margin-top:3px;line-height:1.4;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
     // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
     ".kl-split-pill-mobile{display:inline-flex;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
     "@media(min-width:640px){.kl-split-pill-mobile{display:none;}}",
@@ -331,6 +331,9 @@
     // Info body
     ".kl-popup-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
     ".kl-popup-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;margin:0;}",
+    ".kl-popup-meta{font-family:'Pacaembu',sans-serif;font-size:12px;color:rgba(100,44,255,0.55);margin:0;line-height:1.5;}",
+    ".kl-popup-timetable-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#642CFF;color:#DCEA75;font-family:'Pacaembu',sans-serif;font-size:12px;border:none;cursor:pointer;text-decoration:none;border-radius:0;letter-spacing:0.04em;transition:opacity 0.15s;margin-top:2px;}",
+    ".kl-popup-timetable-btn:hover{opacity:0.85;}",
     ".kl-popup-desc{font-family:'Pacaembu',sans-serif;font-size:13px;color:#333;line-height:1.65;margin:0;}",
     ".kl-popup-placeholder{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(0,0,0,0.3);margin:0;}",
     ".kl-popup-player{margin-top:4px;}",
@@ -359,6 +362,7 @@
       this._popupNavIdx = -1;
       this._loading = true;
       this._favToastSeen = false;
+      this._timetableUrl = "/menetrend"; // default; overridden by timetable-url attribute
       // Touch swipe state
       this._touchStartX = 0;
       this._touchStartY = 0;
@@ -420,12 +424,15 @@
       }
     }
 
-    static get observedAttributes() { return ["lineup-data", "page-url"]; }
+    static get observedAttributes() { return ["lineup-data", "page-url", "timetable-url"]; }
 
     attributeChangedCallback(name, oldVal, newVal) {
       // page-url is set by Velo page code with the full page URL (including query string)
       // This is needed because the custom element runs in a cross-origin iframe and
       // cannot access window.parent.location directly.
+      if (name === "timetable-url" && newVal) {
+        this._timetableUrl = newVal;
+      }
       if (name === "page-url" && newVal) {
         try {
           var u = new URL(newVal);
@@ -665,8 +672,32 @@
             '</div>' +
           '</div>';
       }
+      // Build schedule meta line: day · HH:MM – HH:MM · Stage
+      var self = this;
+      function buildSlotMeta(start, end, stage) {
+        if (!start) return null;
+        var dayLabel = getDayLabel(start);
+        var timeStr = fmtTime(start) + (end ? (' – ' + fmtTime(end)) : '');
+        var parts = [dayLabel, timeStr, stage].filter(Boolean);
+        return parts.join(' · ');
+      }
+      var slots = [
+        buildSlotMeta(a.mainStart, a.mainEnd, a.stage),
+        buildSlotMeta(a.secondStart, a.secondEnd, a.stage),
+        buildSlotMeta(a.thirdStart, a.thirdEnd, a.stage),
+      ].filter(Boolean);
+      var metaHtml = slots.length
+        ? '<p class="kl-popup-meta">' + slots.map(esc).join('<br>') + '</p>'
+        : '';
+      var timetableSlug = slugify(a.name);
+      var timetableHref = (self._timetableUrl || '/menetrend') + '?eloado=' + encodeURIComponent(timetableSlug);
+      var timetableBtnHtml = a.mainStart
+        ? '<a class="kl-popup-timetable-btn" href="' + esc(timetableHref) + '">&#9654; ' + i18n.timetable + '</a>'
+        : '';
       var infoBodyHtml =
         '<div class="kl-popup-body">' +
+          metaHtml +
+          timetableBtnHtml +
           (genre ? '<p class="kl-popup-genre">' + genre + '</p>' : '') +
           (desc
             ? '<p class="kl-popup-desc">' + desc + '</p>'

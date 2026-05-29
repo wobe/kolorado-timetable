@@ -12,9 +12,17 @@
 // ============================================================
 
 import { getLineup } from "backend/lineupApi";
+import wixLocation from "wix-location";
 
 $w.onReady(async function () {
   const lineupEl = $w("#koloradoLineup");
+
+  // Pass the current page URL so the element can read ?tipus= and ?eloado= params
+  lineupEl.setAttribute("page-url", wixLocation.url);
+
+  // Pass the timetable page URL so the popup "show in timetable" button works.
+  // Update this path to match your actual Wix timetable page URL.
+  lineupEl.setAttribute("timetable-url", wixLocation.baseUrl + "/menetrend");
 
   try {
     const artists = await getLineup();
