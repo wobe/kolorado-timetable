@@ -68,10 +68,10 @@
     "@media(min-width:640px){",
     "  .kap-card{max-width:720px;min-height:350px;}",
     "  .kap-mobile{display:none;}",
-    "  .kap-desktop{display:flex;align-items:stretch;}",
-    "  .kap-left{flex-shrink:0;width:clamp(240px,38%,420px);position:relative;align-self:stretch;}",
-    "  .kap-left-inner{position:absolute;inset:0;}",
-    "  .kap-right{flex:1;overflow-y:auto;max-height:90vh;display:flex;flex-direction:column;}",
+    "  .kap-desktop{display:flex;align-items:stretch;min-height:350px;}",
+    "  .kap-left{flex-shrink:0;width:clamp(240px,38%,420px);position:relative;}",
+    "  .kap-left-inner{position:absolute;inset:0;display:flex;flex-direction:column;}",
+    "  .kap-right{flex:1;overflow-y:auto;max-height:90vh;display:flex;flex-direction:column;min-height:350px;}",
     "}",
     ".kap-photo{width:100%;height:100%;object-fit:cover;display:block;}",
     ".kap-photo-ph{width:100%;height:100%;overflow:hidden;}",
@@ -81,7 +81,8 @@
     ".kap-subtitle{font-family:'SerialBlur',sans-serif;font-size:14px;color:#642CFF;background:#FEFFC0;display:inline;padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.4;text-transform:uppercase;letter-spacing:0.03em;opacity:0.8;}",
     ".kap-fav{position:absolute;bottom:10px;right:10px;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.25);transition:all 0.15s;z-index:5;}",
     ".kap-fav.off{background:rgba(254,255,192,0.95);}",
-    ".kap-fav.on{background:#e53e3e;}",
+    ".kap-fav.on{background:#e86b5a;}",
+    ".kap-fav.on svg{fill:#DCEA75 !important;color:#DCEA75 !important;}",
     ".kap-body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:1;}",
     ".kap-meta{font-family:'Pacaembu',sans-serif;font-size:15px;color:#0E4B4D;line-height:1.4;}",
     ".kap-genre{font-family:'Pacaembu',sans-serif;font-size:13px;color:rgba(100,44,255,0.6);text-transform:lowercase;margin:0;}",
@@ -91,7 +92,7 @@
     ".kap-player iframe{display:block;width:100%;}",
     ".kap-yt-wrap{position:relative;width:100%;padding-bottom:56.25%;}",
     ".kap-yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;}",
-    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:24px;font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;}",
+    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:20px;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;padding:0;}",
     ".kap-nav-btn.disabled{opacity:0.2;pointer-events:none;cursor:default;}",
     "@media(min-width:640px){.kap-nav-btn{display:flex;}}",
   ].join("\n");
@@ -137,13 +138,13 @@
     var imgPanel  = _kapImagePanel(a, isFav);
     var infoPanel = _kapInfoPanel(a);
     return '<div class="kap-overlay" id="kap-overlay">' +
-      '<button class="kap-nav-btn' + (!hasPrev ? " disabled" : "") + '" id="kap-nav-prev">&#8249;</button>' +
+      '<button class="kap-nav-btn' + (!hasPrev ? " disabled" : "") + '" id="kap-nav-prev">&#9664;</button>' +
       '<div class="kap-card">' +
         '<button class="kap-close" id="kap-close">&#215;</button>' +
         '<div class="kap-mobile"><div class="kap-img-wrap"><div class="kap-img-inner">' + imgPanel + '</div></div>' + infoPanel + '</div>' +
         '<div class="kap-desktop"><div class="kap-left"><div class="kap-left-inner">' + imgPanel + '</div></div><div class="kap-right">' + infoPanel + '</div></div>' +
       '</div>' +
-      '<button class="kap-nav-btn' + (!hasNext ? " disabled" : "") + '" id="kap-nav-next">&#8250;</button>' +
+      '<button class="kap-nav-btn' + (!hasNext ? " disabled" : "") + '" id="kap-nav-next">&#9654;</button>' +
     '</div>';
   }
   function _kapWire(shadow, a, isFav, callbacks) {
