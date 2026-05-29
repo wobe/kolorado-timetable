@@ -641,7 +641,7 @@
           '<span class="kl-popup-name">' + esc(a.name) + '</span>' +
           (subtitle ? '<br><span class="kl-popup-subtitle">' + subtitle + '</span>' : '') +
         '</div>' +
-        '<button class="kl-popup-fav ' + (isFav ? "on" : "off") + '" id="kl-popup-fav" data-id="' + esc(a.id) + '">' +
+        '<button class="kl-popup-fav kl-popup-fav-btn ' + (isFav ? "on" : "off") + '" data-id="' + esc(a.id) + '">' +
           (isFav ? ICONS.heartWhite(true, 18) : ICONS.heart(false, 18)) +
         '</button>';
 
@@ -702,7 +702,7 @@
       return (
         '<div class="kl-overlay" id="kl-overlay">' +
           // Prev arrow
-          '<button class="kl-nav-btn' + (!hasPrev ? " disabled" : "") + '" id="kl-nav-prev">&#8249;</button>' +
+          '<button class="kl-nav-btn" id="kl-nav-prev"' + (!hasPrev ? ' disabled' : '') + '>&#9664;</button>' +
           // Card
           '<div class="kl-popup-card" id="kl-popup-card">' +
             '<button class="kl-popup-close" id="kl-popup-close">&#215;</button>' +
@@ -718,7 +718,7 @@
             '</div>' +
           '</div>' +
           // Next arrow
-          '<button class="kl-nav-btn' + (!hasNext ? " disabled" : "") + '" id="kl-nav-next">&#8250;</button>' +
+          '<button class="kl-nav-btn" id="kl-nav-next"' + (!hasNext ? ' disabled' : '') + '>&#9654;</button>' +
         '</div>'
       );
     }
@@ -877,15 +877,17 @@
           self._render(); self._bindEvents();
         });
         // Fav in popup
-        var popupFav = root.querySelector("#kl-popup-fav");
-        if (popupFav) popupFav.addEventListener("click", function (e) {
-          e.stopPropagation();
-          var id = popupFav.getAttribute("data-id");
-          if (!id) return;
-          if (self._favourites.has(id)) { self._favourites.delete(id); } else { self._favourites.add(id); }
-          writeFavCookie(self._favourites);
-          writeFavLocalStorage(self._favourites);
-          self._render(); self._bindEvents();
+        var popupFavBtns = root.querySelectorAll(".kl-popup-fav-btn");
+        popupFavBtns.forEach(function(btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var id = btn.getAttribute("data-id");
+            if (!id) return;
+            if (self._favourites.has(id)) { self._favourites.delete(id); } else { self._favourites.add(id); }
+            writeFavCookie(self._favourites);
+            writeFavLocalStorage(self._favourites);
+            self._render(); self._bindEvents();
+          });
         });
         // Nav arrows
         var prevBtn = root.querySelector("#kl-nav-prev");
