@@ -520,7 +520,7 @@
     ".kt-header{position:sticky;top:0;z-index:40;background:rgba(6,35,34,0.97);border-bottom:1px solid rgba(26,107,102,0.2);backdrop-filter:blur(8px);padding:12px 16px 8px;}",
     ".kt-header-inner{position:relative;padding:0;}",
     "@keyframes kt-panel-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}",
-    ".kt-panel-float{position:absolute;top:calc(100% + 6px);left:-16px;right:-16px;z-index:50;background:rgba(14,47,46,0.99);border-radius:0 0 18px 18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.6);overflow:hidden;animation:kt-panel-drop 0.18s ease;}",
+    ".kt-panel-float{position:absolute;top:calc(100% + 6px);left:-16px;right:-16px;z-index:50;background:rgba(14,47,46,0.99);border-radius:18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 16px 48px rgba(0,0,0,0.6);overflow:hidden;animation:kt-panel-drop 0.18s ease;}",
     ".kt-panel-backdrop{position:fixed;inset:0;z-index:49;}",
     "@media(min-width:701px){.kt-panel-float{max-width:500px;}}",
     ".kt-days{display:flex;gap:6px;justify-content:center;}",
@@ -554,8 +554,8 @@
     ".kt-view-btn.active{background:rgba(220,234,117,0.13);color:#dcea75;}",
     ".kt-panel{background:rgba(14,47,46,0.99);padding:12px 16px;}",
     ".kt-panel-list{max-height:260px;overflow-y:auto;margin-bottom:8px;}",
-    ".kt-panel-float.kt-fav-panel-float{left:0;right:auto;min-width:280px;border-radius:0 0 18px 18px;border-top:2px solid rgba(232,107,90,0.5);}",
-    ".kt-panel-float.kt-search-panel-float{left:auto;right:0;min-width:280px;border-radius:0 0 18px 18px;border-top:2px solid rgba(220,234,117,0.35);}",
+    ".kt-panel-float.kt-fav-panel-float{left:0;right:auto;min-width:280px;border:1.5px solid rgba(232,107,90,0.55);}",
+    ".kt-panel-float.kt-search-panel-float{left:auto;right:0;min-width:280px;border:1.5px solid rgba(220,234,117,0.5);}",
     "@media(max-width:700px){.kt-panel-float.kt-fav-panel-float{left:0;right:8px;}.kt-panel-float.kt-search-panel-float{left:8px;right:0;}}",
     ".kt-panel-row{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;transition:background 0.15s;}",
     ".kt-panel-row:hover{background:rgba(26,107,102,0.15);}",
@@ -1100,8 +1100,13 @@
           searchPopup.appendChild(sp2);
         }
         inner.appendChild(searchPopup);
-        // Auto-focus the input
-        requestAnimationFrame(function(){ var inp = searchPopup.querySelector("input"); if(inp) inp.focus(); });
+        // Auto-focus the input — double rAF needed on mobile (iOS/Android) to trigger keyboard
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            var inp = searchPopup.querySelector("input");
+            if(inp){ inp.focus(); inp.click(); }
+          });
+        });
       }
       header.appendChild(inner);
       header.appendChild(stageRow);
