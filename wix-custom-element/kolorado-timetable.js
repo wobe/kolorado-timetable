@@ -59,14 +59,14 @@
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
     ".kap-overlay{position:fixed;inset:0;background:rgba(14,75,77,0.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
-    ".kap-card{position:relative;width:100%;max-width:480px;background:#FEFFC0;box-shadow:0 24px 60px rgba(0,0,0,0.3);animation:kapFadeIn 0.18s ease;}",
+    ".kap-card{position:relative;width:100%;max-width:480px;min-height:350px;background:#FEFFC0;box-shadow:0 24px 60px rgba(0,0,0,0.3);animation:kapFadeIn 0.18s ease;}",
     ".kap-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(254,255,192,0.9);border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#642CFF;font-weight:700;z-index:10;line-height:1;}",
     ".kap-mobile{display:flex;flex-direction:column;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}",
     ".kap-img-wrap{position:relative;width:100%;padding-top:75%;flex-shrink:0;overflow:hidden;}",
     ".kap-img-inner{position:absolute;inset:0;}",
     ".kap-desktop{display:none;}",
     "@media(min-width:640px){",
-    "  .kap-card{max-width:720px;}",
+    "  .kap-card{max-width:720px;min-height:350px;}",
     "  .kap-mobile{display:none;}",
     "  .kap-desktop{display:flex;align-items:stretch;}",
     "  .kap-left{flex-shrink:0;width:clamp(240px,38%,420px);position:relative;align-self:stretch;}",
@@ -147,11 +147,11 @@
     '</div>';
   }
   function _kapWire(shadow, a, isFav, callbacks) {
-    var overlay  = shadow.getElementById("kap-overlay");
-    var closeBtn = shadow.getElementById("kap-close");
-    var favBtn   = shadow.getElementById("kap-fav");
-    var prevBtn  = shadow.getElementById("kap-nav-prev");
-    var nextBtn  = shadow.getElementById("kap-nav-next");
+    var overlay  = shadow.querySelector("#kap-overlay");
+    var closeBtn = shadow.querySelector("#kap-close");
+    var favBtn   = shadow.querySelector("#kap-fav");
+    var prevBtn  = shadow.querySelector("#kap-nav-prev");
+    var nextBtn  = shadow.querySelector("#kap-nav-next");
     if (closeBtn) closeBtn.addEventListener("click", function() { if (callbacks.onClose) callbacks.onClose(); });
     if (overlay)  overlay.addEventListener("click", function(e) { if (e.target === overlay && callbacks.onClose) callbacks.onClose(); });
     if (favBtn)   favBtn.addEventListener("click", function(e) { e.stopPropagation(); var id=favBtn.getAttribute("data-id"); if(callbacks.onToggleFav) callbacks.onToggleFav(id); });
