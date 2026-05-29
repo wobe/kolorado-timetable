@@ -1352,6 +1352,16 @@
       }
       writeFavCookie(this._favourites);
       writeFavLocalStorage(this._favourites);
+      // Analytics: notify parent page (Velo) of fav change for GA4 tracking
+      var artistObj = this._artists.find(function(a){ return a.id === baseId || a.id === id; });
+      try {
+        window.parent.postMessage({
+          type: "kolorado-fav-event",
+          action: adding ? "add" : "remove",
+          artistId: baseId,
+          artistName: artistObj ? (artistObj.name || artistObj.title || baseId) : baseId,
+        }, "*");
+      } catch(e) {}
       this._render();
     };
 
