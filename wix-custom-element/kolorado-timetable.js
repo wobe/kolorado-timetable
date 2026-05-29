@@ -443,13 +443,13 @@
     try { localStorage.setItem(FAV_TOAST_KEY, "1"); } catch(e) {}
     var t = document.createElement("div");
     t.style.cssText = [
-      "position:fixed","bottom:24px","left:50%","transform:translateX(-50%)",
-      "z-index:9999","max-width:calc(100vw - 32px)","width:360px",
-      "background:#dcea75","color:#062322","padding:12px 16px",
+      "position:fixed","bottom:16px","left:12px","right:12px",
+      "z-index:9999",
+      "background:#dcea75","color:#062322","padding:10px 14px",
       "display:flex","align-items:flex-start","gap:10px",
       "box-shadow:0 4px 24px rgba(0,0,0,0.35)",
       "font-family:'Pacaembu',sans-serif","font-size:13px","line-height:1.5",
-      "pointer-events:auto","cursor:default","border-radius:9999px",
+      "pointer-events:auto","cursor:default","border-radius:14px",
     ].join(";");
     t.innerHTML =
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="#062322" stroke="#062322" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px">'+
@@ -460,7 +460,7 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
       '</button>';
     document.body.appendChild(t);
-    setTimeout(function(){ if (t.parentNode) t.remove(); }, 6000);
+    setTimeout(function(){ if (t.parentNode) t.remove(); }, 5000);
   }
 
   function encodeFavs(ids) {
@@ -1439,10 +1439,15 @@
 
     _showToast(msg) {
       var toast = document.createElement("div");
-      toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dcea75;color:#062322;padding:8px 18px;font-family:'Pacaembu',sans-serif;font-size:13px;z-index:9999;pointer-events:none;";
-      toast.textContent = msg;
+      toast.style.cssText = "position:fixed;bottom:16px;left:12px;right:12px;background:#dcea75;color:#062322;padding:10px 14px;font-family:'Pacaembu',sans-serif;font-size:13px;line-height:1.5;z-index:9999;pointer-events:auto;border-radius:14px;display:flex;align-items:flex-start;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,0.35);";
+      var msgSpan = document.createElement("span"); msgSpan.style.cssText = "flex:1"; msgSpan.textContent = msg;
+      var closeBtn = document.createElement("button"); closeBtn.style.cssText = "background:none;border:none;cursor:pointer;color:rgba(6,35,34,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px";
+      closeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      closeBtn.addEventListener("click", function(){ toast.remove(); });
+      toast.appendChild(msgSpan); toast.appendChild(closeBtn);
       document.body.appendChild(toast);
-      setTimeout(function(){ toast.remove(); }, 3000);
+      var tid = setTimeout(function(){ if(toast.parentNode) toast.remove(); }, 5000);
+      closeBtn.addEventListener("click", function(){ clearTimeout(tid); });
     };
 
   }
