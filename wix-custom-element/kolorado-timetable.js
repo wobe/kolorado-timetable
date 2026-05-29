@@ -94,7 +94,7 @@
     ".kap-player iframe{display:block;width:100%;}",
     ".kap-yt-wrap{position:relative;width:100%;padding-bottom:56.25%;}",
     ".kap-yt-wrap iframe{position:absolute;inset:0;width:100%;height:100%;display:block;}",
-    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(254,255,192,0.92);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#642CFF;font-size:13px;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,0.2);margin:0 8px;transition:opacity 0.15s;padding:0;}",
+    ".kap-nav-btn{flex-shrink:0;align-self:center;z-index:20;width:40px;height:40px;border-radius:50%;background:transparent;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;color:#DCEA75;font-size:22px;line-height:1;margin:0 4px;transition:opacity 0.15s;padding:0;}",
     ".kap-nav-btn.disabled{opacity:0.2;pointer-events:none;cursor:default;}",
     "@media(min-width:640px){.kap-nav-btn{display:flex;}}",
   ].join("\n");
@@ -162,6 +162,15 @@
     });
     if (prevBtn)  prevBtn.addEventListener("click", function(e) { e.stopPropagation(); if (callbacks.onPrev) callbacks.onPrev(); });
     if (nextBtn)  nextBtn.addEventListener("click", function(e) { e.stopPropagation(); if (callbacks.onNext) callbacks.onNext(); });
+    // Keyboard navigation
+    function _kapKeyHandler(e) {
+      if (e.key === "ArrowLeft")  { e.preventDefault(); if (callbacks.onPrev) callbacks.onPrev(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); if (callbacks.onNext) callbacks.onNext(); }
+      if (e.key === "Escape")     { if (callbacks.onClose) callbacks.onClose(); }
+    }
+    document.addEventListener("keydown", _kapKeyHandler);
+    // Store cleanup fn so caller can remove listener when popup closes
+    callbacks._removeKeyHandler = function() { document.removeEventListener("keydown", _kapKeyHandler); };
   }
   // Compatibility shim — existing code calls KoloradoArtistPopup.render/wire/CSS
   var KoloradoArtistPopup = { CSS: KAP_CSS, render: _kapRender, wire: _kapWire,
@@ -772,6 +781,7 @@
       this._render();
     };
     _closeArtistPopup() {
+      if (this._kapKeyCleanup) { this._kapKeyCleanup(); this._kapKeyCleanup = null; }
       this._popupArtist = null;
       this._render();
     };
@@ -830,7 +840,9 @@
         var popupDiv = document.createElement("div");
         popupDiv.innerHTML = KoloradoArtistPopup.render(this._popupArtist, isFav, hasPrev, hasNext);
         root.appendChild(popupDiv.firstChild);
-        KoloradoArtistPopup.wire(root, this._popupArtist, isFav, {
+        // Remove any stale keyboard handler before wiring new one
+        if (this._kapKeyCleanup) { this._kapKeyCleanup(); this._kapKeyCleanup = null; }
+        var _kapCbs = {
           onClose: function() { self._closeArtistPopup(); },
           onToggleFav: function(id) {
             self._toggleFav(id);
@@ -843,7 +855,9 @@
           onNext: function() {
             if (navIdx >= 0 && navIdx < dayNavList.length - 1) { self._popupArtist = dayNavList[navIdx + 1]; self._render(); }
           },
-        });
+        };
+        KoloradoArtistPopup.wire(root, this._popupArtist, isFav, _kapCbs);
+        if (_kapCbs._removeKeyHandler) this._kapKeyCleanup = _kapCbs._removeKeyHandler;
       }
       // Close filter on outside click
       if (this._showFilter) {
