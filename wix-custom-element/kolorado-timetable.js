@@ -1352,9 +1352,17 @@
         var block = self._shadow.querySelector('[data-id="'+artist.id+'"]');
         if (block) {
           var rect = block.getBoundingClientRect();
-          window.scrollTo({ top: rect.top + window.scrollY - 80, behavior: "smooth" });
-          block.style.outline="2px solid #dcea75";
-          setTimeout(function(){block.style.outline="";},1200);
+          // Offset 160px to clear sticky header (day tabs + toolbar + stage row)
+          window.scrollTo({ top: rect.top + window.scrollY - 160, behavior: "smooth" });
+          // Highlight for 5s then fade out over 0.6s
+          block.style.transition = "outline 0s";
+          block.style.outline = "2px solid #dcea75";
+          block.style.boxShadow = "0 0 0 3px #dcea7588";
+          setTimeout(function(){
+            block.style.transition = "outline 0.6s ease, box-shadow 0.6s ease";
+            block.style.outline = "";
+            block.style.boxShadow = "";
+          }, 5000);
         }
       }, 80);
     };
