@@ -267,7 +267,7 @@
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
-    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{font-size:8px;padding:1px 4px;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
+    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{display:none;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
     "@media(min-width:768px){.kl-name{font-size:16px;}}",
     ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;white-space:normal;word-break:break-word;}",
     // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
@@ -855,7 +855,25 @@
           }
           writeFavCookie(self._favourites);
           writeFavLocalStorage(self._favourites);
-          self._render(); self._bindEvents();
+          // Update this button in-place to avoid full re-render (which reloads all images)
+          if (isNew) {
+            btn.classList.add("on");
+            btn.innerHTML = ICONS.heartWhite(true, 16);
+          } else {
+            btn.classList.remove("on");
+            btn.innerHTML = ICONS.heart(false, 16);
+          }
+          // Update the fav badge count in the header without full re-render
+          var badge = self.querySelector(".kl-badge");
+          var favToggle = self.querySelector("#kl-fav-toggle");
+          var newCount = self._favourites.size;
+          if (badge) { badge.textContent = newCount; if (newCount === 0) badge.remove(); }
+          else if (newCount > 0 && favToggle) {
+            var nb = document.createElement("span"); nb.className = "kl-badge"; nb.textContent = newCount;
+            favToggle.appendChild(nb);
+          }
+          // Only do a full re-render if filtering by favourites (grid content changes)
+          if (self._filterFavourites) { self._render(); self._bindEvents(); }
         });
       });
 
