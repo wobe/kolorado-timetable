@@ -206,6 +206,10 @@
       searchTitle:     "Keres\u00e9s",
       filtersTitle:    "Sz\u0171r\u0151k",
       onlyFavourites:  "Csak a kedvenceim",
+      musicElo:        "\u00c9l\u0151 zene",
+      musicElektro:    "Elektronikus",
+      musicNemzene:    "Nemzene",
+      stages:          "Helysz\u00ednek",
       calendar:        "Napt\u00e1r",
       list:            "Lista",
       noResults:       "Nincs tal\u00e1lat: \u201e",
@@ -235,6 +239,10 @@
       searchTitle:     "Search",
       filtersTitle:    "Filters",
       onlyFavourites:  "Only my favourites",
+      musicElo:        "Live",
+      musicElektro:    "Electronic",
+      musicNemzene:    "World",
+      stages:          "Venues",
       calendar:        "Calendar",
       list:            "List",
       noResults:       "No results: \u201c",
@@ -583,11 +591,16 @@
     ".kt-empty{text-align:center;padding:32px 16px;color:rgba(122,158,155,0.7);font-size:13px;}",
     ".kt-empty button{margin-top:10px;background:none;border:none;color:#dcea75;font-size:12px;text-decoration:underline;cursor:pointer;font-family:'Pacaembu',sans-serif;}",
     ".kt-filter-wrap{position:relative;}",
-    ".kt-filter-dropdown{position:absolute;right:0;top:calc(100% + 4px);z-index:60;min-width:200px;background:#062322;border:1px solid rgba(26,107,102,0.3);box-shadow:0 8px 24px rgba(0,0,0,0.4);}",
-    ".kt-filter-item{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:12px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:'Pacaembu',sans-serif;color:#7a9e9b;transition:background 0.15s;}",
-    ".kt-filter-item:hover{background:rgba(26,107,102,0.15);}",
-    ".kt-filter-item.active{color:#e86b5a;background:rgba(232,107,90,0.06);}",
-    ".kt-filter-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}",
+    ".kt-filter-panel-float{left:auto;right:0;min-width:260px;border:1.5px solid rgba(26,107,102,0.45);}",
+    "@media(max-width:700px){.kt-filter-panel-float{left:1px;right:1px;min-width:0;}}",
+    ".kt-filter-panel-inner{padding:12px 12px 14px;display:flex;flex-direction:column;gap:12px;}",
+    ".kt-music-pill{display:flex;border-radius:9999px;overflow:hidden;border:1px solid rgba(26,107,102,0.4);background:rgba(6,35,34,0.6);flex-shrink:0;}",
+    ".kt-music-pill-btn{flex:1;padding:6px 10px;border:none;background:transparent;color:rgba(122,158,155,0.7);font-family:'Pacaembu',sans-serif;font-size:10px;cursor:pointer;transition:all 0.18s;white-space:nowrap;text-align:center;}",
+    ".kt-music-pill-btn.on{background:#dcea75;color:#062322;font-weight:700;}",
+    ".kt-stage-chips{display:flex;flex-wrap:wrap;gap:6px;}",
+    ".kt-stage-chip{padding:4px 10px;border-radius:9999px;border:1.5px solid;font-family:'Pacaembu',sans-serif;font-size:10px;cursor:pointer;transition:all 0.18s;background:transparent;}",
+    ".kt-stage-chip.on{color:#062322;}",
+    ".kt-stage-chip.off{background:transparent!important;color:rgba(122,158,155,0.6);}",
     ".kt-filter-sep{border:none;border-top:1px solid rgba(26,107,102,0.15);margin:2px 0;}",
     ".kt-day-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(122,158,155,0.6);padding:4px 10px 2px;font-family:'Pacaembu',sans-serif;}",
     ".kt-list{padding:8px 8px 48px;}",
@@ -667,6 +680,7 @@
       this._showKedvencek = false;
       this._showSearch = false;
       this._showFilter = false;
+      this._filterMusicTypes = new Set(["elo", "elektro", "nemzene"]);
       this._filterFavourites = false;
       this._searchQuery = "";
       this._tappedBlockId = null;
@@ -905,6 +919,56 @@
       }
     };
 
+    _buildFilterPanel() {
+      var self = this;
+      var panel = document.createElement("div"); panel.classList.add("kt-panel-float","kt-filter-panel-float");
+      var filterInner = document.createElement("div"); filterInner.className = "kt-filter-panel-inner";
+      // 3-way music type pill
+      var pill = document.createElement("div"); pill.className = "kt-music-pill";
+      [["elo",i18n.musicElo],["elektro",i18n.musicElektro],["nemzene",i18n.musicNemzene]].forEach(function(pair){
+        var key=pair[0], label=pair[1];
+        var btn = document.createElement("button"); btn.className = "kt-music-pill-btn" + (self._filterMusicTypes.has(key)?" on":""); btn.textContent = label;
+        btn.addEventListener("click", function(e){
+          e.stopPropagation();
+          if(self._filterMusicTypes.has(key)){ if(self._filterMusicTypes.size>1) self._filterMusicTypes.delete(key); }
+          else self._filterMusicTypes.add(key);
+          self._activeStages = new Set(self._stages.map(function(s){return s.id;}));
+          self._render();
+        });
+        pill.appendChild(btn);
+      });
+      filterInner.appendChild(pill);
+      // Stage chips — only stages with events on this day matching current music type filter
+      var allMT = self._filterMusicTypes.size === 3;
+      var stagesWithEvents = new Set();
+      self._artists.forEach(function(a){
+        if (getFestivalDayId(a.startTime) !== self._activeDay) return;
+        if (!allMT && !self._filterMusicTypes.has(self._classifyGenre(a.genre))) return;
+        stagesWithEvents.add(a.stage);
+      });
+      var visibleStageList = self._stages.filter(function(s){ return stagesWithEvents.has(s.name); });
+      if (visibleStageList.length) {
+        var chipsWrap = document.createElement("div"); chipsWrap.className = "kt-stage-chips";
+        visibleStageList.forEach(function(stage){
+          var isOn = self._activeStages.has(stage.id);
+          var chip = document.createElement("button"); chip.className = "kt-stage-chip " + (isOn?"on":"off");
+          chip.textContent = stage.name;
+          chip.style.borderColor = stage.color;
+          if (isOn) chip.style.background = stage.color;
+          chip.addEventListener("click", function(e){
+            e.stopPropagation();
+            if(self._activeStages.has(stage.id)){ if(self._activeStages.size>1) self._activeStages.delete(stage.id); }
+            else self._activeStages.add(stage.id);
+            self._render();
+          });
+          chipsWrap.appendChild(chip);
+        });
+        filterInner.appendChild(chipsWrap);
+      }
+      panel.appendChild(filterInner);
+      return panel;
+    };
+
     _renderSkeleton() {
       var el = document.createElement("div");
       el.className = "kt-skeleton";
@@ -946,32 +1010,12 @@
       searchWidget.addEventListener("click", function(){ self._showSearch=!self._showSearch; self._showKedvencek=false; self._render(); });
 
       // Filter widget (shared)
-      var hasFilters = this._filterFavourites || this._activeStages.size < this._stages.length;
+      var hasFilters = this._filterFavourites || this._activeStages.size < this._stages.length || this._filterMusicTypes.size < 3;
       var fw = document.createElement("div"); fw.className = "kt-filter-wrap";
       var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = i18n.filtersTitle;
       fb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
       fw.appendChild(fb);
-      if (this._showFilter) {
-        var dd = document.createElement("div"); dd.className = "kt-filter-dropdown";
-        var favItem = document.createElement("button");
-        favItem.className = "kt-filter-item" + (this._filterFavourites ? " active" : "");
-        favItem.innerHTML = ICONS.heart(this._filterFavourites ? "#e86b5a" : "none", 13) + " " + i18n.onlyFavourites;
-        favItem.addEventListener("click", function(){ self._filterFavourites = !self._filterFavourites; self._showFilter=false; self._render(); });
-        dd.appendChild(favItem);
-        var sep = document.createElement("hr"); sep.className = "kt-filter-sep"; dd.appendChild(sep);
-        self._stages.forEach(function(stage) {
-          var isActive = self._activeStages.has(stage.id);
-          var item = document.createElement("button"); item.className = "kt-filter-item";
-          item.innerHTML = '<span class="dot" style="background:'+(isActive?stage.color:"rgba(122,158,155,0.3)")+'"></span><span style="color:'+(isActive?stage.color:"#7a9e9b")+'">'+stage.name+'</span>'+(isActive?'<span style="margin-left:auto;font-size:10px;opacity:0.6">✓</span>':"");
-          item.addEventListener("click", function(){
-            if(self._activeStages.has(stage.id)){ if(self._activeStages.size>1) self._activeStages.delete(stage.id); }
-            else self._activeStages.add(stage.id);
-            self._render();
-          });
-          dd.appendChild(item);
-        });
-        fw.appendChild(dd);
-      }
+      if (this._showFilter) { fw.appendChild(self._buildFilterPanel()); }
 
       // View toggle (shared)
       var vt = document.createElement("div"); vt.className = "kt-view-toggle";
@@ -1022,7 +1066,7 @@
       var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(13);
       mfb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
       mfw.appendChild(mfb);
-      if (self._showFilter && typeof dd !== 'undefined') { mfw.appendChild(dd.cloneNode(true)); }
+      if (self._showFilter) { mfw.appendChild(self._buildFilterPanel()); }
       mobileToolbar.appendChild(mfw);
       // View toggle hidden on mobile — list-only on small screens
       inner.appendChild(mobileToolbar);
@@ -1048,12 +1092,13 @@
         stageRow.appendChild(cell);
       });
       // Tap-outside backdrop — closes whichever panel is open
-      if (self._showKedvencek || self._showSearch) {
+      if (self._showKedvencek || self._showSearch || self._showFilter) {
         var backdrop = document.createElement("div");
         backdrop.className = "kt-panel-backdrop";
         backdrop.addEventListener("click", function() {
           self._showKedvencek = false;
           self._showSearch = false;
+          self._showFilter = false;
           self._searchQuery = "";
           self._render();
         });
@@ -1358,13 +1403,26 @@
       if (sc) { var nl = this._createNowLine(hh); if(nl) sc.insertBefore(nl, sc.firstChild); }
     };
 
+    _classifyGenre(genre) {
+      if (!genre) return "elo"; // default: live
+      var g = genre.toLowerCase();
+      // Nemzene: world, folk, ska, reggae, afro, latin, balkán, cigány, klezmer, jazz, blues, country, soul, funk, gospel, r&b, rnb
+      if (/folk|world|ska|reggae|afro|latin|balk|cig|klezmer|jazz|blues|country|soul|funk|gospel|r&b|rnb|dzsessz|népi|nép/.test(g)) return "nemzene";
+      // Elektronikus: electronic, techno, house, trance, drum, dnb, bass, ambient, dub, edm, electro, synth, dance, rave, minimal, psytrance, hardstyle, gabber, industrial, noise, glitch, idm
+      if (/electron|techno|house|trance|drum|dnb|bass|ambient|dub|edm|electro|synth|dance|rave|minimal|psytrance|hardstyle|gabber|industrial|noise|glitch|idm|tánczene|dj set|dj-set/.test(g)) return "elektro";
+      // Default: live (rock, pop, indie, rap, hip-hop, punk, metal, alternative, experimental, etc.)
+      return "elo";
+    };
+
     _getVisibleArtists() {
       var self = this;
+      var allMusicTypes = self._filterMusicTypes.size === 3; // all on = no filter
       return this._artists.filter(function(a){
         if (getFestivalDayId(a.startTime) !== self._activeDay) return false;
         var stage = self._stages.find(function(s){return s.name===a.stage;});
         if (!stage || !self._activeStages.has(stage.id)) return false;
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
+        if (!allMusicTypes && !self._filterMusicTypes.has(self._classifyGenre(a.genre))) return false;
         return true;
       });
     };
