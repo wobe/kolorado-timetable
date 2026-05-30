@@ -1293,7 +1293,7 @@
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
         var isTO = !!artist.timetableonly;
-         var row = document.createElement("div"); row.className = "kt-list-row";
+         var row = document.createElement("div"); row.className = "kt-list-row"; row.setAttribute("data-id", artist.id);
         row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'\u2013'+formatTime(artist.endTime)+', <span class="stage-label-inline" style="color:'+color+'99">'+artist.stage+'</span></div>'+(artist.genre ? '<div class="genre-label">'+artist.genre+'</div>' : '')+'</div>'+(isTO ? '' : '<button class="fav-btn'+(isFav?' on':'')+' " data-id="'+artist.id+'">'+ICONS.heart(isFav?'#e86b5a':'none',18)+'</button>');
         if (!isTO) row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
         if (!isTO) row.addEventListener("click", function(){ self._openArtistPopup(artist); });
@@ -1515,12 +1515,24 @@
           var rect = block.getBoundingClientRect();
           // Offset 160px to clear sticky header (day tabs + toolbar + stage row)
           window.scrollTo({ top: rect.top + window.scrollY - 160, behavior: "smooth" });
-          // Highlight for 5s then fade out over 0.6s
-          block.style.transition = "outline 0s";
-          block.style.outline = "2px solid #dcea75";
-          block.style.boxShadow = "0 0 0 3px #dcea7588";
+          // Highlight style depends on element type
+          var isListRow = block.classList.contains("kt-list-row");
+          block.style.transition = "none";
+          if (isListRow) {
+            // List row: background tint + yellow left-border flash
+            block.style.background = "rgba(220,234,117,0.12)";
+            block.style.borderLeft = "3px solid #dcea75";
+            block.style.paddingLeft = "9px";
+          } else {
+            // Grid block: outline + glow
+            block.style.outline = "2px solid #dcea75";
+            block.style.boxShadow = "0 0 0 3px #dcea7588";
+          }
           setTimeout(function(){
-            block.style.transition = "outline 0.6s ease, box-shadow 0.6s ease";
+            block.style.transition = "background 0.6s ease, border-left 0.6s ease, outline 0.6s ease, box-shadow 0.6s ease";
+            block.style.background = "";
+            block.style.borderLeft = "";
+            block.style.paddingLeft = "";
             block.style.outline = "";
             block.style.boxShadow = "";
           }, 5000);
