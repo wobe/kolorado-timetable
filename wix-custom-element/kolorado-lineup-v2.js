@@ -267,15 +267,16 @@
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
+    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{font-size:9px;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
     "@media(min-width:768px){.kl-name{font-size:16px;}}",
-    ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;white-space:normal;word-break:break-word;}",
     // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
     ".kl-split-pill-mobile{display:inline-flex;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
     "@media(min-width:640px){.kl-split-pill-mobile{display:none;}}",
     ".kl-split-pill-desktop{display:none;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
     "@media(min-width:640px){.kl-split-pill-desktop{display:inline-flex;}}",
     // Fav circle — bottom-right
-    ".kl-fav-circle{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:#DCEA75;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;z-index:4;box-shadow:0 2px 10px rgba(0,0,0,0.25);}",
+    ".kl-fav-circle{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:#FEFFC0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;z-index:4;box-shadow:0 2px 10px rgba(0,0,0,0.25);}",
     ".kl-fav-circle.on{background:#e86b5a;}",
     // Hover overlay
     ".kl-hover-overlay{position:absolute;inset:0;background:rgba(100,44,255,0.0);transition:background 0.2s;pointer-events:none;}",
