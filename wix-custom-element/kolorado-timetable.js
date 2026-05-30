@@ -965,6 +965,33 @@
         });
         filterInner.appendChild(chipsWrap);
       }
+      // Footer row: red "only favourites" chip + conditional clear-filters button
+      var footerRow = document.createElement("div"); footerRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:4px;";
+      // Favourites chip
+      var favChip = document.createElement("button");
+      favChip.className = "kt-stage-chip " + (self._filterFavourites ? "on" : "off");
+      favChip.textContent = i18n.onlyFavourites;
+      favChip.style.borderColor = "#e86b5a";
+      if (self._filterFavourites) { favChip.style.background = "#e86b5a"; favChip.style.color = "#fff"; }
+      else { favChip.style.color = "rgba(232,107,90,0.75)"; }
+      favChip.addEventListener("click", function(e){ e.stopPropagation(); self._filterFavourites = !self._filterFavourites; self._render(); });
+      footerRow.appendChild(favChip);
+      // Clear filters button — only when any filter is active
+      var anyFilter = self._filterFavourites || self._activeStages.size < self._stages.length || self._filterMusicTypes.size < 3;
+      if (anyFilter) {
+        var clearBtn = document.createElement("button");
+        clearBtn.textContent = i18n.clearFilters || "Sz\u0171r\u0151k t\u00f6rl\u00e9se";
+        clearBtn.style.cssText = "background:none;border:none;cursor:pointer;font-family:'Pacaembu',sans-serif;font-size:10px;color:rgba(122,158,155,0.7);text-decoration:underline;padding:4px 2px;white-space:nowrap;flex-shrink:0;";
+        clearBtn.addEventListener("click", function(e){
+          e.stopPropagation();
+          self._filterFavourites = false;
+          self._filterMusicTypes = new Set(["elo","elektro","nemzene"]);
+          self._activeStages = new Set(self._stages.map(function(s){return s.id;}));
+          self._render();
+        });
+        footerRow.appendChild(clearBtn);
+      }
+      filterInner.appendChild(footerRow);
       panel.appendChild(filterInner);
       return panel;
     };
