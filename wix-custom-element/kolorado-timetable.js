@@ -590,9 +590,10 @@
     ".kt-action-btn:hover{border-color:rgba(220,234,117,0.4);color:#dcea75;}",
     ".kt-empty{text-align:center;padding:32px 16px;color:rgba(122,158,155,0.7);font-size:13px;}",
     ".kt-empty button{margin-top:10px;background:none;border:none;color:#dcea75;font-size:12px;text-decoration:underline;cursor:pointer;font-family:'Pacaembu',sans-serif;}",
-    ".kt-filter-wrap{position:relative;}",
+    ".kt-filter-wrap{position:static;}",
     ".kt-filter-panel-float{left:auto;right:0;min-width:260px;border:1.5px solid rgba(26,107,102,0.45);}",
     "@media(max-width:700px){.kt-filter-panel-float{left:1px;right:1px;min-width:0;}}",
+    ".kt-music-pill-sep{width:1px;background:rgba(26,107,102,0.4);flex-shrink:0;align-self:stretch;}",
     ".kt-filter-panel-inner{padding:12px 12px 14px;display:flex;flex-direction:column;gap:12px;}",
     ".kt-music-pill{display:flex;border-radius:9999px;overflow:hidden;border:1px solid rgba(26,107,102,0.4);background:rgba(6,35,34,0.6);flex-shrink:0;}",
     ".kt-music-pill-btn{flex:1;padding:6px 10px;border:none;background:transparent;color:rgba(122,158,155,0.7);font-family:'Pacaembu',sans-serif;font-size:10px;cursor:pointer;transition:all 0.18s;white-space:nowrap;text-align:center;}",
@@ -774,6 +775,7 @@
               name:            baseName,
               stage:           stageName,
               genre:           item.genre || item.genre1 || "",
+              programtipus:    item.programtipus || item.Programt\u00edpus || "",
               url:             item.website || item.url || null,
               photo:           item.photo || "",
               longDescription: item.longDescription || item.bio || "",
@@ -925,7 +927,9 @@
       var filterInner = document.createElement("div"); filterInner.className = "kt-filter-panel-inner";
       // 3-way music type pill
       var pill = document.createElement("div"); pill.className = "kt-music-pill";
-      [["elo",i18n.musicElo],["elektro",i18n.musicElektro],["nemzene",i18n.musicNemzene]].forEach(function(pair){
+      var pillKeys = [["elo",i18n.musicElo],["elektro",i18n.musicElektro],["nemzene",i18n.musicNemzene]];
+      pillKeys.forEach(function(pair, idx){
+        if (idx > 0) { var sep = document.createElement("div"); sep.className = "kt-music-pill-sep"; pill.appendChild(sep); }
         var key=pair[0], label=pair[1];
         var btn = document.createElement("button"); btn.className = "kt-music-pill-btn" + (self._filterMusicTypes.has(key)?" on":""); btn.textContent = label;
         btn.addEventListener("click", function(e){
@@ -943,7 +947,7 @@
       var stagesWithEvents = new Set();
       self._artists.forEach(function(a){
         if (getFestivalDayId(a.startTime) !== self._activeDay) return;
-        if (!allMT && !self._filterMusicTypes.has(self._classifyGenre(a.genre))) return;
+        if (!allMT && !self._filterMusicTypes.has(self._classifyArtist(a))) return;
         stagesWithEvents.add(a.stage);
       });
       var visibleStageList = self._stages.filter(function(s){ return stagesWithEvents.has(s.name); });
@@ -1042,7 +1046,7 @@
       var fb = document.createElement("button"); fb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); fb.innerHTML = ICONS.filter(15); fb.title = i18n.filtersTitle;
       fb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
       fw.appendChild(fb);
-      if (this._showFilter) { fw.appendChild(self._buildFilterPanel()); }
+      // Filter panel is appended to inner (position:relative) so it spans full header width
 
       // View toggle (shared)
       var vt = document.createElement("div"); vt.className = "kt-view-toggle";
@@ -1093,7 +1097,7 @@
       var mfb = document.createElement("button"); mfb.className = "kt-icon-btn" + (hasFilters ? " active" : ""); mfb.innerHTML = ICONS.filter(13);
       mfb.addEventListener("click", function(e){ e.stopPropagation(); self._showFilter = !self._showFilter; self._render(); });
       mfw.appendChild(mfb);
-      if (self._showFilter) { mfw.appendChild(self._buildFilterPanel()); }
+      // Filter panel appended to inner below (spans full header width)
       mobileToolbar.appendChild(mfw);
       // View toggle hidden on mobile — list-only on small screens
       inner.appendChild(mobileToolbar);
@@ -1130,6 +1134,10 @@
           self._render();
         });
         inner.appendChild(backdrop);
+      }
+      // Filter floating panel — floats from inner wrapper, right-aligned (or full-width on mobile)
+      if (self._showFilter) {
+        inner.appendChild(self._buildFilterPanel());
       }
       // Kedvencek floating panel — floats from the inner wrapper, above stage row + timetable
       if (self._showKedvencek) {
@@ -1430,14 +1438,22 @@
       if (sc) { var nl = this._createNowLine(hh); if(nl) sc.insertBefore(nl, sc.firstChild); }
     };
 
-    _classifyGenre(genre) {
-      if (!genre) return "elo"; // default: live
-      var g = genre.toLowerCase();
-      // Nemzene: world, folk, ska, reggae, afro, latin, balkán, cigány, klezmer, jazz, blues, country, soul, funk, gospel, r&b, rnb
-      if (/folk|world|ska|reggae|afro|latin|balk|cig|klezmer|jazz|blues|country|soul|funk|gospel|r&b|rnb|dzsessz|népi|nép/.test(g)) return "nemzene";
-      // Elektronikus: electronic, techno, house, trance, drum, dnb, bass, ambient, dub, edm, electro, synth, dance, rave, minimal, psytrance, hardstyle, gabber, industrial, noise, glitch, idm
-      if (/electron|techno|house|trance|drum|dnb|bass|ambient|dub|edm|electro|synth|dance|rave|minimal|psytrance|hardstyle|gabber|industrial|noise|glitch|idm|tánczene|dj set|dj-set/.test(g)) return "elektro";
-      // Default: live (rock, pop, indie, rap, hip-hop, punk, metal, alternative, experimental, etc.)
+    _classifyArtist(artist) {
+      // Primary: use CMS Programt\u00edpus field (Tags array or string)
+      var pt = artist.programtipus;
+      if (pt) {
+        var pts = Array.isArray(pt)
+          ? pt.map(function(v){ return (v||'').toLowerCase().trim(); })
+          : [(pt||'').toLowerCase().trim()];
+        if (pts.some(function(v){ return v === 'nemzene'; })) return "nemzene";
+        if (pts.some(function(v){ return v === 'elektronikus zene'; })) return "elektro";
+        if (pts.some(function(v){ return v === '\u00e9l\u0151zene'; })) return "elo";
+      }
+      // Fallback: genre keyword matching
+      var g = (artist.genre || '').toLowerCase();
+      if (!g) return "elo";
+      if (/folk|world|ska|reggae|afro|latin|balk|cig|klezmer|jazz|blues|country|soul|funk|gospel|r&b|rnb|dzsessz|n\u00e9pi|n\u00e9p/.test(g)) return "nemzene";
+      if (/electron|techno|house|trance|drum|dnb|bass|ambient|dub|edm|electro|synth|dance|rave|minimal|psytrance|hardstyle|gabber|industrial|noise|glitch|idm|t\u00e1nczene|dj set|dj-set/.test(g)) return "elektro";
       return "elo";
     };
 
@@ -1449,7 +1465,7 @@
         var stage = self._stages.find(function(s){return s.name===a.stage;});
         if (!stage || !self._activeStages.has(stage.id)) return false;
         if (self._filterFavourites && !self._favourites.has(a.id)) return false;
-        if (!allMusicTypes && !self._filterMusicTypes.has(self._classifyGenre(a.genre))) return false;
+        if (!allMusicTypes && !self._filterMusicTypes.has(self._classifyArtist(a))) return false;
         return true;
       });
     };
