@@ -195,7 +195,7 @@
       return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (filled ? color : "none") + '" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     },
     heartWhite: function (filled, size, fillColor) {
-      size = size || 18; fillColor = fillColor || "#DCEA75";
+      size = size || 18; fillColor = fillColor || "#FEFFC0";
       return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (filled ? fillColor : "none") + '" stroke="' + fillColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
     },
     search: function (size) {
@@ -267,7 +267,7 @@
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
-    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{font-size:9px;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
+    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{font-size:8px;padding:1px 4px;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
     "@media(min-width:768px){.kl-name{font-size:16px;}}",
     ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;white-space:normal;word-break:break-word;}",
     // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
