@@ -597,7 +597,8 @@
     ".kt-list-row .info{flex:1;min-width:0;}",
     ".kt-list-row .name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
     ".kt-list-row .time{font-size:11px;color:rgba(122,158,155,0.8);margin-top:2px;}",
-    ".kt-list-row .stage-label{font-size:10px;margin-top:2px;}",
+    ".kt-list-row .stage-label-inline{font-size:11px;}",
+    ".kt-list-row .genre-label{font-size:10px;color:rgba(122,158,155,0.6);margin-top:2px;font-family:'Pacaembu',sans-serif;}",
     ".kt-list-row .fav-btn{background:none;border:none;cursor:pointer;padding:8px;color:#7a9e9b;transition:color 0.15s;flex-shrink:0;}",
     ".kt-list-row .fav-btn.on{color:#e86b5a;}",
     ".kt-grid-wrap{padding:0 8px 32px;}",
@@ -1212,8 +1213,8 @@
         var color = stage ? stage.color : "#dcea75";
         var isFav = self._favourites.has(artist.id);
         var isTO = !!artist.timetableonly;
-        var row = document.createElement("div"); row.className = "kt-list-row";
-        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'–'+formatTime(artist.endTime)+'</div><div class="stage-label" style="color:'+color+'55">'+artist.stage+'</div></div>'+(isTO ? '' : '<button class="fav-btn'+(isFav?" on":"")+' " data-id="'+artist.id+'">'+ICONS.heart(isFav?"#e86b5a":"none",18)+'</button>');
+         var row = document.createElement("div"); row.className = "kt-list-row";
+        row.innerHTML = '<div class="bar" style="background:'+color+'"></div><div class="info"><div class="name" style="color:'+color+'">'+artist.name+'</div><div class="time">'+formatTime(artist.startTime)+'\u2013'+formatTime(artist.endTime)+', <span class="stage-label-inline" style="color:'+color+'99">'+artist.stage+'</span></div>'+(artist.genre ? '<div class="genre-label">'+artist.genre+'</div>' : '')+'</div>'+(isTO ? '' : '<button class="fav-btn'+(isFav?' on':'')+' " data-id="'+artist.id+'">'+ICONS.heart(isFav?'#e86b5a':'none',18)+'</button>');
         if (!isTO) row.querySelector(".fav-btn").addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
         if (!isTO) row.addEventListener("click", function(){ self._openArtistPopup(artist); });
         wrap.appendChild(row);
