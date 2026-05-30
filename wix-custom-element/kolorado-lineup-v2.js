@@ -72,7 +72,7 @@
       tryOtherFilter:"Próbálj más szűrőt!",
       detailsSoon:   "Részletek hamarosan...",
       timetable:     "→ Menetrend",
-      favToast:      "A kedvenceid a böngésződben tárolódnak. Itt megtalálod később is, azonban más eszközeidre nem szinkronizálódnak.",
+      favToast:      "A kedvenceidet a böngésződ tárolja.",
     },
     en: {
       zene:          "MUSIC",
@@ -85,7 +85,7 @@
       tryOtherFilter:"Try a different filter!",
       detailsSoon:   "Details coming soon...",
       timetable:     "→ Timetable",
-      favToast:      "Your favourites are stored in this browser. They'll be here when you return, but won't sync to other devices.",
+      favToast:      "Your favourites are stored in your browser.",
     },
   };
   var i18n = I18N[LANG] || I18N.en;
@@ -267,9 +267,9 @@
     // Name label — top-left, per-line yellow bg
     ".kl-name-wrap{position:absolute;top:0;left:0;padding:6px 8px 4px;z-index:3;}",
     ".kl-name{font-family:'SerialBlur',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:0.02em;color:#642CFF;line-height:1.3;background:#FEFFC0;display:inline;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 6px;}",
-    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{display:none;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
     "@media(min-width:768px){.kl-name{font-size:16px;}}",
     ".kl-genre-chip{display:inline-block;font-family:'Pacaembu',sans-serif;font-size:10px;text-transform:lowercase;letter-spacing:0.03em;background:#642CFF;color:#DCEA75;padding:1px 5px;border-radius:0;margin-top:3px;line-height:1.4;max-width:100%;white-space:normal;word-break:break-word;}",
+    "@media(max-width:639px){.kl-name{font-size:12px;}.kl-genre-chip{display:none!important;}.kl-fav-circle{width:28px;height:28px;bottom:6px;right:6px;}}",
     // Desktop 3-way split: hide the mobile-only 2-way pill, show desktop 3-way
     ".kl-split-pill-mobile{display:inline-flex;border-radius:9999px;overflow:hidden;border:1.5px solid rgba(100,44,255,0.25);flex-shrink:0;}",
     "@media(min-width:640px){.kl-split-pill-mobile{display:none;}}",
@@ -298,8 +298,10 @@
     "@keyframes kl-pulse{0%,100%{opacity:0.5}50%{opacity:1}}",
 
     // ── Toast ──
-    ".kl-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#642CFF;color:#FEFFC0;font-family:'Pacaembu',sans-serif;font-size:13px;padding:10px 18px;border-radius:9999px;z-index:9999;max-width:320px;text-align:center;line-height:1.4;opacity:0;transition:opacity 0.3s,transform 0.3s;pointer-events:none;}",
-    ".kl-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}",
+    ".kl-toast{position:fixed;bottom:16px;left:12px;right:12px;transform:translateY(20px);background:#dcea75;color:#062322;font-family:'Pacaembu',sans-serif;font-size:13px;padding:10px 14px;border-radius:14px;z-index:9999;line-height:1.5;opacity:0;transition:opacity 0.3s,transform 0.3s;pointer-events:auto;display:flex;align-items:flex-start;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,0.35);}",
+    ".kl-toast.show{opacity:1;transform:translateY(0);}",
+    ".kl-toast-msg{flex:1;}",
+    ".kl-toast-close{background:none;border:none;cursor:pointer;color:rgba(6,35,34,0.5);padding:0;flex-shrink:0;display:flex;align-items:center;margin-top:1px;}",
 
     // ── Popup ──
     "@keyframes kl-fade-in{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
@@ -606,7 +608,7 @@
       var popupHtml = this._popupArtist ? this._renderPopup(this._popupArtist) : "";
 
       // ── Toast ──
-      var toastHtml = '<div class="kl-toast" id="kl-toast"></div>';
+      var toastHtml = '<div class="kl-toast" id="kl-toast"><span class="kl-toast-msg" id="kl-toast-msg"></span><button class="kl-toast-close" id="kl-toast-close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
 
 
 
@@ -741,9 +743,12 @@
     _showToast(msg) {
       var el = this.querySelector("#kl-toast");
       if (!el) return;
-      el.textContent = msg;
+      var msgEl = el.querySelector("#kl-toast-msg");
+      var closeEl = el.querySelector("#kl-toast-close");
+      if (msgEl) msgEl.textContent = msg;
       el.classList.add("show");
-      setTimeout(function () { el.classList.remove("show"); }, 6000);
+      var tid = setTimeout(function () { el.classList.remove("show"); }, 5000);
+      if (closeEl) { closeEl.onclick = function() { el.classList.remove("show"); clearTimeout(tid); }; }
     }
 
     // ── Bind events ───────────────────────────────────────────
