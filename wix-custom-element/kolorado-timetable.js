@@ -208,7 +208,7 @@
       onlyFavourites:  "Csak a kedvenceim",
       musicElo:        "\u00c9l\u0151 zene",
       musicElektro:    "Elektronikus",
-      musicNemzene:    "Nem-zene",
+      musicNemzene:    "Nemzene",
       stages:          "Helysz\u00ednek",
       calendar:        "Napt\u00e1r",
       list:            "Lista",
