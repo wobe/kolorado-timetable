@@ -2,25 +2,25 @@
  * Kolorádó Festival — Favourites Analytics Worker
  *
  * KV keys used:
- *   artist:{id}:total          → total fav count (combined)
- *   artist:{id}:timetable      → fav count from timetable widget
- *   artist:{id}:lineup         → fav count from lineup widget
- *   artist:{id}:name           → display name (stored on first ping)
- *   session:{sessionId}:favs   → JSON array of artistIds favourited in this session (TTL 24h)
- *   cofav:{idA}:{idB}          → co-fav count (idA < idB alphabetically)
- *   meta:artistIds             → JSON array of all known artist IDs
+ *   artist:{id}:total              → total fav count (combined)
+ *   artist:{id}:timetable          → fav count from timetable widget
+ *   artist:{id}:lineup             → fav count from lineup widget
+ *   artist:{id}:name               → display name (stored on first ping)
+ *   artist:{id}:day:{day}          → fav count for a specific festival day
+ *   session:{sessionId}:favs       → JSON array of artistIds favourited in this session (TTL 24h)
+ *   cofav:{idA}:{idB}              → co-fav count (idA < idB alphabetically)
+ *   meta:artistIds                 → JSON array of all known artist IDs
+ *   meta:days                      → JSON array of all known festival days
  */
 
 const ALLOWED_ORIGINS = [
   "https://kolorado.hu",
   "https://www.kolorado.hu",
-  // Manus preview domains (any subdomain of manus.computer)
 ];
 
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Allow any manus.computer preview domain
   if (origin.endsWith(".manus.computer")) return true;
   if (origin.endsWith(".manus.space")) return true;
   return false;
@@ -53,18 +53,26 @@ export default {
       let body;
       try { body = await request.json(); } catch { return jsonResponse({ error: "bad json" }, 400, origin); }
 
-      const { artistId, artistName, source, action, sessionId } = body;
+      const { artistId, artistName, source, action, sessionId, day } = body;
       if (!artistId || !source || !action) return jsonResponse({ error: "missing fields" }, 400, origin);
       if (!["timetable", "lineup"].includes(source)) return jsonResponse({ error: "invalid source" }, 400, origin);
       if (!["add", "remove"].includes(action)) return jsonResponse({ error: "invalid action" }, 400, origin);
 
       const delta = action === "add" ? 1 : -1;
 
-      // Update counts
-      await Promise.all([
+      // Update counts (total + per-source)
+      const countUpdates = [
         increment(env.FAVS_KV, `artist:${artistId}:total`, delta),
         increment(env.FAVS_KV, `artist:${artistId}:${source}`, delta),
-      ]);
+      ];
+
+      // Per-day count (if day provided)
+      if (day) {
+        countUpdates.push(increment(env.FAVS_KV, `artist:${artistId}:day:${day}`, delta));
+        countUpdates.push(addToIndex(env.FAVS_KV, "meta:days", day));
+      }
+
+      await Promise.all(countUpdates);
 
       // Store artist name on first ping
       if (artistName) {
@@ -82,7 +90,6 @@ export default {
         let sessionFavs = raw ? JSON.parse(raw) : [];
 
         if (action === "add") {
-          // Record co-fav with every other artist already in this session
           const coFavPromises = sessionFavs.map(otherId => {
             const [a, b] = [artistId, otherId].sort();
             return increment(env.FAVS_KV, `cofav:${a}:${b}`, 1);
@@ -93,7 +100,6 @@ export default {
           sessionFavs = sessionFavs.filter(id => id !== artistId);
         }
 
-        // Store session with 24h TTL
         await env.FAVS_KV.put(sessionKey, JSON.stringify(sessionFavs), { expirationTtl: 86400 });
       }
 
@@ -102,30 +108,40 @@ export default {
 
     // ── GET /counts ──────────────────────────────────────────────────────────
     if (request.method === "GET" && path === "/counts") {
-      const raw = await env.FAVS_KV.get("meta:artistIds");
-      const artistIds = raw ? JSON.parse(raw) : [];
+      const [rawIds, rawDays] = await Promise.all([
+        env.FAVS_KV.get("meta:artistIds"),
+        env.FAVS_KV.get("meta:days"),
+      ]);
+      const artistIds = rawIds ? JSON.parse(rawIds) : [];
+      const days = rawDays ? JSON.parse(rawDays) : [];
 
       // Fetch all counts in parallel
       const artists = await Promise.all(artistIds.map(async id => {
-        const [total, timetable, lineup, name] = await Promise.all([
-          env.FAVS_KV.get(`artist:${id}:total`),
-          env.FAVS_KV.get(`artist:${id}:timetable`),
-          env.FAVS_KV.get(`artist:${id}:lineup`),
-          env.FAVS_KV.get(`artist:${id}:name`),
-        ]);
-        return {
+        const keys = [
+          `artist:${id}:total`,
+          `artist:${id}:timetable`,
+          `artist:${id}:lineup`,
+          `artist:${id}:name`,
+          ...days.map(d => `artist:${id}:day:${d}`),
+        ];
+        const values = await Promise.all(keys.map(k => env.FAVS_KV.get(k)));
+        const result = {
           id,
-          name: name || id,
-          total: parseInt(total || "0"),
-          timetable: parseInt(timetable || "0"),
-          lineup: parseInt(lineup || "0"),
+          name: values[3] || id,
+          total: parseInt(values[0] || "0"),
+          timetable: parseInt(values[1] || "0"),
+          lineup: parseInt(values[2] || "0"),
+          byDay: {},
         };
+        days.forEach((d, i) => {
+          result.byDay[d] = parseInt(values[4 + i] || "0");
+        });
+        return result;
       }));
 
-      // Sort by total desc
       artists.sort((a, b) => b.total - a.total);
 
-      // Fetch top co-fav pairs (scan prefix cofav:)
+      // Fetch top co-fav pairs
       const coFavList = await env.FAVS_KV.list({ prefix: "cofav:" });
       const coFavPairs = await Promise.all(coFavList.keys.map(async k => {
         const parts = k.name.split(":");
@@ -137,7 +153,7 @@ export default {
       }));
       coFavPairs.sort((a, b) => b.count - a.count);
 
-      return jsonResponse({ artists, coFavPairs: coFavPairs.slice(0, 50) }, 200, origin);
+      return jsonResponse({ artists, coFavPairs: coFavPairs.slice(0, 50), days }, 200, origin);
     }
 
     return new Response("Not found", { status: 404 });

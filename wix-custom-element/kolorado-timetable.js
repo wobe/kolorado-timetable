@@ -441,7 +441,7 @@
     } catch(e) { return "unknown"; }
   }
 
-  function pingFavWorker(artistId, artistName, action) {
+  function pingFavWorker(artistId, artistName, action, day) {
     if (!FAVS_WORKER_URL) return;
     try {
       fetch(FAVS_WORKER_URL + "/fav", {
@@ -452,7 +452,8 @@
           artistName: artistName,
           source: "timetable",
           action: action,
-          sessionId: getSessionId()
+          sessionId: getSessionId(),
+          day: day || null
         })
       }).catch(function(){}); // fire-and-forget, ignore errors
     } catch(e) {}
@@ -1529,11 +1530,13 @@
         // Also add the bare base ID so lineup-v2 (which uses bare IDs) sees it
         this._favourites.add(baseId);
         showFirstFavToast();
-        pingFavWorker(baseId, artistName, "add");
+        var artistDay = artistObj ? getFestivalDayId(artistObj.startTime) : null;
+        pingFavWorker(baseId, artistName, "add", artistDay);
       } else {
         allSlotIds.forEach(function(sid){ this._favourites.delete(sid); }, this);
         this._favourites.delete(baseId);
-        pingFavWorker(baseId, artistName, "remove");
+        var artistDay2 = artistObj ? getFestivalDayId(artistObj.startTime) : null;
+        pingFavWorker(baseId, artistName, "remove", artistDay2);
       }
       writeFavCookie(this._favourites);
       writeFavLocalStorage(this._favourites);

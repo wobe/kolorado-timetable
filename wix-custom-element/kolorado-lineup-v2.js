@@ -185,7 +185,7 @@
     } catch(e) { return "unknown"; }
   }
 
-  function pingFavWorker(artistId, artistName, action) {
+  function pingFavWorker(artistId, artistName, action, day) {
     if (!FAVS_WORKER_URL) return;
     try {
       fetch(FAVS_WORKER_URL + "/fav", {
@@ -196,7 +196,8 @@
           artistName: artistName,
           source: "lineup",
           action: action,
-          sessionId: getSessionId()
+          sessionId: getSessionId(),
+          day: day || null
         })
       }).catch(function(){}); // fire-and-forget, ignore errors
     } catch(e) {}
@@ -890,10 +891,10 @@
               self._favToastSeen = true;
               self._showToast(i18n.favToast);
             }
-            pingFavWorker(id, artistName, "add");
+            pingFavWorker(id, artistName, "add", artistObj ? getDayId(artistObj.startTime) : null);
           } else {
             self._favourites.delete(id);
-            pingFavWorker(id, artistName, "remove");
+            pingFavWorker(id, artistName, "remove", artistObj ? getDayId(artistObj.startTime) : null);
           }
           writeFavCookie(self._favourites);
           writeFavLocalStorage(self._favourites);
@@ -948,10 +949,10 @@
             var artistName2 = artistObj2 ? artistObj2.name : id;
             if (self._favourites.has(id)) {
               self._favourites.delete(id);
-              pingFavWorker(id, artistName2, "remove");
+              pingFavWorker(id, artistName2, "remove", artistObj2 ? getDayId(artistObj2.startTime) : null);
             } else {
               self._favourites.add(id);
-              pingFavWorker(id, artistName2, "add");
+              pingFavWorker(id, artistName2, "add", artistObj2 ? getDayId(artistObj2.startTime) : null);
             }
             writeFavCookie(self._favourites);
             writeFavLocalStorage(self._favourites);
