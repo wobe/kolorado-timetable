@@ -89,6 +89,11 @@ export default {
         const raw = await env.FAVS_KV.get(sessionKey);
         let sessionFavs = raw ? JSON.parse(raw) : [];
 
+        // Count unique sessions (only on first fav from this session)
+        if (action === "add" && sessionFavs.length === 0) {
+          await increment(env.FAVS_KV, "meta:sessionCount", 1);
+        }
+
         if (action === "add") {
           const coFavPromises = sessionFavs.map(otherId => {
             const [a, b] = [artistId, otherId].sort();
@@ -108,12 +113,14 @@ export default {
 
     // ── GET /counts ──────────────────────────────────────────────────────────
     if (request.method === "GET" && path === "/counts") {
-      const [rawIds, rawDays] = await Promise.all([
+      const [rawIds, rawDays, rawSessionCount] = await Promise.all([
         env.FAVS_KV.get("meta:artistIds"),
         env.FAVS_KV.get("meta:days"),
+        env.FAVS_KV.get("meta:sessionCount"),
       ]);
       const artistIds = rawIds ? JSON.parse(rawIds) : [];
       const days = rawDays ? JSON.parse(rawDays) : [];
+      const sessionCount = parseInt(rawSessionCount || "0");
 
       // Fetch all counts in parallel
       const artists = await Promise.all(artistIds.map(async id => {
@@ -153,7 +160,7 @@ export default {
       }));
       coFavPairs.sort((a, b) => b.count - a.count);
 
-      return jsonResponse({ artists, coFavPairs: coFavPairs.slice(0, 50), days }, 200, origin);
+      return jsonResponse({ artists, coFavPairs: coFavPairs.slice(0, 50), days, sessionCount }, 200, origin);
     }
 
     return new Response("Not found", { status: 404 });

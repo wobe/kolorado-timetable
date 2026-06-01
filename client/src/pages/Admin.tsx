@@ -49,6 +49,7 @@ interface CountsData {
   artists: ArtistStat[];
   coFavPairs: CoFavPair[];
   days?: string[];
+  sessionCount?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -330,9 +331,10 @@ export default function Admin() {
         {data && (
           <>
             {/* Summary stats */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-4 gap-4 mb-8">
               {[
                 { label: "Összes kedvenc", value: allArtists.reduce((s, a) => s + a.total, 0) },
+                { label: "Felhasználók", value: data.sessionCount ?? 0 },
                 { label: "Előadók", value: allArtists.filter(a => a.total > 0).length },
                 { label: "Párok", value: coFavPairs.length },
               ].map(stat => (
