@@ -1,5 +1,6 @@
 /**
  * Kolorádó Festival — Favourites Analytics Worker
+ * v2 — day tracking + session count
  *
  * KV keys used:
  *   artist:{id}:total              → total fav count (combined)
