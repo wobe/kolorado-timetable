@@ -156,6 +156,12 @@ export default function Admin() {
   // Day filter: null = all days
   const [activeDay, setActiveDay] = useState<string | null>(null);
 
+  // Expand/collapse state for each leaderboard
+  const [expandedMain, setExpandedMain] = useState(false);
+  const [expandedTT, setExpandedTT] = useState(false);
+  const [expandedLineup, setExpandedLineup] = useState(false);
+  const [expandedPairs, setExpandedPairs] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -364,13 +370,20 @@ export default function Admin() {
               )}
             </div>
             <Card className="mb-8">
-              {artists.slice(0, 20).map((a, i) => (
+              {(expandedMain ? artists : artists.slice(0, 10)).map((a, i) => (
                 <LeaderboardRow key={a.id} rank={i + 1} artist={a} max={maxTotal} showSource dayKey={activeDay ?? undefined} />
               ))}
               {artists.length === 0 && (
                 <p className="text-sm text-center py-4" style={{ color: "rgba(122,158,155,0.4)" }}>
                   {activeDay ? `Nincs adat erre a napra: ${DAY_LABELS[activeDay] || activeDay}` : "Még nincs adat"}
                 </p>
+              )}
+              {artists.length > 10 && (
+                <button onClick={() => setExpandedMain(e => !e)}
+                  className="w-full mt-3 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(220,234,117,0.08)", color: "rgba(220,234,117,0.6)", border: "1px solid rgba(220,234,117,0.15)" }}>
+                  {expandedMain ? `▲ Kevesebb` : `▼ Összes (${artists.length})`}
+                </button>
               )}
             </Card>
 
@@ -382,7 +395,7 @@ export default function Admin() {
                   style={{ color: "rgba(122,158,155,0.5)", fontFamily: "'Pacaembu', sans-serif" }}>
                   Timetable
                 </div>
-                {ttLeaders.filter(a => a.timetable > 0).map((a, i) => (
+                {(expandedTT ? ttLeaders : ttLeaders.slice(0, 10)).filter(a => a.timetable > 0).map((a, i) => (
                   <div key={a.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                     <span className="text-xs font-mono w-5 text-right shrink-0"
                       style={{ color: i < 3 ? "#dcea75" : "rgba(122,158,155,0.4)" }}>{i + 1}</span>
@@ -397,6 +410,13 @@ export default function Admin() {
                 {ttLeaders.filter(a => a.timetable > 0).length === 0 && (
                   <p className="text-xs text-center py-4" style={{ color: "rgba(122,158,155,0.3)" }}>Még nincs adat</p>
                 )}
+                {ttLeaders.filter(a => a.timetable > 0).length > 10 && (
+                  <button onClick={() => setExpandedTT(e => !e)}
+                    className="w-full mt-3 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-opacity hover:opacity-80"
+                    style={{ background: "rgba(220,234,117,0.08)", color: "rgba(220,234,117,0.6)", border: "1px solid rgba(220,234,117,0.15)" }}>
+                    {expandedTT ? `▲ Kevesebb` : `▼ Összes`}
+                  </button>
+                )}
               </Card>
 
               <Card>
@@ -404,7 +424,7 @@ export default function Admin() {
                   style={{ color: "rgba(122,158,155,0.5)", fontFamily: "'Pacaembu', sans-serif" }}>
                   Lineup
                 </div>
-                {lineupLeaders.filter(a => a.lineup > 0).map((a, i) => (
+                {(expandedLineup ? lineupLeaders : lineupLeaders.slice(0, 10)).filter(a => a.lineup > 0).map((a, i) => (
                   <div key={a.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                     <span className="text-xs font-mono w-5 text-right shrink-0"
                       style={{ color: i < 3 ? "#dcea75" : "rgba(122,158,155,0.4)" }}>{i + 1}</span>
@@ -419,13 +439,20 @@ export default function Admin() {
                 {lineupLeaders.filter(a => a.lineup > 0).length === 0 && (
                   <p className="text-xs text-center py-4" style={{ color: "rgba(122,158,155,0.3)" }}>Még nincs adat</p>
                 )}
+                {lineupLeaders.filter(a => a.lineup > 0).length > 10 && (
+                  <button onClick={() => setExpandedLineup(e => !e)}
+                    className="w-full mt-3 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-opacity hover:opacity-80"
+                    style={{ background: "rgba(220,234,117,0.08)", color: "rgba(220,234,117,0.6)", border: "1px solid rgba(220,234,117,0.15)" }}>
+                    {expandedLineup ? `▲ Kevesebb` : `▼ Összes`}
+                  </button>
+                )}
               </Card>
             </div>
 
             {/* Co-favouriting */}
             <SectionTitle>Aki szereti ezt, szereti azt is</SectionTitle>
             <Card>
-              {coFavPairs.slice(0, 30).map((pair, i) => (
+              {(expandedPairs ? coFavPairs : coFavPairs.slice(0, 10)).map((pair, i) => (
                 <div key={`${pair.idA}-${pair.idB}`}
                   className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0">
                   <span className="text-xs font-mono w-5 text-right shrink-0"
@@ -446,6 +473,13 @@ export default function Admin() {
                 <p className="text-sm text-center py-4" style={{ color: "rgba(122,158,155,0.4)" }}>
                   Még nincs elég adat a párok kiszámításához
                 </p>
+              )}
+              {coFavPairs.length > 10 && (
+                <button onClick={() => setExpandedPairs(e => !e)}
+                  className="w-full mt-3 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(220,234,117,0.08)", color: "rgba(220,234,117,0.6)", border: "1px solid rgba(220,234,117,0.15)" }}>
+                  {expandedPairs ? `▲ Kevesebb` : `▼ Összes (${coFavPairs.length})`}
+                </button>
               )}
             </Card>
 
