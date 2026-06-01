@@ -57,7 +57,7 @@
     var strokeColor = filled ? "#DCEA75" : "#0E4B4D";
     return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'+fillColor+'" stroke="'+strokeColor+'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
   }
-  var KAP_PLACEHOLDER_IMG = "https://cdn.jsdelivr.net/gh/wobe/kolorado-timetable@main/wix-custom-element/artist-placeholder.jpg";
+  var KAP_PLACEHOLDER_IMG = "/manus-storage/artist-placeholder_8beba02a.jpg";
   var KAP_CSS = [
     "@keyframes kapFadeIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}",
     ".kap-overlay{position:fixed;inset:0;background:rgba(6,35,34,0.70);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}",
@@ -812,8 +812,9 @@
           // Expand each CMS item into up to 3 timetable blocks (main + second + third slot)
           var expanded = [];
           raw.forEach(function(item) {
-            var rawStage = item.stage || item.sznpad || "Nagyszínpad";
+            var rawStage = item.stage || item.sznpad || "";
             var stageName = Array.isArray(rawStage) ? rawStage[0] : rawStage;
+            if (!stageName || !stageName.trim()) return; // skip events with no stage
             var baseId   = item._id || item.id || String(Math.random());
             var baseName = item.name || item.title || i18n.unknown;
             var shared = {
