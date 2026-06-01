@@ -170,7 +170,39 @@
     } catch (e) {}
   }
 
-  // ── Shared localStorage fav sync ──────────────────────────────
+   // ── Favourites analytics Worker ──────────────────────────────────────────
+  // Set this to your deployed Cloudflare Worker URL after running `wrangler deploy`
+  var FAVS_WORKER_URL = "";
+
+  function getSessionId() {
+    try {
+      var key = "kolorado_session_id";
+      var existing = localStorage.getItem(key);
+      if (existing) return existing;
+      var id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(key, id);
+      return id;
+    } catch(e) { return "unknown"; }
+  }
+
+  function pingFavWorker(artistId, artistName, action) {
+    if (!FAVS_WORKER_URL) return;
+    try {
+      fetch(FAVS_WORKER_URL + "/fav", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId: artistId,
+          artistName: artistName,
+          source: "lineup",
+          action: action,
+          sessionId: getSessionId()
+        })
+      }).catch(function(){}); // fire-and-forget, ignore errors
+    } catch(e) {}
+  }
+
+  // ── Shared localStorage fav sync ────────────────────────────
   var FAV_LS_KEY = "kolorado_favourites";
   var _favBC = null;
   try { _favBC = new BroadcastChannel("kolorado_fav_sync"); } catch(e) {}
@@ -849,14 +881,19 @@
           var id = btn.getAttribute("data-fav");
           if (!id) return;
           var isNew = !self._favourites.has(id);
+          // Look up artist name for analytics ping
+          var artistObj = self._artists.find(function(a){ return a.id === id; });
+          var artistName = artistObj ? artistObj.name : id;
           if (isNew) {
             self._favourites.add(id);
             if (!self._favToastSeen) {
               self._favToastSeen = true;
               self._showToast(i18n.favToast);
             }
+            pingFavWorker(id, artistName, "add");
           } else {
             self._favourites.delete(id);
+            pingFavWorker(id, artistName, "remove");
           }
           writeFavCookie(self._favourites);
           writeFavLocalStorage(self._favourites);
@@ -907,7 +944,15 @@
             e.stopPropagation();
             var id = btn.getAttribute("data-id");
             if (!id) return;
-            if (self._favourites.has(id)) { self._favourites.delete(id); } else { self._favourites.add(id); }
+            var artistObj2 = self._artists.find(function(a){ return a.id === id; });
+            var artistName2 = artistObj2 ? artistObj2.name : id;
+            if (self._favourites.has(id)) {
+              self._favourites.delete(id);
+              pingFavWorker(id, artistName2, "remove");
+            } else {
+              self._favourites.add(id);
+              pingFavWorker(id, artistName2, "add");
+            }
             writeFavCookie(self._favourites);
             writeFavLocalStorage(self._favourites);
             self._render(); self._bindEvents();

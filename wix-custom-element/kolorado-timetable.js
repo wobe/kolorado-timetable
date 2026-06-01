@@ -425,6 +425,39 @@
     document.cookie = FAV_COOKIE_NAME + "=" + encodeURIComponent(JSON.stringify(Array.from(ids))) + "; path=/; max-age=" + FAV_COOKIE_MAX_AGE + "; SameSite=Lax";
   }
 
+  // ── Favourites analytics Worker ──────────────────────────────────────────
+  // Set this to your deployed Cloudflare Worker URL after running `wrangler deploy`
+  var FAVS_WORKER_URL = "";
+
+  // Stable anonymous session ID (persists for 24h in localStorage)
+  function getSessionId() {
+    try {
+      var key = "kolorado_session_id";
+      var existing = localStorage.getItem(key);
+      if (existing) return existing;
+      var id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(key, id);
+      return id;
+    } catch(e) { return "unknown"; }
+  }
+
+  function pingFavWorker(artistId, artistName, action) {
+    if (!FAVS_WORKER_URL) return;
+    try {
+      fetch(FAVS_WORKER_URL + "/fav", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId: artistId,
+          artistName: artistName,
+          source: "timetable",
+          action: action,
+          sessionId: getSessionId()
+        })
+      }).catch(function(){}); // fire-and-forget, ignore errors
+    } catch(e) {}
+  }
+
   // ── Shared localStorage fav sync (works across tabs of same origin) ──────
   var FAV_LS_KEY = "kolorado_favourites";
   // BroadcastChannel for same-tab cross-iframe sync (modern browsers)
@@ -1488,14 +1521,19 @@
       if (!allSlotIds.length) allSlotIds = [id]; // fallback: just the clicked id
       // Toggle: if base id is currently faved, remove all; otherwise add all
       var adding = !this._favourites.has(baseId) && !this._favourites.has(id);
+      // Look up artist name for analytics ping
+      var artistObj = this._artists.find(function(a){ return a.id === baseId || a.id === id; });
+      var artistName = artistObj ? artistObj.name : baseId;
       if (adding) {
         allSlotIds.forEach(function(sid){ this._favourites.add(sid); }, this);
         // Also add the bare base ID so lineup-v2 (which uses bare IDs) sees it
         this._favourites.add(baseId);
         showFirstFavToast();
+        pingFavWorker(baseId, artistName, "add");
       } else {
         allSlotIds.forEach(function(sid){ this._favourites.delete(sid); }, this);
         this._favourites.delete(baseId);
+        pingFavWorker(baseId, artistName, "remove");
       }
       writeFavCookie(this._favourites);
       writeFavLocalStorage(this._favourites);
