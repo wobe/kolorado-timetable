@@ -172,7 +172,7 @@
 
    // ── Favourites analytics Worker ──────────────────────────────────────────
   // Set this to your deployed Cloudflare Worker URL after running `wrangler deploy`
-  var FAVS_WORKER_URL = "";
+  var FAVS_WORKER_URL = "https://kolorado-favs.kolorado.workers.dev";
 
   function getSessionId() {
     try {
