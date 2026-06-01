@@ -112,23 +112,34 @@
         _kapHeartSvg(isFav, 18) +
       '</button>';
   }
+  function _kapBuildPlayer(rawUrl) {
+    var url = rawUrl.trim();
+    if (!url) return "";
+    // SoundCloud
+    if (/soundcloud\.com/i.test(url)) {
+      return '<div class="kap-player"><iframe width="100%" height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(url)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
+    }
+    // YouTube
+    if (/youtube\.com|youtu\.be/i.test(url)) {
+      var mEmbed = url.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+      var mWatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+      var mShort = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+      var ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]);
+      var ytSrc = ytId ? "https://www.youtube.com/embed/" + ytId : url;
+      return '<div class="kap-player"><div class="kap-yt-wrap"><iframe src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
+    }
+    return "";
+  }
   function _kapInfoPanel(a) {
     var dayLabel = _kapDayLabel(a.startTime);
     var timeStr  = a.startTime ? _kapFmt(a.startTime) + (a.endTime ? " – " + _kapFmt(a.endTime) : "") : "";
     var metaParts = [dayLabel, timeStr, a.stage].filter(Boolean);
     var metaLine  = metaParts.join(", ");
-    var playerHtml = "";
-    if (a.soundcloudLink) {
-      playerHtml = '<div class="kap-player"><iframe width="100%" height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url='+encodeURIComponent(a.soundcloudLink)+'&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
-    } else if (a.youtubeLink) {
-      var ytUrl = a.youtubeLink;
-      var mEmbed = ytUrl.match(/\/embed\/([A-Za-z0-9_-]{11})/);
-      var mWatch = ytUrl.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-      var mShort = ytUrl.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-      var ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]);
-      var ytSrc = ytId ? "https://www.youtube.com/embed/" + ytId : ytUrl;
-      playerHtml = '<div class="kap-player"><div class="kap-yt-wrap"><iframe src="'+_kapEsc(ytSrc)+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
-    }
+    // Collect all comma-separated URLs from both fields
+    var allUrls = [];
+    if (a.soundcloudLink) allUrls = allUrls.concat(a.soundcloudLink.split(","));
+    if (a.youtubeLink)    allUrls = allUrls.concat(a.youtubeLink.split(","));
+    var playerHtml = allUrls.map(_kapBuildPlayer).join("");
     return '<div class="kap-body">' +
       (metaLine ? '<div class="kap-meta">'+_kapEsc(metaLine)+'</div>' : '') +
       (a.genre ? '<p class="kap-genre">'+_kapEsc(a.genre)+'</p>' : '') +
