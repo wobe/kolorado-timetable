@@ -16,7 +16,7 @@
 import { useEffect, useRef, useState } from "react";
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const WORKER_URL_STORAGE_KEY = "kolorado_worker_url";
+const WORKER_URL = "https://kolorado-favs.kolorado.workers.dev";
 const ADMIN_PASSWORD = "HouseATonal67";
 const AUTO_REFRESH_MS = 60_000;
 
@@ -50,14 +50,6 @@ interface CountsData {
   coFavPairs: CoFavPair[];
   days?: string[];
   sessionCount?: number;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function getWorkerUrl(): string {
-  try { return localStorage.getItem(WORKER_URL_STORAGE_KEY) || ""; } catch { return ""; }
-}
-function saveWorkerUrl(url: string) {
-  try { localStorage.setItem(WORKER_URL_STORAGE_KEY, url); } catch {}
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -144,9 +136,6 @@ export default function Admin() {
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState(false);
 
-  const [workerUrl, setWorkerUrlState] = useState(getWorkerUrl);
-  const [workerInput, setWorkerInput] = useState(getWorkerUrl);
-
   const [data, setData] = useState<CountsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,19 +160,11 @@ export default function Admin() {
     else setPwError(true);
   }
 
-  function handleWorkerSave(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = workerInput.trim().replace(/\/$/, "");
-    saveWorkerUrl(trimmed);
-    setWorkerUrlState(trimmed);
-  }
-
   async function fetchData() {
-    if (!workerUrl) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(workerUrl + "/counts");
+      const res = await fetch(WORKER_URL + "/counts");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
@@ -198,13 +179,13 @@ export default function Admin() {
 
   // Initial fetch
   useEffect(() => {
-    if (authed && workerUrl) fetchData();
+    if (authed) fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed, workerUrl]);
+  }, [authed]);
 
   // Auto-refresh every 60s
   useEffect(() => {
-    if (!authed || !workerUrl) return;
+    if (!authed) return;
     timerRef.current = setInterval(() => { fetchData(); }, AUTO_REFRESH_MS);
     countdownRef.current = setInterval(() => {
       setCountdown(c => (c <= 1 ? AUTO_REFRESH_MS / 1000 : c - 1));
@@ -214,7 +195,7 @@ export default function Admin() {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed, workerUrl]);
+  }, [authed]);
 
   // ── Password gate ──────────────────────────────────────────────────────────
   if (!authed) {
@@ -287,7 +268,7 @@ export default function Admin() {
           )}
           <button
             onClick={fetchData}
-            disabled={loading || !workerUrl}
+            disabled={loading}
             className="rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-80 disabled:opacity-40"
             style={{ background: "rgba(220,234,117,0.15)", color: "#dcea75", border: "1px solid rgba(220,234,117,0.3)" }}>
             {loading ? "…" : "Frissítés"}
@@ -297,40 +278,14 @@ export default function Admin() {
 
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Worker URL config */}
-        {!workerUrl && (
-          <Card className="mb-8">
-            <p className="text-sm mb-3" style={{ color: "rgba(122,158,155,0.8)" }}>
-              Írd be a Cloudflare Worker URL-jét a statisztikák betöltéséhez:
-            </p>
-            <form onSubmit={handleWorkerSave} className="flex gap-2">
-              <input
-                type="url" placeholder="https://kolorado-favs.xxx.workers.dev"
-                value={workerInput} onChange={e => setWorkerInput(e.target.value)}
-                className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ background: "rgba(26,107,102,0.15)", border: "1px solid rgba(26,107,102,0.3)", color: "#c8dedd" }}
-              />
-              <button type="submit"
-                className="rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-80"
-                style={{ background: "#dcea75", color: "#062322" }}>
-                Mentés
-              </button>
-            </form>
-          </Card>
-        )}
-
-        {workerUrl && !data && !loading && !error && (
+        {!data && !loading && !error && (
           <p className="text-center text-sm py-12" style={{ color: "rgba(122,158,155,0.5)" }}>Betöltés…</p>
         )}
 
         {error && (
           <Card className="mb-6">
             <p className="text-sm" style={{ color: "#e86b5a" }}>Hiba: {error}</p>
-            <p className="text-xs mt-1" style={{ color: "rgba(122,158,155,0.5)" }}>Worker URL: {workerUrl}</p>
-            <button onClick={() => { setWorkerUrlState(""); setWorkerInput(""); saveWorkerUrl(""); }}
-              className="mt-3 text-xs underline" style={{ color: "rgba(122,158,155,0.6)" }}>
-              URL módosítása
-            </button>
+
           </Card>
         )}
 
@@ -483,14 +438,7 @@ export default function Admin() {
               )}
             </Card>
 
-            {/* Worker URL edit */}
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => { setWorkerUrlState(""); setWorkerInput(""); saveWorkerUrl(""); }}
-                className="text-xs underline" style={{ color: "rgba(122,158,155,0.3)" }}>
-                Worker URL módosítása
-              </button>
-            </div>
+
           </>
         )}
       </div>
