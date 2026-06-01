@@ -140,7 +140,7 @@ function DayPill({ label, active, onClick }: { label: string; active: boolean; o
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Admin() {
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('kolorado_admin_authed') === '1');
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState(false);
 
@@ -167,7 +167,7 @@ export default function Admin() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (pwInput === ADMIN_PASSWORD) { setAuthed(true); setPwError(false); }
+    if (pwInput === ADMIN_PASSWORD) { setAuthed(true); setPwError(false); sessionStorage.setItem('kolorado_admin_authed', '1'); }
     else setPwError(true);
   }
 
