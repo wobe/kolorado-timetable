@@ -1,17 +1,14 @@
 /**
  * Kolorádó Festival — Favourites Analytics Worker
- * v2 — day tracking + session count
+ * v3 — snapshot pattern (minimal KV reads)
  *
- * KV keys used:
- *   artist:{id}:total              → total fav count (combined)
- *   artist:{id}:timetable          → fav count from timetable widget
- *   artist:{id}:lineup             → fav count from lineup widget
- *   artist:{id}:name               → display name (stored on first ping)
- *   artist:{id}:day:{day}          → fav count for a specific festival day
- *   session:{sessionId}:favs       → JSON array of artistIds favourited in this session (TTL 24h)
- *   cofav:{idA}:{idB}              → co-fav count (idA < idB alphabetically)
- *   meta:artistIds                 → JSON array of all known artist IDs
- *   meta:days                      → JSON array of all known festival days
+ * KV keys:
+ *   meta:snapshot      → JSON: { artists: {[id]: {name,total,timetable,lineup,byDay:{}}}, sessionCount, days[] }
+ *   meta:cofavs        → JSON: { [pairKey]: { idA, idB, nameA, nameB, count } }
+ *   session:{id}:favs  → JSON array of artistIds (TTL 24h)
+ *
+ * /counts  = 2 KV reads (snapshot + cofavs)
+ * /fav     = 2 KV reads + 2 KV writes (snapshot read/write + session read/write)
  */
 
 const ALLOWED_ORIGINS = [
@@ -37,12 +34,32 @@ function corsHeaders(origin) {
   };
 }
 
+function jsonResponse(data, status, origin) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+  });
+}
+
+// Read snapshot, defaulting to empty structure
+async function readSnapshot(kv) {
+  const raw = await kv.get("meta:snapshot");
+  if (!raw) return { artists: {}, sessionCount: 0, days: [] };
+  try { return JSON.parse(raw); } catch { return { artists: {}, sessionCount: 0, days: [] }; }
+}
+
+// Read co-favs blob
+async function readCofavs(kv) {
+  const raw = await kv.get("meta:cofavs");
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
     const url = new URL(request.url);
 
-    // Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
@@ -61,136 +78,98 @@ export default {
 
       const delta = action === "add" ? 1 : -1;
 
-      // Update counts (total + per-source)
-      const countUpdates = [
-        increment(env.FAVS_KV, `artist:${artistId}:total`, delta),
-        increment(env.FAVS_KV, `artist:${artistId}:${source}`, delta),
-      ];
+      // Read snapshot + session in parallel (2 reads)
+      const sessionKey = sessionId ? `session:${sessionId}:favs` : null;
+      const [snap, rawSession] = await Promise.all([
+        readSnapshot(env.FAVS_KV),
+        sessionKey ? env.FAVS_KV.get(sessionKey) : Promise.resolve(null),
+      ]);
 
-      // Per-day count (if day provided)
+      // Update artist entry in snapshot
+      if (!snap.artists[artistId]) {
+        snap.artists[artistId] = { name: artistName || artistId, total: 0, timetable: 0, lineup: 0, byDay: {} };
+      }
+      const a = snap.artists[artistId];
+      if (artistName && !a.name) a.name = artistName;
+      a.total = Math.max(0, (a.total || 0) + delta);
+      a[source] = Math.max(0, (a[source] || 0) + delta);
       if (day) {
-        countUpdates.push(increment(env.FAVS_KV, `artist:${artistId}:day:${day}`, delta));
-        countUpdates.push(addToIndex(env.FAVS_KV, "meta:days", day));
+        a.byDay = a.byDay || {};
+        a.byDay[day] = Math.max(0, (a.byDay[day] || 0) + delta);
+        if (!snap.days.includes(day)) snap.days.push(day);
       }
 
-      await Promise.all(countUpdates);
+      // Session tracking + co-fav pairs
+      let sessionFavs = rawSession ? JSON.parse(rawSession) : [];
+      let cofavs = null; // only load if needed
 
-      // Store artist name on first ping
-      if (artistName) {
-        const existing = await env.FAVS_KV.get(`artist:${artistId}:name`);
-        if (!existing) await env.FAVS_KV.put(`artist:${artistId}:name`, artistName);
-      }
-
-      // Track artist ID in the global index
-      await addToIndex(env.FAVS_KV, "meta:artistIds", artistId);
-
-      // Co-fav tracking (session-based)
       if (sessionId) {
-        const sessionKey = `session:${sessionId}:favs`;
-        const raw = await env.FAVS_KV.get(sessionKey);
-        let sessionFavs = raw ? JSON.parse(raw) : [];
-
-        // Count unique sessions (only on first fav from this session)
         if (action === "add" && sessionFavs.length === 0) {
-          await increment(env.FAVS_KV, "meta:sessionCount", 1);
+          snap.sessionCount = (snap.sessionCount || 0) + 1;
+        }
+
+        if (action === "add" && sessionFavs.length > 0) {
+          // Need to update co-favs — load the blob
+          cofavs = await readCofavs(env.FAVS_KV);
+          for (const otherId of sessionFavs) {
+            const [x, y] = [artistId, otherId].sort();
+            const pairKey = `${x}:${y}`;
+            if (!cofavs[pairKey]) {
+              cofavs[pairKey] = {
+                idA: x, idB: y,
+                nameA: snap.artists[x]?.name || x,
+                nameB: snap.artists[y]?.name || y,
+                count: 0,
+              };
+            }
+            cofavs[pairKey].count += 1;
+          }
         }
 
         if (action === "add") {
-          const coFavPromises = sessionFavs.map(otherId => {
-            const [a, b] = [artistId, otherId].sort();
-            return increment(env.FAVS_KV, `cofav:${a}:${b}`, 1);
-          });
-          await Promise.all(coFavPromises);
           if (!sessionFavs.includes(artistId)) sessionFavs.push(artistId);
         } else {
           sessionFavs = sessionFavs.filter(id => id !== artistId);
         }
-
-        await env.FAVS_KV.put(sessionKey, JSON.stringify(sessionFavs), { expirationTtl: 86400 });
       }
+
+      // Write snapshot + session (+ cofavs if updated) in parallel
+      const writes = [
+        env.FAVS_KV.put("meta:snapshot", JSON.stringify(snap)),
+        sessionKey ? env.FAVS_KV.put(sessionKey, JSON.stringify(sessionFavs), { expirationTtl: 86400 }) : Promise.resolve(),
+      ];
+      if (cofavs !== null) {
+        writes.push(env.FAVS_KV.put("meta:cofavs", JSON.stringify(cofavs)));
+      }
+      await Promise.all(writes);
 
       return jsonResponse({ ok: true }, 200, origin);
     }
 
     // ── GET /counts ──────────────────────────────────────────────────────────
     if (request.method === "GET" && path === "/counts") {
-      const [rawIds, rawDays, rawSessionCount] = await Promise.all([
-        env.FAVS_KV.get("meta:artistIds"),
-        env.FAVS_KV.get("meta:days"),
-        env.FAVS_KV.get("meta:sessionCount"),
+      // Only 2 KV reads total
+      const [snap, cofavs] = await Promise.all([
+        readSnapshot(env.FAVS_KV),
+        readCofavs(env.FAVS_KV),
       ]);
-      const artistIds = rawIds ? JSON.parse(rawIds) : [];
-      const days = rawDays ? JSON.parse(rawDays) : [];
-      const sessionCount = parseInt(rawSessionCount || "0");
 
-      // Fetch all counts in parallel
-      const artists = await Promise.all(artistIds.map(async id => {
-        const keys = [
-          `artist:${id}:total`,
-          `artist:${id}:timetable`,
-          `artist:${id}:lineup`,
-          `artist:${id}:name`,
-          ...days.map(d => `artist:${id}:day:${d}`),
-        ];
-        const values = await Promise.all(keys.map(k => env.FAVS_KV.get(k)));
-        const result = {
-          id,
-          name: values[3] || id,
-          total: parseInt(values[0] || "0"),
-          timetable: parseInt(values[1] || "0"),
-          lineup: parseInt(values[2] || "0"),
-          byDay: {},
-        };
-        days.forEach((d, i) => {
-          result.byDay[d] = parseInt(values[4 + i] || "0");
-        });
-        return result;
-      }));
+      const artists = Object.entries(snap.artists)
+        .map(([id, a]) => ({ id, name: a.name || id, total: a.total || 0, timetable: a.timetable || 0, lineup: a.lineup || 0, byDay: a.byDay || {} }))
+        .sort((a, b) => b.total - a.total);
 
-      artists.sort((a, b) => b.total - a.total);
+      const coFavPairs = Object.values(cofavs)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 50);
 
-      // Fetch top co-fav pairs
-      const coFavList = await env.FAVS_KV.list({ prefix: "cofav:" });
-      const coFavPairs = await Promise.all(coFavList.keys.map(async k => {
-        const parts = k.name.split(":");
-        const [, idA, idB] = parts;
-        const count = parseInt(await env.FAVS_KV.get(k.name) || "0");
-        const nameA = await env.FAVS_KV.get(`artist:${idA}:name`) || idA;
-        const nameB = await env.FAVS_KV.get(`artist:${idB}:name`) || idB;
-        return { idA, idB, nameA, nameB, count };
-      }));
-      coFavPairs.sort((a, b) => b.count - a.count);
-
-      return jsonResponse({ artists, coFavPairs: coFavPairs.slice(0, 50), days, sessionCount }, 200, origin);
+      return jsonResponse({
+        artists,
+        coFavPairs,
+        days: snap.days || [],
+        sessionCount: snap.sessionCount || 0,
+      }, 200, origin);
     }
 
     return new Response("Not found", { status: 404 });
   }
 };
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function increment(kv, key, delta) {
-  const current = parseInt(await kv.get(key) || "0");
-  const next = Math.max(0, current + delta);
-  await kv.put(key, String(next));
-}
-
-async function addToIndex(kv, key, value) {
-  const raw = await kv.get(key);
-  const arr = raw ? JSON.parse(raw) : [];
-  if (!arr.includes(value)) {
-    arr.push(value);
-    await kv.put(key, JSON.stringify(arr));
-  }
-}
-
-function jsonResponse(data, status, origin) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(origin),
-    },
-  });
-}
