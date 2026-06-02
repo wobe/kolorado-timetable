@@ -18,7 +18,6 @@ import { useEffect, useRef, useState } from "react";
 // ── Config ────────────────────────────────────────────────────────────────────
 const WORKER_URL = "https://kolorado-favs.kolorado.workers.dev";
 const ADMIN_PASSWORD = "HouseATonal67";
-const AUTO_REFRESH_MS = 60_000;
 
 const DAY_LABELS: Record<string, string> = {
   wed: "Szerda",
@@ -140,7 +139,6 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(AUTO_REFRESH_MS / 1000);
 
   // Day filter: null = all days
   const [activeDay, setActiveDay] = useState<string | null>(null);
@@ -150,9 +148,6 @@ export default function Admin() {
   const [expandedTT, setExpandedTT] = useState(false);
   const [expandedLineup, setExpandedLineup] = useState(false);
   const [expandedPairs, setExpandedPairs] = useState(false);
-
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -169,7 +164,6 @@ export default function Admin() {
       const json = await res.json();
       setData(json);
       setLastRefresh(new Date());
-      setCountdown(AUTO_REFRESH_MS / 1000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -183,19 +177,6 @@ export default function Admin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed]);
 
-  // Auto-refresh every 60s
-  useEffect(() => {
-    if (!authed) return;
-    timerRef.current = setInterval(() => { fetchData(); }, AUTO_REFRESH_MS);
-    countdownRef.current = setInterval(() => {
-      setCountdown(c => (c <= 1 ? AUTO_REFRESH_MS / 1000 : c - 1));
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed]);
 
   // ── Password gate ──────────────────────────────────────────────────────────
   if (!authed) {
@@ -263,7 +244,7 @@ export default function Admin() {
         <div className="flex items-center gap-3">
           {lastRefresh && (
             <span className="text-xs" style={{ color: "rgba(122,158,155,0.5)" }}>
-              {lastRefresh.toLocaleTimeString("hu-HU")} · {countdown}s
+              {lastRefresh.toLocaleTimeString("hu-HU")}
             </span>
           )}
           <button
