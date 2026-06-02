@@ -684,30 +684,26 @@
       // Info body
       var genre = esc(a.genre || "");
       var desc = esc(a.longDescription || a.description || "");
-      var hasSC = !!a.soundcloudLink;
-      var hasYT = !hasSC && !!a.youtubeLink;
-      var playerHtml = "";
-      if (hasSC) {
-        playerHtml =
-          '<div class="kl-popup-player">' +
-            '<iframe width="100%" height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=' +
-              encodeURIComponent(a.soundcloudLink) +
-              '&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe>' +
-          '</div>';
-      } else if (hasYT) {
-        var ytUrl = a.youtubeLink;
-        var mEmbed = ytUrl.match(/\/embed\/([A-Za-z0-9_-]{11})/);
-        var mWatch = ytUrl.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-        var mShort = ytUrl.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-        var ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]);
-        var ytSrc = ytId ? "https://www.youtube.com/embed/" + ytId : ytUrl;
-        playerHtml =
-          '<div class="kl-popup-player">' +
-            '<div class="kl-popup-yt-wrap">' +
-              '<iframe src="' + esc(ytSrc) + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>' +
-            '</div>' +
-          '</div>';
+      function buildPlayer(rawUrl) {
+        var url = rawUrl.trim();
+        if (!url) return "";
+        if (/soundcloud\.com/i.test(url)) {
+          return '<div class="kl-popup-player"><iframe width="100%" height="125" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=' + encodeURIComponent(url) + '&color=%23642CFF&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe></div>';
+        }
+        if (/youtube\.com|youtu\.be/i.test(url)) {
+          var mEmbed = url.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+          var mWatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+          var mShort = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+          var ytId = (mEmbed && mEmbed[1]) || (mWatch && mWatch[1]) || (mShort && mShort[1]);
+          var ytSrc = ytId ? "https://www.youtube.com/embed/" + ytId : url;
+          return '<div class="kl-popup-player"><div class="kl-popup-yt-wrap"><iframe src="' + esc(ytSrc) + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>';
+        }
+        return "";
       }
+      var allUrls = [];
+      if (a.soundcloudLink) allUrls = allUrls.concat(a.soundcloudLink.split(","));
+      if (a.youtubeLink)    allUrls = allUrls.concat(a.youtubeLink.split(","));
+      var playerHtml = allUrls.map(buildPlayer).join("");
       // Build schedule meta line: day · HH:MM – HH:MM · Stage
       var self = this;
       function buildSlotMeta(start, end, stage) {
