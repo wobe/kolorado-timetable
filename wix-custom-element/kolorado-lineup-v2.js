@@ -552,6 +552,7 @@
           var q = self._searchQuery.toLowerCase();
           if (
             !(a.name || "").toLowerCase().includes(q) &&
+            !(a.name2 || "").toLowerCase().includes(q) &&
             !(a.genre || "").toLowerCase().includes(q)
           ) return false;
         }

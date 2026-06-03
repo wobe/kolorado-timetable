@@ -1322,7 +1322,7 @@
       var panel = document.createElement("div"); panel.className = "kt-panel";
       var q = this._searchQuery.toLowerCase();
       var results = this._artists.filter(function(a){
-        return a.name.toLowerCase().indexOf(q)!==-1 || (a.genre && a.genre.toLowerCase().indexOf(q)!==-1) || a.stage.toLowerCase().indexOf(q)!==-1;
+        return a.name.toLowerCase().indexOf(q)!==-1 || (a.name2 && a.name2.toLowerCase().indexOf(q)!==-1) || (a.genre && a.genre.toLowerCase().indexOf(q)!==-1) || a.stage.toLowerCase().indexOf(q)!==-1;
       }).slice(0,20);
       if (!results.length) { panel.innerHTML = '<div class="kt-empty">'+i18n.noResults+this._searchQuery+i18n.noResultsClose+'</div>'; return panel; }
       var list = document.createElement("div"); list.className = "kt-panel-list";
