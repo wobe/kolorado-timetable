@@ -305,6 +305,10 @@
       .replace(/[óöő]/g,'o').replace(/[úüű]/g,'u')
       .replace(/[^a-z0-9]+/g,'');
   }
+  // The 7 primary stages shown as timeline columns on desktop grid view
+  var PRIMARY_STAGES = [
+    "nagyszínpad", "platános", "hangár", "tószínpad", "bálterem", "nyugi listening bar", "ring"
+  ];
   function buildStages(artists) {
     // Collect unique stage names from artist data
     var seen = {};
@@ -314,9 +318,7 @@
       if (stageName && !seen[stageName]) { seen[stageName] = true; names.push(stageName); }
     });
     // Sort: priority stages first (case-insensitive match), then rest alphabetically
-    var STAGE_PRIORITY = [
-      "nagyszínpad", "platános", "hangár", "tószínpad", "bálterem", "nyugi listening bar", "ring"
-    ];
+    var STAGE_PRIORITY = PRIMARY_STAGES;
     names.sort(function(a, b) {
       var ai = STAGE_PRIORITY.indexOf(a.toLowerCase());
       var bi = STAGE_PRIORITY.indexOf(b.toLowerCase());
@@ -660,6 +662,20 @@
     ".kt-list-row .genre-label{font-size:10px;color:rgba(122,158,155,0.6);margin-top:2px;font-family:'Pacaembu',sans-serif;}",
     ".kt-list-row .fav-btn{background:none;border:none;cursor:pointer;padding:8px;color:#7a9e9b;transition:color 0.15s;flex-shrink:0;}",
     ".kt-list-row .fav-btn.on{color:#e86b5a;}",
+    ".kt-extra-stages-section{padding:0 8px 32px;}",
+    ".kt-extra-stages-title{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(122,158,155,0.5);padding:16px 8px 8px;}",
+    ".kt-extra-stage-group{margin-bottom:20px;}",
+    ".kt-extra-stage-label{font-family:'SerialBlur',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;padding:6px 4px 8px;border-bottom:1px solid rgba(26,107,102,0.15);margin-bottom:10px;}",
+    ".kt-extra-cards{display:flex;flex-wrap:wrap;gap:8px;}",
+    ".kt-extra-card{position:relative;width:160px;min-height:80px;border-radius:2px;cursor:pointer;transition:box-shadow 0.18s,outline 0.18s;overflow:visible;}",
+    ".kt-extra-card:hover{box-shadow:0 0 0 1px currentColor,0 0 10px 1px currentColor;z-index:5;}",
+    ".kt-extra-card-content{height:100%;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;padding:6px 8px;position:relative;overflow:hidden;}",
+    ".kt-extra-card-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;line-height:1.25;word-break:break-word;overflow-wrap:break-word;white-space:normal;padding-right:22px;}",
+    ".kt-extra-card-time{font-size:10px;white-space:nowrap;font-family:'Pacaembu',sans-serif;margin-top:auto;padding-top:6px;}",
+    ".kt-extra-card-fav-btn{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);background:rgba(6,35,34,0.55);color:inherit;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;transition:all 0.15s;flex-shrink:0;}",
+    ".kt-extra-card-fav-btn.on{background:#e86b5a;border-color:#e86b5a;color:#DCEA75;display:flex;}",
+    ".kt-extra-card:hover .kt-extra-card-fav-btn{display:flex;}",
+    ".kt-extra-card-fav-btn:hover{background:rgba(232,107,90,0.8);}",
     ".kt-grid-wrap{padding:0 8px 32px;}",
     ".kt-grid-scroll{overflow-x:auto;overflow-y:visible;border:1px solid rgba(26,107,102,0.15);}",
     ".kt-grid-inner{display:flex;}",
@@ -1356,43 +1372,109 @@
       var timeLabels = getTimeLabels();
       var visibleArtists = this._getVisibleArtists();
       var visibleStages = this._getVisibleStages(visibleArtists);
-      var wrap = document.createElement("div"); wrap.className = "kt-grid-wrap";
+
+      // On desktop grid view: split into primary timeline stages and extra stages
+      var primaryStages, extraStages;
+      if (!isMobile) {
+        primaryStages = visibleStages.filter(function(s){ return PRIMARY_STAGES.indexOf(s.name.toLowerCase()) !== -1; });
+        extraStages   = visibleStages.filter(function(s){ return PRIMARY_STAGES.indexOf(s.name.toLowerCase()) === -1; });
+      } else {
+        primaryStages = visibleStages;
+        extraStages   = [];
+      }
+
+      var container = document.createElement("div");
+
       if (!visibleArtists.length) {
         var empty = document.createElement("div"); empty.className = "kt-empty";
         empty.innerHTML = (this._filterFavourites?i18n.noFavProgram:i18n.noProgram)+'<br><button>'+i18n.showAll+'</button>';
         empty.querySelector("button").addEventListener("click", function(){ self._activeStages=new Set(self._stages.map(function(s){return s.id;})); self._filterFavourites=false; self._render(); });
-        wrap.appendChild(empty); return wrap;
+        container.appendChild(empty); return container;
       }
-      var scroll = document.createElement("div"); scroll.className = "kt-grid-scroll";
-      scroll.addEventListener("click", function(){ if(self._tappedBlockId){ self._tappedBlockId=null; self._render(); }});
-      var inner = document.createElement("div"); inner.className = "kt-grid-inner";
-      inner.style.minWidth = isMobile ? (visibleStages.length*140+48)+"px" : "auto";
-      // Time axis
-      var ta = document.createElement("div"); ta.className = "kt-time-axis"; ta.style.width = isMobile?"36px":"48px";
-      var tah = document.createElement("div"); tah.className = "kt-time-axis-header"; ta.appendChild(tah);
-      var tab = document.createElement("div"); tab.className = "kt-time-axis-body"; tab.style.height = totalH+"px";
-      timeLabels.forEach(function(t){
-        var lbl = document.createElement("div"); lbl.className = "kt-time-label"; lbl.style.top = ((t.hour-DAY_START_HOUR)*hh)+"px";
-        lbl.innerHTML = "<span>"+t.label+"</span>"; tab.appendChild(lbl);
+
+      // ── Timeline grid (primary stages) ──
+      if (primaryStages.length) {
+        var wrap = document.createElement("div"); wrap.className = "kt-grid-wrap";
+        var scroll = document.createElement("div"); scroll.className = "kt-grid-scroll";
+        scroll.addEventListener("click", function(){ if(self._tappedBlockId){ self._tappedBlockId=null; self._render(); }});
+        var inner = document.createElement("div"); inner.className = "kt-grid-inner";
+        inner.style.minWidth = isMobile ? (primaryStages.length*140+48)+"px" : "auto";
+        // Time axis
+        var ta = document.createElement("div"); ta.className = "kt-time-axis"; ta.style.width = isMobile?"36px":"48px";
+        var tah = document.createElement("div"); tah.className = "kt-time-axis-header"; ta.appendChild(tah);
+        var tab = document.createElement("div"); tab.className = "kt-time-axis-body"; tab.style.height = totalH+"px";
+        timeLabels.forEach(function(t){
+          var lbl = document.createElement("div"); lbl.className = "kt-time-label"; lbl.style.top = ((t.hour-DAY_START_HOUR)*hh)+"px";
+          lbl.innerHTML = "<span>"+t.label+"</span>"; tab.appendChild(lbl);
+        });
+        ta.appendChild(tab); inner.appendChild(ta);
+        // Stage cols
+        var sc = document.createElement("div"); sc.className = "kt-stage-cols";
+        var nl = this._createNowLine(hh); if(nl) sc.appendChild(nl);
+        primaryStages.forEach(function(stage, idx){
+          var artists = visibleArtists.filter(function(a){return a.stage===stage.name;});
+          var col = document.createElement("div"); col.className = "kt-stage-col";
+          col.style.minWidth = isMobile?"140px":"160px";
+          if(idx < primaryStages.length-1) col.style.borderRight = "1px solid rgba(26,107,102,0.08)";
+          var ch = document.createElement("div"); ch.className = "kt-stage-header";
+          ch.innerHTML = '<span style="color:'+stage.color+'">'+stage.name+'</span>'; col.appendChild(ch);
+          var cb = document.createElement("div"); cb.className = "kt-stage-body"; cb.style.height = totalH+"px";
+          timeLabels.forEach(function(t){ var hl=document.createElement("div"); hl.className="kt-hour-line"; hl.style.top=((t.hour-DAY_START_HOUR)*hh)+"px"; cb.appendChild(hl); });
+          artists.forEach(function(artist){ cb.appendChild(self._createArtistBlock(artist, stage, hh)); });
+          col.appendChild(cb); sc.appendChild(col);
+        });
+        inner.appendChild(sc); scroll.appendChild(inner); wrap.appendChild(scroll);
+        container.appendChild(wrap);
+      }
+
+      // ── Extra stages card section (desktop only) ──
+      if (extraStages.length) {
+        container.appendChild(this._renderExtraStagesSection(extraStages, visibleArtists));
+      }
+
+      return container;
+    };
+
+    _renderExtraStagesSection(extraStages, visibleArtists) {
+      var self = this;
+      var section = document.createElement("div"); section.className = "kt-extra-stages-section";
+      extraStages.forEach(function(stage) {
+        var artists = visibleArtists.filter(function(a){ return a.stage === stage.name; });
+        if (!artists.length) return;
+        artists.sort(function(a, b){ return a.startTime - b.startTime; });
+        var group = document.createElement("div"); group.className = "kt-extra-stage-group";
+        var label = document.createElement("div"); label.className = "kt-extra-stage-label";
+        label.style.color = stage.color;
+        label.textContent = stage.name;
+        group.appendChild(label);
+        var cards = document.createElement("div"); cards.className = "kt-extra-cards";
+        artists.forEach(function(artist) {
+          var isFav = self._favourites.has(artist.id);
+          var isTO  = !!artist.timetableonly;
+          var card  = document.createElement("div"); card.className = "kt-extra-card";
+          card.style.cssText = "background:"+stage.color+"26;color:"+stage.color+";outline:"+(isFav?"2px solid #e86b5a":"none")+";";
+          var content = document.createElement("div"); content.className = "kt-extra-card-content";
+          var nameEl = document.createElement("div"); nameEl.className = "kt-extra-card-name";
+          nameEl.style.color = stage.color; nameEl.textContent = artist.name;
+          content.appendChild(nameEl);
+          var timeEl = document.createElement("div"); timeEl.className = "kt-extra-card-time";
+          timeEl.style.color = stage.color+"99";
+          timeEl.textContent = formatTime(artist.startTime)+"–"+formatTime(artist.endTime);
+          content.appendChild(timeEl);
+          if (!isTO) {
+            var fb = document.createElement("button"); fb.className = "kt-extra-card-fav-btn"+(isFav?" on":"");
+            fb.innerHTML = ICONS.heart(isFav?"#DCEA75":"none", 10);
+            fb.addEventListener("click", function(e){ e.stopPropagation(); self._toggleFav(artist.id); });
+            content.appendChild(fb);
+          }
+          card.appendChild(content);
+          if (!isTO) card.addEventListener("click", function(){ self._openArtistPopup(artist); });
+          cards.appendChild(card);
+        });
+        group.appendChild(cards);
+        section.appendChild(group);
       });
-      ta.appendChild(tab); inner.appendChild(ta);
-      // Stage cols
-      var sc = document.createElement("div"); sc.className = "kt-stage-cols";
-      var nl = this._createNowLine(hh); if(nl) sc.appendChild(nl);
-      visibleStages.forEach(function(stage, idx){
-        var artists = visibleArtists.filter(function(a){return a.stage===stage.name;});
-        var col = document.createElement("div"); col.className = "kt-stage-col";
-        col.style.minWidth = isMobile?"140px":"160px";
-        if(idx < visibleStages.length-1) col.style.borderRight = "1px solid rgba(26,107,102,0.08)";
-        var ch = document.createElement("div"); ch.className = "kt-stage-header";
-        ch.innerHTML = '<span style="color:'+stage.color+'">'+stage.name+'</span>'; col.appendChild(ch);
-        var cb = document.createElement("div"); cb.className = "kt-stage-body"; cb.style.height = totalH+"px";
-        timeLabels.forEach(function(t){ var hl=document.createElement("div"); hl.className="kt-hour-line"; hl.style.top=((t.hour-DAY_START_HOUR)*hh)+"px"; cb.appendChild(hl); });
-        artists.forEach(function(artist){ cb.appendChild(self._createArtistBlock(artist, stage, hh)); });
-        col.appendChild(cb); sc.appendChild(col);
-      });
-      inner.appendChild(sc); scroll.appendChild(inner); wrap.appendChild(scroll);
-      return wrap;
+      return section;
     };
 
     _createArtistBlock(artist, stage, hh) {
