@@ -667,7 +667,7 @@
     ".kt-extra-stage-group{margin-bottom:20px;}",
     ".kt-extra-stage-label{font-family:'SerialBlur',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;padding:6px 4px 8px;border-bottom:1px solid rgba(26,107,102,0.15);margin-bottom:10px;}",
     ".kt-extra-cards{display:flex;flex-wrap:wrap;gap:8px;}",
-    ".kt-extra-card{position:relative;width:160px;min-height:80px;border-radius:2px;cursor:pointer;transition:box-shadow 0.18s,outline 0.18s;overflow:visible;}",
+    ".kt-extra-card{position:relative;width:200px;min-height:100px;border-radius:2px;cursor:pointer;transition:box-shadow 0.18s,outline 0.18s;overflow:visible;}",
     ".kt-extra-card:hover{box-shadow:0 0 0 1px currentColor,0 0 10px 1px currentColor;z-index:5;}",
     ".kt-extra-card-content{height:100%;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;padding:6px 8px;position:relative;overflow:hidden;}",
     ".kt-extra-card-name{font-family:'SerialBlur',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:0.03em;line-height:1.25;word-break:break-word;overflow-wrap:break-word;white-space:normal;padding-right:22px;}",
@@ -1173,8 +1173,10 @@
       spacerCell.className = "kt-stage-row-spacer";
       spacerCell.id = "kt-stage-row-spacer";
       stageRow.appendChild(spacerCell);
-      // Stage cells (built from this._stages; filtered to visible ones after data loads)
-      var visibleStagesForHeader = this._getVisibleStages(this._getVisibleArtists());
+      // Stage cells — only show primary timeline stages (extra stages have their own card section)
+      var visibleStagesForHeader = this._getVisibleStages(this._getVisibleArtists()).filter(function(s){
+        return PRIMARY_STAGES.indexOf(s.name.toLowerCase()) !== -1;
+      });
       visibleStagesForHeader.forEach(function(stage) {
         var cell = document.createElement("div");
         cell.className = "kt-stage-row-cell";
