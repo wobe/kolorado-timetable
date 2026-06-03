@@ -627,7 +627,7 @@
               '<div class="kl-card-inner">' +
                 photoHtml +
                 '<div class="kl-hover-overlay"></div>' +
-                '<div class="kl-name-wrap"><span class="kl-name">' + esc(a.name) + '</span>' + (a.genre ? '<br><span class="kl-genre-chip">' + esc(a.genre) + '</span>' : '') + '</div>' +
+                '<div class="kl-name-wrap"><span class="kl-name">' + esc(a.name) + '</span>' + ((a.name2 || a.genre) ? '<br><span class="kl-genre-chip">' + esc(a.name2 || a.genre) + '</span>' : '') + '</div>' +
                 '<button class="kl-fav-circle' + (isFav ? " on" : "") + '" data-fav="' + esc(a.id) + '">' +
                   (isFav ? ICONS.heartWhite(true, 16) : ICONS.heart(false, 16)) +
                 '</button>' +
@@ -671,11 +671,12 @@
         ? '<img class="kl-popup-photo" src="' + esc(a.photo) + '" alt="' + esc(a.name) + '" loading="lazy">'
         : '<div class="kl-popup-photo-ph"><img src="' + PLACEHOLDER_IMG + '" alt="" loading="lazy"></div>';
       var subtitle = esc(a.title1 || "");
+      var name2 = esc(a.name2 || "");
       var imagePanelHtml =
         photoHtml +
         '<div class="kl-popup-name-wrap">' +
           '<span class="kl-popup-name">' + esc(a.name) + '</span>' +
-          (subtitle ? '<br><span class="kl-popup-subtitle">' + subtitle + '</span>' : '') +
+          (name2 ? '<br><span class="kl-popup-subtitle">' + name2 + '</span>' : (subtitle ? '<br><span class="kl-popup-subtitle">' + subtitle + '</span>' : '')) +
         '</div>' +
         '<button class="kl-popup-fav kl-popup-fav-btn ' + (isFav ? "on" : "off") + '" data-id="' + esc(a.id) + '">' +
           (isFav ? ICONS.heartWhite(true, 18) : ICONS.heart(false, 18)) +

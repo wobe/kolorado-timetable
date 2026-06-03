@@ -103,10 +103,11 @@
       ? '<img class="kap-photo" src="'+_kapEsc(a.photo)+'" alt="'+_kapEsc(a.name)+'" loading="lazy">'
       : '<div class="kap-photo-ph"><img src="'+KAP_PLACEHOLDER_IMG+'" alt="" loading="lazy"></div>';
     var subtitle = _kapEsc(a.title1 || "");
+    var name2 = _kapEsc(a.name2 || "");
     return photoHtml +
       '<div class="kap-name-wrap">' +
         '<span class="kap-name">'+_kapEsc(a.name)+'</span>' +
-        (subtitle ? '<br><span class="kap-subtitle">'+subtitle+'</span>' : '') +
+        (name2 ? '<br><span class="kap-subtitle">'+name2+'</span>' : (subtitle ? '<br><span class="kap-subtitle">'+subtitle+'</span>' : '')) +
       '</div>' +
       '<button class="kap-fav-popup '+(isFav?"on":"off")+'" data-id="'+_kapEsc(a.id)+'">' +
         _kapHeartSvg(isFav, 18) +
@@ -837,7 +838,8 @@
               name:            baseName,
               stage:           stageName,
               genre:           item.genre || item.genre1 || "",
-              programtipus:    item.programtipus || item.Programt\u00edpus || "",
+              name2:           item.name2 || item.Name2 || "",
+              programtipus:    item.programtipus || item.Programtípus || "",
               url:             item.website || item.url || null,
               photo:           item.photo || "",
               longDescription: item.longDescription || item.bio || "",
@@ -1510,9 +1512,9 @@
       nameEl.style.color = stage.color;
       nameEl.textContent = artist.name;
       content.appendChild(nameEl);
-      if (!isShort && artist.genre) {
+      if (!isShort && (artist.name2 || artist.genre)) {
         var ge = document.createElement("div"); ge.className = "kt-block-genre";
-        ge.textContent = artist.genre; content.appendChild(ge);
+        ge.textContent = artist.name2 || artist.genre; content.appendChild(ge);
       }
       if (!isShort) {
         var te = document.createElement("div"); te.className = "kt-block-time";
