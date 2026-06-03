@@ -1461,6 +1461,11 @@
           var nameEl = document.createElement("div"); nameEl.className = "kt-extra-card-name";
           nameEl.style.color = stage.color; nameEl.textContent = artist.name;
           content.appendChild(nameEl);
+          var subLabel = artist.name2 || artist.genre;
+          if (subLabel) {
+            var subEl = document.createElement("div"); subEl.className = "kt-block-genre";
+            subEl.textContent = subLabel; content.appendChild(subEl);
+          }
           var timeEl = document.createElement("div"); timeEl.className = "kt-extra-card-time";
           timeEl.style.color = stage.color+"99";
           timeEl.textContent = formatTime(artist.startTime)+"–"+formatTime(artist.endTime);
