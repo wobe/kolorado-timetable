@@ -665,9 +665,10 @@
     ".kt-list-row .fav-btn.on{color:#e86b5a;}",
     ".kt-extra-stages-section{padding:0 8px 32px;}",
     ".kt-extra-stages-title{font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(122,158,155,0.5);padding:16px 8px 8px;}",
-    ".kt-extra-stage-group{margin-bottom:20px;}",
-    ".kt-extra-stage-label{font-family:'SerialBlur',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;padding:6px 4px 8px;border-bottom:1px solid rgba(26,107,102,0.15);margin-bottom:10px;}",
-    ".kt-extra-cards{display:flex;flex-wrap:wrap;gap:8px;}",
+    ".kt-extra-stage-group{margin-bottom:0;}",
+    ".kt-extra-stage-label{display:none;}",
+    ".kt-extra-cards{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;padding:12px 0 4px;}",
+    ".kt-extra-stage-chip{display:inline-flex;align-items:center;font-family:'SerialBlur',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.07em;padding:4px 10px;border-radius:2px;white-space:nowrap;align-self:flex-start;margin-top:4px;opacity:0.9;}",
     ".kt-extra-card{position:relative;width:200px;min-height:100px;border-radius:2px;cursor:pointer;transition:box-shadow 0.18s,outline 0.18s;overflow:visible;}",
     ".kt-extra-card:hover{box-shadow:0 0 0 1px currentColor,0 0 10px 1px currentColor;z-index:5;}",
     ".kt-extra-card-content{height:100%;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;padding:6px 8px;position:relative;overflow:hidden;}",
@@ -1442,16 +1443,16 @@
     _renderExtraStagesSection(extraStages, visibleArtists) {
       var self = this;
       var section = document.createElement("div"); section.className = "kt-extra-stages-section";
+      var cards = document.createElement("div"); cards.className = "kt-extra-cards";
       extraStages.forEach(function(stage) {
         var artists = visibleArtists.filter(function(a){ return a.stage === stage.name; });
         if (!artists.length) return;
         artists.sort(function(a, b){ return a.startTime - b.startTime; });
-        var group = document.createElement("div"); group.className = "kt-extra-stage-group";
-        var label = document.createElement("div"); label.className = "kt-extra-stage-label";
-        label.style.color = stage.color;
-        label.textContent = stage.name;
-        group.appendChild(label);
-        var cards = document.createElement("div"); cards.className = "kt-extra-cards";
+        // Stage chip separator
+        var chip = document.createElement("div"); chip.className = "kt-extra-stage-chip";
+        chip.style.cssText = "background:"+stage.color+"26;color:"+stage.color+";";
+        chip.textContent = stage.name;
+        cards.appendChild(chip);
         artists.forEach(function(artist) {
           var isFav = self._favourites.has(artist.id);
           var isTO  = !!artist.timetableonly;
@@ -1480,9 +1481,8 @@
           if (!isTO) card.addEventListener("click", function(){ self._openArtistPopup(artist); });
           cards.appendChild(card);
         });
-        group.appendChild(cards);
-        section.appendChild(group);
       });
+      section.appendChild(cards);
       return section;
     };
 
